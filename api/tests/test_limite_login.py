@@ -50,3 +50,43 @@ def test_limite_por_usuario_vale_mesmo_trocando_de_ip(cliente_anonimo: TestClien
 
     assert resposta.status_code == 429
     assert resposta.json()["erro"]["codigo"] == "muitas_tentativas"
+
+
+def test_usuarios_sem_falha_recente_saem_da_memoria():
+    # Um nome inventado por tentativa não pode fazer a memória crescer para sempre.
+    relogio = RelogioFalso()
+    limite = LimiteFalhasLogin(janela_segundos=60, relogio=relogio)
+    limite.LIMITE_PARA_VARRER = 10
+    for i in range(11):
+        limite.registrar_falha(f"inventado-{i}")
+
+    relogio.agora = 61
+    limite.registrar_falha("ana")
+
+    assert limite.usuarios_guardados() == 1
+    assert not limite.bloqueado("inventado-0")
+
+
+def test_limite_por_ip_usa_o_ip_da_cloudflare_e_ignora_x_forwarded_for(
+    cliente_anonimo: TestClient,
+):
+    # Na API publicada, um X-Forwarded-For novo a cada tentativa furava o limite por IP. A
+    # Cloudflare grava o IP real em CF-Connecting-IP e sobrescreve o que o cliente mandar.
+    respostas = [
+        cliente_anonimo.post(
+            "/auth/login",
+            json={"usuario": f"inventado-{i}", "senha": "chute"},
+            headers={"CF-Connecting-IP": "198.51.100.7", "X-Forwarded-For": f"203.0.113.{i}"},
+        ).status_code
+        for i in range(6)
+    ]
+
+    assert respostas == [401] * 5 + [429]
+
+    # Outro cliente (outro IP real) continua podendo entrar.
+    outro = cliente_anonimo.post(
+        "/auth/login",
+        json={"usuario": "inventado-x", "senha": "chute"},
+        headers={"CF-Connecting-IP": "198.51.100.8"},
+    )
+    assert outro.status_code == 401
