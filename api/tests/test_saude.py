@@ -3,7 +3,7 @@ from collections.abc import Iterator
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.core.banco import criar_engine, obter_sessao
+from app.core.banco import criar_engine, obter_sessao_sem_retry
 from app.main import criar_app
 
 
@@ -24,9 +24,9 @@ def test_health_responde_503_sem_banco():
             yield sessao
 
     app = criar_app()
-    app.dependency_overrides[obter_sessao] = sessao_sem_banco
+    app.dependency_overrides[obter_sessao_sem_retry] = sessao_sem_banco
 
     resposta = TestClient(app).get("/health")
 
     assert resposta.status_code == 503
-    assert resposta.json()["banco"] == "indisponivel"
+    assert resposta.json() == {"status": "degradado", "banco": "indisponivel"}

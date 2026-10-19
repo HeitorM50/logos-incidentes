@@ -50,4 +50,11 @@ def obter_sessao() -> Iterator[Session]:
         yield sessao
 
 
+def obter_sessao_sem_retry() -> Iterator[Session]:
+    """Sessão para o /health: responde rápido e com o próprio corpo quando o banco cai."""
+    with obter_fabrica_sessoes()() as sessao:
+        yield sessao
+
+
 SessaoDep = Annotated[Session, Depends(obter_sessao)]
+SessaoSemRetryDep = Annotated[Session, Depends(obter_sessao_sem_retry)]

@@ -1,4 +1,4 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Path, Query, Response, status
 
@@ -29,11 +29,20 @@ router = APIRouter(
 @router.get("", response_model=ListaIncidentes, summary="Lista incidentes em ordem de triagem")
 def listar_incidentes(
     sessao: SessaoDep,
+    analista: AnalistaAtualDep,
     criticidade: Annotated[list[Criticidade], Query()] = [],  # noqa: B006
     categoria: Annotated[list[Categoria], Query()] = [],  # noqa: B006
     status_: Annotated[list[StatusIncidente], Query(alias="status")] = [],  # noqa: B006
+    responsavel: Annotated[
+        Literal["eu"] | None, Query(description="`eu` lista só os incidentes assumidos por mim")
+    ] = None,
 ):
-    filtros = FiltrosIncidentes(criticidades=criticidade, categorias=categoria, status=status_)
+    filtros = FiltrosIncidentes(
+        criticidades=criticidade,
+        categorias=categoria,
+        status=status_,
+        responsavel_id=analista.id if responsavel == "eu" else None,
+    )
     return servico.listar(sessao, filtros)
 
 

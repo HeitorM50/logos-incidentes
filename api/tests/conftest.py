@@ -15,7 +15,7 @@ from pydantic import ValidationError
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.core.banco import criar_engine, obter_sessao
+from app.core.banco import criar_engine, obter_sessao, obter_sessao_sem_retry
 from app.core.config import Configuracao, obter_configuracao
 from app.core.limite import falhas_login, limitador
 from app.core.seguranca import criar_token, gerar_hash_senha
@@ -71,6 +71,7 @@ def app_teste(fabrica_sessoes: sessionmaker[Session], sessao: Session) -> FastAP
     falhas_login.reiniciar()
     app = criar_app()
     app.dependency_overrides[obter_sessao] = sessao_de_teste
+    app.dependency_overrides[obter_sessao_sem_retry] = sessao_de_teste
     return app
 
 

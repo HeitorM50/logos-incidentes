@@ -190,3 +190,21 @@ def test_remover_com_versao_desatualizada_responde_409(cliente: TestClient):
 
     assert resposta.status_code == 409
     assert cliente.get(rota).status_code == 200
+
+
+def test_filtro_responsavel_eu_mostra_so_os_incidentes_do_analista(
+    cliente: TestClient, cliente_bruno: TestClient
+):
+    da_ana = criar(cliente)
+    do_bruno = criar(cliente)
+    criar(cliente)  # sem responsável
+    cliente.post(f"/incidentes/{da_ana['id']}/assumir", json={"versao": 1})
+    cliente_bruno.post(f"/incidentes/{do_bruno['id']}/assumir", json={"versao": 1})
+
+    corpo = cliente.get("/incidentes", params={"responsavel": "eu"}).json()
+
+    assert [i["id"] for i in corpo["itens"]] == [da_ana["id"]]
+
+
+def test_filtro_responsavel_com_outro_valor_responde_422(cliente: TestClient):
+    assert cliente.get("/incidentes", params={"responsavel": "bruno"}).status_code == 422
