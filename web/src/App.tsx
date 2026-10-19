@@ -1,24 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useQuery } from '@tanstack/react-query'
+import { verificarSaude } from '@/api/saude'
 
-type EstadoApi = 'verificando' | 'ok' | 'indisponivel'
-
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
-
-// Esqueleto de deploy (issue #12): confirma que o front publicado alcança a API publicada.
+// Tela provisória até a tela de triagem (issue #16): confirma que o front alcança a API.
 function App() {
-  const [estado, setEstado] = useState<EstadoApi>('verificando')
+  const saude = useQuery({
+    queryKey: ['saude'],
+    queryFn: ({ signal }) => verificarSaude(signal),
+  })
 
-  useEffect(() => {
-    fetch(`${API_URL}/health`)
-      .then((resposta) => setEstado(resposta.ok ? 'ok' : 'indisponivel'))
-      .catch(() => setEstado('indisponivel'))
-  }, [])
+  const estado = saude.isPending ? 'verificando' : saude.isSuccess ? 'ok' : 'indisponivel'
 
   return (
-    <main>
-      <h1>Logos</h1>
-      <p>Central de resposta a incidentes</p>
-      <p role="status">API: {estado}</p>
+    <main className="mx-auto max-w-xl p-8">
+      <h1 className="text-2xl font-semibold">Logos</h1>
+      <p className="text-muted-foreground">Central de resposta a incidentes</p>
+      <p role="status" className="mt-4">
+        API: {estado}
+      </p>
     </main>
   )
 }
