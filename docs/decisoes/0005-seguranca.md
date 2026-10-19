@@ -12,7 +12,10 @@ O case pede para explicar a "segurança básica da API". Além disso, o controle
 - **Login com usuário e senha** → a API devolve um **JWT** (HS256, validade de 8 horas — um turno).
 - Senhas guardadas só como **hash bcrypt**.
 - Todas as rotas exigem `Authorization: Bearer <token>`, exceto `POST /auth/login` e `GET /health`.
-- **Limite de tentativas no login** (slowapi): excesso devolve 429.
+- **Limite de tentativas no login**, em duas camadas, ambas com resposta 429:
+  - por IP (slowapi, 5 por minuto);
+  - por usuário (5 senhas erradas por minuto). O cabeçalho `X-Forwarded-For` pode ser forjado
+    para fugir do limite por IP, mas o usuário atacado não muda.
 - **CORS** restrito ao domínio do front.
 - **Validação de entrada** em todas as rotas (Pydantic): enums fechados, limites de tamanho,
   campos extras rejeitados.
@@ -28,6 +31,9 @@ O case pede para explicar a "segurança básica da API". Além disso, o controle
   (Vercel e Render).
 
 ## Consequências
+
+- O limite por usuário permite que alguém bloqueie a conta de um analista por 1 minuto errando a
+  senha de propósito. Risco aceito no MVP; em produção, desafio adicional (captcha) em vez de bloqueio.
 
 - O token fica no `localStorage` do front. Risco aceito para o MVP: a mitigação é a validação de
   entrada e a ausência de HTML injetado. Em produção real, cookie `HttpOnly` no mesmo domínio.

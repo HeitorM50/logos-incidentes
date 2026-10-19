@@ -11,7 +11,8 @@ class Configuracao(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     database_url: str
-    jwt_segredo: str = Field(min_length=16)
+    # HS256 pede um segredo de pelo menos 256 bits.
+    jwt_segredo: str = Field(min_length=32)
     jwt_validade_horas: int = 8
     cors_origens: Annotated[list[str], NoDecode] = ["http://localhost:5173"]
 

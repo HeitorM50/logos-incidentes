@@ -17,7 +17,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.banco import criar_engine, obter_sessao
 from app.core.config import Configuracao, obter_configuracao
-from app.core.limite import limitador
+from app.core.limite import falhas_login, limitador
 from app.core.seguranca import criar_token, gerar_hash_senha
 from app.main import criar_app
 from app.models import Analista, Base
@@ -68,6 +68,7 @@ def app_teste(fabrica_sessoes: sessionmaker[Session], sessao: Session) -> FastAP
             yield sessao_requisicao
 
     limitador.reset()
+    falhas_login.reiniciar()
     app = criar_app()
     app.dependency_overrides[obter_sessao] = sessao_de_teste
     return app

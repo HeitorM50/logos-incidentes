@@ -19,7 +19,7 @@ jobs:
     env:
       # Os testes criam e removem um schema temporário; os dados da aplicação não são tocados.
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      JWT_SEGREDO: segredo-apenas-para-testes
+      JWT_SEGREDO: segredo-usado-apenas-nos-testes-do-ci
     steps:
       - uses: actions/checkout@v5
       - uses: astral-sh/setup-uv@v6
