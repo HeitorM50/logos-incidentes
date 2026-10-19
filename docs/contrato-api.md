@@ -63,7 +63,8 @@ por status e ordenada por criticidade e tempo aberto.
   - `em_investigacao` → `inconclusivo` ou `fechado`
   - `inconclusivo` → `em_investigacao` ou `fechado`
 - **Liberar** — só o responsável: remove o responsável; `em_investigacao` volta para `aberto`.
-- **Fechado** é final: não aceita edição, mudança de status, assumir nem liberar.
+- **Fechado** é final: não aceita edição, mudança de status, assumir, liberar nem remoção. O
+  incidente fechado é registro histórico da operação; só se remove o que ainda está em andamento.
 - **Editar e remover:** qualquer analista se não houver responsável; senão, só o responsável.
 
 ## Rotas
@@ -80,7 +81,7 @@ por status e ordenada por criticidade e tempo aberto.
 | `POST /incidentes/{id}/assumir` | `{versao}` | 200 `Incidente` | 401, 404, 409, 422 |
 | `POST /incidentes/{id}/liberar` | `{versao}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
 | `POST /incidentes/{id}/status` | `{versao, status}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
-| `DELETE /incidentes/{id}?versao=N` | — | 204 | 401, 403, 404, 409 |
+| `DELETE /incidentes/{id}?versao=N` | — | 204 | 401, 403, 404, 409, 422 |
 
 **`ListaIncidentes`**
 

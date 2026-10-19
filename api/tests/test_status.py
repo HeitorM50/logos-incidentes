@@ -64,3 +64,15 @@ def test_liberar_devolve_o_incidente_para_aberto(cliente: TestClient):
 
     assert liberado["status"] == "aberto"
     assert liberado["responsavel"] is None
+
+
+def test_incidente_fechado_nao_pode_ser_removido(cliente: TestClient):
+    incidente = acao(cliente, criar_incidente(cliente), "assumir").json()
+    fechado = acao(cliente, incidente, "status", status="fechado").json()
+    rota = f"/incidentes/{fechado['id']}"
+
+    resposta = cliente.delete(rota, params={"versao": fechado["versao"]})
+
+    assert resposta.status_code == 422
+    assert resposta.json()["erro"]["codigo"] == "incidente_fechado"
+    assert cliente.get(rota).status_code == 200

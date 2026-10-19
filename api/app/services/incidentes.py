@@ -232,6 +232,8 @@ def mudar_status(
 def remover(sessao: Session, incidente_id: int, versao_lida: int, analista_id: int) -> None:
     incidente = _buscar(sessao, incidente_id)
     _exigir_versao_atual(sessao, incidente, versao_lida)
+    # Fechado é registro histórico da operação: não pode ser apagado.
+    _exigir_aberto_para_alteracao(incidente)
     _exigir_responsavel_ou_livre(incidente, analista_id)
     resultado = sessao.execute(
         delete(Incidente)
