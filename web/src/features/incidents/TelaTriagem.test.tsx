@@ -1,5 +1,5 @@
 import { QueryClientProvider } from '@tanstack/react-query'
-import { act, render, screen, within } from '@testing-library/react'
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { criarClienteDeConsultas } from '@/lib/consultas'
@@ -26,6 +26,7 @@ function renderizar() {
 afterEach(() => {
   vi.useRealTimers()
   vi.unstubAllGlobals()
+  window.history.replaceState(null, '', '/')
 })
 
 describe('TelaTriagem', () => {
@@ -75,7 +76,8 @@ describe('TelaTriagem', () => {
     simularLista(nunca)
     renderizar()
 
-    expect(screen.getByText('Carregando incidentes…', { selector: 'p' })).toBeInTheDocument()
+    const linha = screen.getByText('Carregando incidentes…', { selector: 'p:not([role])' })
+    expect(linha).toBeInTheDocument()
     expect(screen.getByText('Sincronizando…')).toBeInTheDocument()
   })
 
@@ -176,5 +178,176 @@ describe('estadoDaConexao', () => {
     [{ ...base, data: {}, fetchStatus: 'paused' as const }, 'reconectando'],
   ])('%o → %s', (consulta, esperado) => {
     expect(estadoDaConexao(consulta)).toBe(esperado)
+  })
+})
+
+describe('TelaTriagem — filtros', () => {
+  const frota = [
+    incidente({ id: 1, titulo: 'Capotamento', criticidade: 'alta', categoria: 'acidente_vitimas' }),
+    incidente({
+      id: 2,
+      titulo: 'Árvore na pista',
+      criticidade: 'media',
+      categoria: 'bloqueio_pista',
+      local: 'SP-160, km 40',
+    }),
+    incidente({ id: 3, titulo: 'Pane elétrica', criticidade: 'baixa', placa: 'RTA4E21' }),
+    incidente({ id: 12, titulo: 'Pane no freio', criticidade: 'alta', local: 'BR-381, km 9' }),
+  ]
+
+  async function idsVisiveis() {
+    const linhas = within(await screen.findByRole('list', { name: 'Incidentes' })).getAllByRole(
+      'listitem',
+    )
+    return linhas.map((l) => within(l).getByText(/^#\d+$/).textContent)
+  }
+
+  // A linha visível e a região viva escondida (o indicador de conexão também é um status).
+  const linhaDeStatus = () => document.querySelector('p.text-texto-2:not([role])')
+  // A região viva escondida da linha de status (o indicador de conexão também é um status).
+  const anuncio = () => document.querySelector('p[role="status"].sr-only')
+
+  function abrirCom(url = '/') {
+    window.history.replaceState(null, '', url)
+    simularLista(async () => respostaJson(200, lista(frota)))
+    renderizar()
+  }
+
+  it('o cartão de criticidade filtra a lista e grava o filtro na URL', async () => {
+    abrirCom()
+
+    const alta = await screen.findByRole('button', { name: /^Alta: 2 ativos/ })
+    await userEvent.click(alta)
+
+    expect(alta).toHaveAttribute('aria-pressed', 'true')
+    expect(await idsVisiveis()).toEqual(['#1', '#12'])
+    expect(linhaDeStatus()).toHaveTextContent('Mostrando 2 de 4 incidentes (filtrado)')
+    await waitFor(() => expect(window.location.search).toBe('?criticidade=alta'))
+  })
+
+  it('recarregar a página mantém os filtros da URL', async () => {
+    abrirCom('/?categoria=bloqueio_pista')
+
+    expect(await idsVisiveis()).toEqual(['#2'])
+    expect(screen.getByRole('button', { name: /^Bloqueio de Pista/ })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
+  it('o botão Voltar do navegador troca os filtros da tela', async () => {
+    abrirCom('/?criticidade=baixa')
+    expect(await idsVisiveis()).toEqual(['#3'])
+
+    act(() => {
+      window.history.replaceState(null, '', '/?criticidade=media')
+      window.dispatchEvent(new PopStateEvent('popstate'))
+    })
+
+    expect(await idsVisiveis()).toEqual(['#2'])
+  })
+
+  it('as contagens de cada filtro respeitam os outros filtros', async () => {
+    abrirCom('/?criticidade=alta&categoria=acidente_vitimas')
+
+    expect(
+      await screen.findByRole('button', { name: 'Acidente com Vítimas, 1 ativo' }),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Problema Mecânico, 1 ativo' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Bloqueio de Pista, 0 ativos' })).toBeInTheDocument()
+    // O cartão ALTA conta só a categoria escolhida (o #12 é de outra categoria).
+    expect(screen.getByRole('button', { name: /^Alta: 1 ativo\./ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Baixa: Nenhum ativo' })).toBeInTheDocument()
+  })
+
+  it('busca por título, local, placa e número', async () => {
+    abrirCom()
+    const busca = await screen.findByRole('searchbox', { name: 'Buscar incidente' })
+
+    await userEvent.type(busca, 'arvore')
+    expect(await idsVisiveis()).toEqual(['#2'])
+
+    await userEvent.clear(busca)
+    await userEvent.type(busca, 'br381')
+    expect(await idsVisiveis()).toEqual(['#12'])
+
+    await userEvent.clear(busca)
+    await userEvent.type(busca, 'rta 4e21')
+    expect(await idsVisiveis()).toEqual(['#3'])
+
+    // "#1" é só o incidente 1, não o 12.
+    await userEvent.clear(busca)
+    await userEvent.type(busca, '#1')
+    expect(await idsVisiveis()).toEqual(['#1'])
+    await waitFor(() => expect(window.location.search).toBe('?busca=%231'))
+
+    await userEvent.keyboard('{Escape}')
+    expect(busca).toHaveValue('')
+    expect(await idsVisiveis()).toEqual(['#1', '#2', '#3', '#12'])
+  })
+
+  it('anuncia a contagem ao leitor de tela só quando a digitação para', async () => {
+    abrirCom()
+    const busca = await screen.findByRole('searchbox', { name: 'Buscar incidente' })
+    await waitFor(() => expect(anuncio()).toHaveTextContent('Mostrando 4 de 4'))
+
+    await userEvent.type(busca, 'pane')
+
+    expect(linhaDeStatus()).toHaveTextContent('Mostrando 2 de 4 incidentes (filtrado)')
+    expect(anuncio()).toHaveTextContent('Mostrando 4 de 4')
+    await waitFor(() =>
+      expect(anuncio()).toHaveTextContent('Mostrando 2 de 4 incidentes (filtrado)'),
+    )
+  })
+
+  it('Ctrl+K e "/" levam o foco à busca; Ctrl+/ não', async () => {
+    abrirCom()
+    await idsVisiveis()
+    const busca = screen.getByRole('searchbox', { name: 'Buscar incidente' })
+
+    await userEvent.keyboard('{Control>}k{/Control}')
+    expect(busca).toHaveFocus()
+
+    busca.blur()
+    await userEvent.keyboard('{Control>}/{/Control}')
+    expect(busca).not.toHaveFocus()
+
+    await userEvent.keyboard('/')
+    expect(busca).toHaveFocus()
+    // Dentro de um campo, "/" é texto, não atalho.
+    expect(busca).toHaveValue('')
+    await userEvent.keyboard('/')
+    expect(busca).toHaveValue('/')
+  })
+
+  it('mostra o estado vazio do filtro e limpa tudo, com o foco na busca', async () => {
+    abrirCom('/?criticidade=baixa&categoria=bloqueio_pista')
+
+    const titulo = await screen.findByRole('heading', {
+      name: 'Nenhum incidente com estes filtros',
+    })
+    const painel = titulo.parentElement!
+    expect(painel).toHaveTextContent(
+      'Filtro atual: Criticidade Baixa · Bloqueio de Pista. ' +
+        'Há 4 incidentes ativos fora deste filtro.',
+    )
+
+    await userEvent.click(within(painel).getByRole('button', { name: 'Limpar filtros' }))
+
+    expect(await idsVisiveis()).toEqual(['#1', '#2', '#3', '#12'])
+    expect(screen.queryByRole('button', { name: 'Limpar filtros' })).not.toBeInTheDocument()
+    expect(screen.getByRole('searchbox', { name: 'Buscar incidente' })).toHaveFocus()
+    await waitFor(() => expect(window.location.search).toBe(''))
+  })
+
+  it('busca só com hífen não conta como filtro', async () => {
+    abrirCom()
+    await idsVisiveis()
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Buscar incidente' }), {
+      target: { value: '-' },
+    })
+
+    expect(screen.queryByRole('button', { name: 'Limpar filtros' })).not.toBeInTheDocument()
+    expect(linhaDeStatus()?.textContent).toBe('Mostrando 4 de 4 incidentes')
   })
 })

@@ -1,4 +1,4 @@
-import { CircleCheck, CircleAlert } from 'lucide-react'
+import { CircleAlert, CircleCheck, Funnel } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { LogosLoader } from '@/components/LogosLoader'
 import { Button } from '@/components/ui/button'
@@ -74,6 +74,29 @@ export function PainelVazio() {
       <p className="text-sm leading-normal text-texto-2">
         A frota não tem ocorrências abertas agora. Novos incidentes aparecem aqui automaticamente.
       </p>
+    </Painel>
+  )
+}
+
+interface PropsVazioFiltro {
+  /** Ex.: "Criticidade Alta · Bloqueio de Pista · busca "br-116"". */
+  descricao: string
+  ativos: number
+  aoLimpar: () => void
+}
+
+export function PainelVazioFiltro({ descricao, ativos, aoLimpar }: PropsVazioFiltro) {
+  const quantos = `${ativos} ${ativos === 1 ? 'incidente ativo' : 'incidentes ativos'}`
+  return (
+    <Painel>
+      <Funnel aria-hidden className="size-8" strokeWidth={1.8} />
+      <h2 className="text-lg font-semibold">Nenhum incidente com estes filtros</h2>
+      <p className="text-sm leading-normal text-texto-2">
+        Filtro atual: {descricao}. Há {quantos} fora deste filtro.
+      </p>
+      <Button type="button" onClick={aoLimpar} className="mt-1 h-10 rounded-md px-[18px]">
+        Limpar filtros
+      </Button>
     </Painel>
   )
 }

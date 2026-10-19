@@ -47,3 +47,8 @@ export function resumirTriagem(itens: Incidente[], agora: number): ResumoTriagem
 
   return { ativos: itens.length - fechados, fechados, porStatus, porCriticidade }
 }
+
+/** "1 ativo", "3 ativos". */
+export function quantosAtivos(n: number): string {
+  return `${n} ${n === 1 ? 'ativo' : 'ativos'}`
+}
