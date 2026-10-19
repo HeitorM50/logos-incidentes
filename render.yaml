@@ -8,7 +8,8 @@ services:
     rootDir: api
     buildCommand: pip install uv && uv sync --locked --no-dev
     # Migrations e seed idempotente rodam a cada deploy (o plano free não tem pre-deploy).
-    # --proxy-headers faz o rate limit usar o IP real do cliente, não o do proxy do Render.
+    # O limite de login por IP usa o CF-Connecting-IP da Cloudflare (app/core/limite.py); o
+    # X-Forwarded-For pode ser forjado pelo cliente.
     startCommand: >-
       uv run --no-dev alembic upgrade head &&
       uv run --no-dev python -m app.seed &&

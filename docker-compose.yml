@@ -1,0 +1,20 @@
+# Postgres para desenvolvimento local: `docker compose up -d`. Em produção o banco é o
+# Supabase (ADR 0006). Porta 55432 no computador para não colidir com um Postgres já instalado.
+services:
+  banco:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: logos
+      POSTGRES_PASSWORD: logos
+      POSTGRES_DB: logos
+    ports:
+      - "55432:5432"
+    volumes:
+      - dados:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U logos -d logos"]
+      interval: 2s
+      retries: 15
+
+volumes:
+  dados:
