@@ -1,130 +1,217 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource-variable/geist";
+@import "@fontsource/ibm-plex-sans/400.css";
+@import "@fontsource/ibm-plex-sans/500.css";
+@import "@fontsource/ibm-plex-sans/600.css";
+@import "@fontsource/ibm-plex-sans/700.css";
+@import "@fontsource/ibm-plex-mono/400.css";
+@import "@fontsource/ibm-plex-mono/600.css";
+@import "@fontsource/ibm-plex-mono/700.css";
 
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * Tokens do protótipo de alta fidelidade (docs/decisoes/0004). Toda cor do app sai daqui:
+ * nenhum componente usa hex direto. Trocar o visual = editar só :root e .dark.
+ */
 @theme inline {
+    --font-sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
     --font-heading: var(--font-sans);
-    --font-sans: 'Geist Variable', sans-serif;
-    --color-sidebar-ring: var(--sidebar-ring);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar: var(--sidebar);
-    --color-chart-5: var(--chart-5);
-    --color-chart-4: var(--chart-4);
-    --color-chart-3: var(--chart-3);
-    --color-chart-2: var(--chart-2);
-    --color-chart-1: var(--chart-1);
-    --color-ring: var(--ring);
-    --color-input: var(--input);
-    --color-border: var(--border);
-    --color-destructive: var(--destructive);
-    --color-accent-foreground: var(--accent-foreground);
-    --color-accent: var(--accent);
-    --color-muted-foreground: var(--muted-foreground);
-    --color-muted: var(--muted);
-    --color-secondary-foreground: var(--secondary-foreground);
-    --color-secondary: var(--secondary);
-    --color-primary-foreground: var(--primary-foreground);
-    --color-primary: var(--primary);
-    --color-popover-foreground: var(--popover-foreground);
-    --color-popover: var(--popover);
-    --color-card-foreground: var(--card-foreground);
-    --color-card: var(--card);
-    --color-foreground: var(--foreground);
+
     --color-background: var(--background);
-    --radius-sm: calc(var(--radius) * 0.6);
-    --radius-md: calc(var(--radius) * 0.8);
+    --color-foreground: var(--foreground);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+
+    /* Tokens próprios do Logos */
+    --color-texto-2: var(--texto-2);
+    --color-texto-3: var(--texto-3);
+    --color-borda-forte: var(--borda-forte);
+    --color-superficie-2: var(--superficie-2);
+    --color-esqueleto: var(--esqueleto);
+    --color-ao-vivo: var(--ao-vivo);
+    --color-pontos: var(--pontos);
+
+    --color-erro-fundo: var(--erro-fundo);
+    --color-erro-texto: var(--erro-texto);
+    --color-erro-borda: var(--erro-borda);
+
+    --color-info-fundo: var(--info-fundo);
+    --color-info-texto: var(--info-texto);
+    --color-info-borda: var(--info-borda);
+
+    --color-alta-fundo: var(--alta-fundo);
+    --color-alta-texto: var(--alta-texto);
+    --color-alta-borda: var(--alta-borda);
+    --color-alta-numero: var(--alta-numero);
+    --color-media-fundo: var(--media-fundo);
+    --color-media-texto: var(--media-texto);
+    --color-media-borda: var(--media-borda);
+    --color-media-numero: var(--media-numero);
+    --color-baixa-fundo: var(--baixa-fundo);
+    --color-baixa-texto: var(--baixa-texto);
+    --color-baixa-borda: var(--baixa-borda);
+    --color-baixa-numero: var(--baixa-numero);
+
+    --radius-sm: calc(var(--radius) * 0.5);
+    --radius-md: calc(var(--radius) * 0.75);
     --radius-lg: var(--radius);
-    --radius-xl: calc(var(--radius) * 1.4);
-    --radius-2xl: calc(var(--radius) * 1.8);
-    --radius-3xl: calc(var(--radius) * 2.2);
-    --radius-4xl: calc(var(--radius) * 2.6);
+    --radius-xl: calc(var(--radius) * 1.5);
 }
 
 :root {
-    --background: oklch(1 0 0);
-    --foreground: oklch(0.145 0 0);
-    --card: oklch(1 0 0);
-    --card-foreground: oklch(0.145 0 0);
-    --popover: oklch(1 0 0);
-    --popover-foreground: oklch(0.145 0 0);
-    --primary: oklch(0.205 0 0);
-    --primary-foreground: oklch(0.985 0 0);
-    --secondary: oklch(0.97 0 0);
-    --secondary-foreground: oklch(0.205 0 0);
-    --muted: oklch(0.97 0 0);
-    --muted-foreground: oklch(0.556 0 0);
-    --accent: oklch(0.97 0 0);
-    --accent-foreground: oklch(0.205 0 0);
-    --destructive: oklch(0.577 0.245 27.325);
-    --border: oklch(0.922 0 0);
-    --input: oklch(0.922 0 0);
-    --ring: oklch(0.708 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --radius: 0.625rem;
-    --sidebar: oklch(0.985 0 0);
-    --sidebar-foreground: oklch(0.145 0 0);
-    --sidebar-primary: oklch(0.205 0 0);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.97 0 0);
-    --sidebar-accent-foreground: oklch(0.205 0 0);
-    --sidebar-border: oklch(0.922 0 0);
-    --sidebar-ring: oklch(0.708 0 0);
+    color-scheme: light;
+    --radius: 0.5rem;
+
+    --background: #eef0f3;
+    --foreground: #12161c;
+    --card: #ffffff;
+    --card-foreground: #12161c;
+    --popover: #ffffff;
+    --popover-foreground: #12161c;
+    --primary: #12161c;
+    --primary-foreground: #ffffff;
+    --secondary: #f5f6f8;
+    --secondary-foreground: #12161c;
+    --muted: #f5f6f8;
+    --muted-foreground: #3f4856;
+    --accent: #f0f2f5;
+    --accent-foreground: #12161c;
+    --destructive: #b42318;
+    --border: #d3d8df;
+    --input: #8a94a3;
+    --ring: #5b7fc2;
+
+    --texto-2: #3f4856;
+    --texto-3: #5a6474;
+    --borda-forte: #8a94a3;
+    --superficie-2: #f5f6f8;
+    --esqueleto: #e1e5ea;
+    --ao-vivo: #1f7a4d;
+    --pontos: #12161c;
+
+    --erro-fundo: #fdecea;
+    --erro-texto: #8a1c12;
+    --erro-borda: #c4544a;
+
+    --info-fundo: #eaf1fd;
+    --info-texto: #173a75;
+    --info-borda: #5b7fc2;
+
+    --alta-fundo: #b42318;
+    --alta-texto: #ffffff;
+    --alta-borda: #b42318;
+    --alta-numero: #b42318;
+    --media-fundo: #fdf0c4;
+    --media-texto: #6a4700;
+    --media-borda: #b88a12;
+    --media-numero: #6a4700;
+    --baixa-fundo: #ffffff;
+    --baixa-texto: #2c4a7c;
+    --baixa-borda: #6f86ad;
+    --baixa-numero: #2c4a7c;
 }
 
 .dark {
-    --background: oklch(0.145 0 0);
-    --foreground: oklch(0.985 0 0);
-    --card: oklch(0.205 0 0);
-    --card-foreground: oklch(0.985 0 0);
-    --popover: oklch(0.205 0 0);
-    --popover-foreground: oklch(0.985 0 0);
-    --primary: oklch(0.922 0 0);
-    --primary-foreground: oklch(0.205 0 0);
-    --secondary: oklch(0.269 0 0);
-    --secondary-foreground: oklch(0.985 0 0);
-    --muted: oklch(0.269 0 0);
-    --muted-foreground: oklch(0.708 0 0);
-    --accent: oklch(0.269 0 0);
-    --accent-foreground: oklch(0.985 0 0);
-    --destructive: oklch(0.704 0.191 22.216);
-    --border: oklch(1 0 0 / 10%);
-    --input: oklch(1 0 0 / 15%);
-    --ring: oklch(0.556 0 0);
-    --chart-1: oklch(0.87 0 0);
-    --chart-2: oklch(0.556 0 0);
-    --chart-3: oklch(0.439 0 0);
-    --chart-4: oklch(0.371 0 0);
-    --chart-5: oklch(0.269 0 0);
-    --sidebar: oklch(0.205 0 0);
-    --sidebar-foreground: oklch(0.985 0 0);
-    --sidebar-primary: oklch(0.488 0.243 264.376);
-    --sidebar-primary-foreground: oklch(0.985 0 0);
-    --sidebar-accent: oklch(0.269 0 0);
-    --sidebar-accent-foreground: oklch(0.985 0 0);
-    --sidebar-border: oklch(1 0 0 / 10%);
-    --sidebar-ring: oklch(0.556 0 0);
+    color-scheme: dark;
+
+    --background: #0d1014;
+    --foreground: #e7eaee;
+    --card: #151a20;
+    --card-foreground: #e7eaee;
+    --popover: #151a20;
+    --popover-foreground: #e7eaee;
+    --primary: #e7eaee;
+    --primary-foreground: #0d1014;
+    --secondary: #1c222a;
+    --secondary-foreground: #e7eaee;
+    --muted: #1c222a;
+    --muted-foreground: #b3bbc6;
+    --accent: #1a2027;
+    --accent-foreground: #e7eaee;
+    --destructive: #ff7b6b;
+    --border: #2c343f;
+    --input: #6b7686;
+    --ring: #4a6da8;
+
+    --texto-2: #b3bbc6;
+    --texto-3: #929ca9;
+    --borda-forte: #6b7686;
+    --superficie-2: #1c222a;
+    --esqueleto: #252c35;
+    --ao-vivo: #4cc38a;
+    --pontos: #e7eaee;
+
+    --erro-fundo: #3a1512;
+    --erro-texto: #ffc2ba;
+    --erro-borda: #c4655a;
+
+    --info-fundo: #13243f;
+    --info-texto: #c7d8f7;
+    --info-borda: #4a6da8;
+
+    --alta-fundo: #ff7b6b;
+    --alta-texto: #2a0703;
+    --alta-borda: #ff7b6b;
+    --alta-numero: #ff8a7a;
+    --media-fundo: #3a2d08;
+    --media-texto: #f4c64e;
+    --media-borda: #8f6d14;
+    --media-numero: #f4c64e;
+    --baixa-fundo: #151a20;
+    --baixa-texto: #a9c2ec;
+    --baixa-borda: #5a7099;
+    --baixa-numero: #a9c2ec;
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    }
-  body {
-    @apply bg-background text-foreground;
-    }
+  }
   html {
     @apply font-sans;
-    }
+    font-size: 15px;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+  }
+}
+
+/*
+ * Transição suave na troca de tema. A classe só existe durante a troca (ver src/theme/tema.ts):
+ * transição permanente em todo elemento atrasaria hover, foco e a lista de 100 linhas.
+ */
+html.tema-em-transicao,
+html.tema-em-transicao *,
+html.tema-em-transicao *::before,
+html.tema-em-transicao *::after {
+  transition:
+    background-color 250ms ease,
+    border-color 250ms ease,
+    color 250ms ease,
+    fill 250ms ease,
+    stroke 250ms ease !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.tema-em-transicao,
+  html.tema-em-transicao * {
+    transition: none !important;
+  }
 }

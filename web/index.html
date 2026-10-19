@@ -5,6 +5,14 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Logos — Central de Incidentes</title>
+    <script>
+      // Aplica o tema antes do primeiro desenho da tela (mesma regra de src/theme/tema.ts).
+      try {
+        var salvo = localStorage.getItem('logos.tema')
+        var escuro = salvo ? salvo === 'escuro' : matchMedia('(prefers-color-scheme: dark)').matches
+        if (escuro) document.documentElement.classList.add('dark')
+      } catch (e) {}
+    </script>
   </head>
   <body>
     <div id="root"></div>
