@@ -26,8 +26,9 @@ atualização?" e pede que o sistema não "quebre" se a conexão oscilar.
 - Falha persistente → **503 Service Unavailable** com `Retry-After`, nunca stack trace.
 - `pool_pre_ping` descarta conexões mortas do pool antes de usá-las.
 
-**Demonstração:** as variáveis `SIMULAR_LATENCIA_MS` e `SIMULAR_FALHA_PCT` injetam atraso e falha
-nas rotas de escrita. Ficam desligadas por padrão e servem para mostrar o rollback ao vivo.
+**Demonstração:** `SIMULAR_LATENCIA_MS` atrasa todas as rotas de incidentes (mostra os estados de
+carregamento) e `SIMULAR_FALHA_PCT` faz uma fração das escritas falhar com 503 antes de gravar (mostra
+o rollback ao vivo). As duas ficam desligadas por padrão.
 
 ## Alternativas consideradas
 

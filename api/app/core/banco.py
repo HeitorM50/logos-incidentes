@@ -7,6 +7,7 @@ from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import obter_configuracao
+from app.core.resiliencia import com_retry
 
 
 def criar_engine(url: str, timeout_consulta_ms: int, schema: str | None = None) -> Engine:
@@ -20,7 +21,7 @@ def criar_engine(url: str, timeout_consulta_ms: int, schema: str | None = None) 
         pool_size=5,
         max_overflow=5,
         pool_timeout=10,  # espera máxima por uma conexão livre no pool
-        connect_args={"connect_timeout": 5},
+        connect_args={"connect_timeout": 3},
     )
 
     @event.listens_for(engine, "connect")
@@ -44,6 +45,8 @@ def obter_fabrica_sessoes() -> sessionmaker[Session]:
 def obter_sessao() -> Iterator[Session]:
     """Dependência do FastAPI: uma sessão por requisição, sempre fechada no fim."""
     with obter_fabrica_sessoes()() as sessao:
+        # Abre a conexão já no início, com retry: falha transitória não derruba a requisição.
+        com_retry(sessao.connection)
         yield sessao
 
 

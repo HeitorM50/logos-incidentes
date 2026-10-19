@@ -6,6 +6,7 @@ from slowapi.errors import RateLimitExceeded
 from app.core.config import obter_configuracao
 from app.core.erros import corpo_erro, registrar_tratadores
 from app.core.limite import limitador
+from app.core.resiliencia import registrar_simulacao_de_falhas, registrar_tratadores_de_banco
 from app.routers import auth, incidentes, saude
 
 
@@ -19,7 +20,9 @@ def _limite_excedido(_: Request, erro: RateLimitExceeded) -> JSONResponse:
     )
 
 
-def criar_app() -> FastAPI:
+def criar_app(
+    simular_latencia_ms: int | None = None, simular_falha_pct: float | None = None
+) -> FastAPI:
     """Monta a aplicação. A factory permite criar instâncias isoladas nos testes."""
     app = FastAPI(
         title="Logos API",
@@ -29,6 +32,9 @@ def criar_app() -> FastAPI:
     app.state.limiter = limitador
     app.add_exception_handler(RateLimitExceeded, _limite_excedido)
     registrar_tratadores(app)
+    registrar_tratadores_de_banco(app)
+    latencia, falha = _simulacao(simular_latencia_ms, simular_falha_pct)
+    registrar_simulacao_de_falhas(app, latencia, falha)
 
     app.add_middleware(
         CORSMiddleware,
@@ -50,6 +56,18 @@ def _origens_cors() -> list[str]:
     except ValueError:
         # Sem configuração (ex.: gerar a documentação), nenhuma origem externa é liberada.
         return []
+
+
+def _simulacao(latencia_ms: int | None, falha_pct: float | None) -> tuple[int, float]:
+    try:
+        config = obter_configuracao()
+        padrao = (config.simular_latencia_ms, config.simular_falha_pct)
+    except ValueError:
+        padrao = (0, 0.0)
+    return (
+        padrao[0] if latencia_ms is None else latencia_ms,
+        padrao[1] if falha_pct is None else falha_pct,
+    )
 
 
 app = criar_app()
