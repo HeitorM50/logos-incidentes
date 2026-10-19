@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { aoMudarTema, definirTema, lerTema } from './tema'
+import { aoMudarTema, definirTema, lerTema, seguirTemaDoSistema } from './tema'
 
 afterEach(() => {
   document.documentElement.className = ''
@@ -29,5 +29,25 @@ describe('tema', () => {
 
     vi.advanceTimersByTime(300)
     expect(document.documentElement).not.toHaveClass('tema-em-transicao')
+  })
+
+  it('sem escolha salva, acompanha o tema do sistema; com escolha, ignora', () => {
+    let aoMudar: ((e: { matches: boolean }) => void) | undefined
+    vi.stubGlobal('matchMedia', () => ({
+      matches: false,
+      addEventListener: (_: string, f: typeof aoMudar) => (aoMudar = f),
+      removeEventListener: () => {},
+    }))
+    const parar = seguirTemaDoSistema()
+
+    aoMudar!({ matches: true })
+    expect(lerTema()).toBe('escuro')
+    expect(localStorage.getItem('logos.tema')).toBeNull()
+
+    definirTema('claro')
+    aoMudar!({ matches: true })
+    expect(lerTema()).toBe('claro')
+    parar()
+    vi.unstubAllGlobals()
   })
 })
