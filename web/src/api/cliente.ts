@@ -70,6 +70,11 @@ async function erroDaResposta(resposta: Response): Promise<ErroApi> {
   })
 }
 
+// Sem resposta neste prazo, a requisição vira falha passageira. Sem isto, uma conexão
+// pendurada deixaria a tela "Ao vivo" para sempre e o polling nunca dispararia de novo.
+// O prazo cobre o cold start do Render (~50 s): o servidor acordando ainda responde.
+export const TEMPO_LIMITE_MS = 60_000
+
 /** Único ponto do front que fala HTTP com a API. */
 export async function requisitar<T>(caminho: string, opcoes: OpcoesRequisicao = {}): Promise<T> {
   const { metodo = 'GET', corpo, consulta, sinal, autenticada = true } = opcoes
@@ -78,17 +83,25 @@ export async function requisitar<T>(caminho: string, opcoes: OpcoesRequisicao = 
   const sessao = autenticada ? lerSessao() : null
   if (sessao) cabecalhos.Authorization = `Bearer ${sessao.token}`
 
+  const limite = AbortSignal.timeout(TEMPO_LIMITE_MS)
   let resposta: Response
   try {
     resposta = await fetch(montarUrl(caminho, consulta), {
       method: metodo,
       headers: cabecalhos,
       body: corpo === undefined ? undefined : JSON.stringify(corpo),
-      signal: sinal,
+      signal: sinal ? AbortSignal.any([sinal, limite]) : limite,
     })
   } catch (falha) {
-    // Cancelamento não é erro de rede: repassa para o TanStack Query descartar.
-    if (falha instanceof DOMException && falha.name === 'AbortError') throw falha
+    // Cancelamento pedido pelo TanStack Query não é erro de rede: repassa para ele descartar.
+    if (sinal?.aborted) throw falha
+    if (limite.aborted) {
+      throw new ErroApi({
+        status: 0,
+        codigo: 'sem_conexao',
+        mensagem: 'O servidor demorou demais para responder. Vamos tentar de novo.',
+      })
+    }
     throw new ErroApi({
       status: 0,
       codigo: 'sem_conexao',

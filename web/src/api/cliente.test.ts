@@ -163,8 +163,26 @@ describe('requisitar', () => {
   })
 
   it('repassa o cancelamento sem transformá-lo em erro de rede', async () => {
+    const controle = new AbortController()
+    controle.abort()
     fetchFalso.mockRejectedValue(new DOMException('cancelada', 'AbortError'))
 
-    await expect(requisitar('/incidentes')).rejects.toMatchObject({ name: 'AbortError' })
+    await expect(requisitar('/incidentes', { sinal: controle.signal })).rejects.toMatchObject({
+      name: 'AbortError',
+    })
+  })
+
+  it('transforma a demora acima do limite em falha passageira', async () => {
+    // Simula o prazo já esgotado; o fetch real rejeitaria com o motivo do sinal.
+    vi.spyOn(AbortSignal, 'timeout').mockReturnValue(
+      AbortSignal.abort(new DOMException('prazo', 'TimeoutError')),
+    )
+    fetchFalso.mockRejectedValue(new DOMException('prazo', 'TimeoutError'))
+
+    const erro = await capturarErro(requisitar('/incidentes'))
+
+    expect(erro.codigo).toBe('sem_conexao')
+    expect(erro.ehTransitorio).toBe(true)
+    vi.restoreAllMocks()
   })
 })
