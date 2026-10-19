@@ -1,16 +1,12 @@
-import {
-  useMutation,
-  useMutationState,
-  useQueryClient,
-  type QueryClient,
-} from '@tanstack/react-query'
+import { useMutation, useMutationState, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { ehErroApi } from '@/api/erros'
 import { assumirIncidente, liberarIncidente, mudarStatus } from '@/api/incidentes'
 import { ROTULO_STATUS } from '@/api/rotulos'
-import type { AnalistaResumo, Incidente, ListaIncidentes } from '@/api/tipos'
+import type { AnalistaResumo, Incidente } from '@/api/tipos'
 import { anuncioPendente, aplicarAcao, descreverEstado, motivoBloqueio, type Acao } from './acoes'
-import { CHAVE_ACAO_INCIDENTE, CHAVE_INCIDENTES } from './useIncidentes'
+import { gravarVersao, relerLista, removerDaLista } from './cacheIncidentes'
+import { CHAVE_ACAO_INCIDENTE } from './useIncidentes'
 
 // Atualização otimista por sobreposição: o cache guarda só o que a API confirmou, e a tela
 // aplica por cima as ações em andamento. Assim:
@@ -52,26 +48,6 @@ function chamarApi({ incidente, acao }: Variaveis): Promise<Incidente> {
   if (acao.tipo === 'assumir') return assumirIncidente(incidente.id, incidente.versao)
   if (acao.tipo === 'liberar') return liberarIncidente(incidente.id, incidente.versao)
   return mudarStatus(incidente.id, incidente.versao, acao.status)
-}
-
-/** Grava no cache uma versão vinda da API, sem voltar se o cache já tem uma mais nova. */
-function gravarVersao(cliente: QueryClient, novo: Incidente) {
-  cliente.setQueryData<ListaIncidentes>(CHAVE_INCIDENTES, (lista) =>
-    lista
-      ? {
-          ...lista,
-          itens: lista.itens.map((item) =>
-            item.id === novo.id && novo.versao >= item.versao ? novo : item,
-          ),
-        }
-      : lista,
-  )
-}
-
-function removerDaLista(cliente: QueryClient, id: number) {
-  cliente.setQueryData<ListaIncidentes>(CHAVE_INCIDENTES, (lista) =>
-    lista ? { ...lista, itens: lista.itens.filter((item) => item.id !== id) } : lista,
-  )
 }
 
 function semChave<T>(registro: Record<number, T>, id: number): Record<number, T> {
@@ -182,8 +158,7 @@ export function useAcoesIncidente(analista: AnalistaResumo) {
     },
     onSettled: (_dados, _erro, { incidente }) => {
       emAndamento.current.delete(incidente.id)
-      // Relê a lista e cancela uma leitura iniciada antes da gravação (traria a versão velha).
-      void cliente.invalidateQueries({ queryKey: CHAVE_INCIDENTES })
+      void relerLista(cliente)
     },
   })
 

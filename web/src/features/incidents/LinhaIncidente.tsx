@@ -1,10 +1,12 @@
-import { ChevronRight } from 'lucide-react'
+import { ChevronRight, Pencil, Trash2 } from 'lucide-react'
 import { ROTULO_CATEGORIA, ROTULO_CRITICIDADE, ROTULO_STATUS } from '@/api/rotulos'
 import type { Criticidade, Incidente } from '@/api/tipos'
 import { cn } from '@/lib/utils'
 import type { Acao } from './acoes'
-import { AcoesLinha } from './AcoesLinha'
+import { AcoesLinha, EM_ANDAMENTO, SEM_CONEXAO } from './AcoesLinha'
 import { AvisoConflito } from './Avisos'
+import { BotaoComMotivo } from './BotaoComMotivo'
+import { motivoEdicao } from './formulario'
 import { IconeCriticidade, IconeStatus } from './Icones'
 import { formatarTempoAberto, minutosDesde } from './tempo'
 import type { Conflito } from './useAcoesIncidente'
@@ -36,6 +38,8 @@ interface Props {
   semConexao: boolean
   aoExecutar: (acao: Acao) => void
   aoDispensarConflito: () => void
+  aoEditar: () => void
+  aoRemover: () => void
 }
 
 export function LinhaIncidente({
@@ -49,10 +53,17 @@ export function LinhaIncidente({
   semConexao,
   aoExecutar,
   aoDispensarConflito,
+  aoEditar,
+  aoRemover,
 }: Props) {
   const fechado = incidente.status === 'fechado'
   const meu = incidente.responsavel?.id === idAnalista
   const idDetalhes = `detalhes-incidente-${incidente.id}`
+  const motivoAlterar = pendente
+    ? EM_ANDAMENTO
+    : semConexao
+      ? SEM_CONEXAO
+      : motivoEdicao(incidente, idAnalista)
 
   return (
     <li
@@ -180,6 +191,26 @@ export function LinhaIncidente({
             <dt className="text-texto-3">Por</dt>
             <dd>{incidente.atualizado_por?.nome ?? '—'}</dd>
           </dl>
+          <div className="flex justify-end gap-2 border-t pt-3 sm:col-span-3">
+            <BotaoComMotivo
+              motivo={motivoAlterar}
+              rotulo={`Editar #${incidente.id}`}
+              onClick={aoEditar}
+              className="flex items-center gap-1.5 px-3 font-medium"
+            >
+              <Pencil aria-hidden className="size-3.5" />
+              Editar
+            </BotaoComMotivo>
+            <BotaoComMotivo
+              motivo={motivoAlterar}
+              rotulo={`Remover #${incidente.id}`}
+              onClick={aoRemover}
+              className="flex items-center gap-1.5 px-3 font-medium text-erro-texto"
+            >
+              <Trash2 aria-hidden className="size-3.5" />
+              Remover
+            </BotaoComMotivo>
+          </div>
         </section>
       )}
     </li>

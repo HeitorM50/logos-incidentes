@@ -1,15 +1,18 @@
-import { useMemo, useState } from 'react'
+import { Plus } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { ehErroApi } from '@/api/erros'
 import type { AnalistaLogado, Incidente } from '@/api/tipos'
+import { Button } from '@/components/ui/button'
 import { useAgora } from '@/lib/useAgora'
 import { useSegundosAguardando } from '@/lib/useSegundosAguardando'
 import { useValorAtrasado } from '@/lib/useValorAtrasado'
-import { PilhaAvisos } from './Avisos'
+import { AvisoSucesso, PilhaAvisos } from './Avisos'
 import { BannerReconexao } from './BannerReconexao'
 import { BarraStatus } from './BarraStatus'
 import { CabecalhoTriagem } from './CabecalhoTriagem'
 import { CampoBusca, ID_CAMPO_BUSCA } from './CampoBusca'
 import { CartoesCriticidade } from './CartoesCriticidade'
+import { ConfirmarRemocao } from './ConfirmarRemocao'
 import { FiltroCategorias } from './FiltroCategorias'
 import {
   alternar,
@@ -18,6 +21,7 @@ import {
   SEM_FILTROS,
   temFiltro,
 } from './filtros'
+import { PainelIncidente, type Concluido, type ModoPainel } from './PainelIncidente'
 import { PainelAcordando, PainelErro, PainelVazio, PainelVazioFiltro } from './PainelEstado'
 import { resumirTriagem } from './resumo'
 import { TabelaCarregando, TabelaIncidentes } from './TabelaIncidentes'
@@ -28,6 +32,8 @@ import { estadoDaConexao, useIncidentes } from './useIncidentes'
 // Uma leitura normal leva menos de 1 s. Acima disto, o servidor do Render está acordando.
 const ESPERA_NORMAL_S = 3
 const ATRASO_ANUNCIO_MS = 700
+const DURACAO_SUCESSO_MS = 8000
+const ID_TITULO = 'titulo-triagem'
 
 function mensagemFalhaLista(erro: unknown): string {
   if (!erro) return 'Sem conexão com o servidor. Confira a internet e tente de novo.'
@@ -91,6 +97,35 @@ export function TelaTriagem({ analista, aoSair }: Props) {
     document.getElementById(ID_CAMPO_BUSCA)?.focus()
   }
 
+  const [painel, setPainel] = useState<ModoPainel | null>(null)
+  const [removendo, setRemovendo] = useState<Incidente | null>(null)
+  const [sucesso, setSucesso] = useState<(Concluido & { chave: number }) | null>(null)
+  // O aviso de sucesso para de contar enquanto o mouse ou o foco estão nele.
+  const [sucessoParado, setSucessoParado] = useState(false)
+
+  useEffect(() => {
+    if (!sucesso || sucessoParado) return
+    const id = setTimeout(() => setSucesso(null), DURACAO_SUCESSO_MS)
+    return () => clearTimeout(id)
+  }, [sucesso, sucessoParado])
+
+  function concluir(concluido: Concluido) {
+    setPainel(null)
+    setRemovendo(null)
+    setSucessoParado(false)
+    setSucesso({ ...concluido, chave: Date.now() })
+  }
+
+  // O botão que abriu o painel ou o diálogo pode ter saído da tela (linha removida ou lista
+  // reordenada): o foco vem para o título, e não para o topo da página.
+  const focarTitulo = () => document.getElementById(ID_TITULO)?.focus()
+
+  function mostrarNaLista(id: number) {
+    definirFiltros(() => ({ ...SEM_FILTROS, busca: `#${id}` }))
+    setSucesso(null)
+    document.getElementById(ID_CAMPO_BUSCA)?.focus()
+  }
+
   // Durante uma nova tentativa o TanStack apaga `error`: guarda o último para a mensagem
   // do painel não sumir no meio da tentativa.
   const [ultimoErro, setUltimoErro] = useState<unknown>(null)
@@ -128,6 +163,8 @@ export function TelaTriagem({ analista, aoSair }: Props) {
           agora={agora}
           acoes={acoes}
           semConexao={estado !== 'ao_vivo'}
+          aoEditar={(incidente) => setPainel({ tipo: 'editar', id: incidente.id })}
+          aoRemover={setRemovendo}
         />
       )
     }
@@ -167,7 +204,16 @@ export function TelaTriagem({ analista, aoSair }: Props) {
 
       <main className="flex min-h-0 flex-1 flex-col gap-3.5 px-4 pt-[18px] pb-4 sm:px-6">
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <h1 className="text-xl font-semibold tracking-[-0.01em]">Triagem</h1>
+          <div className="flex items-center gap-4">
+            {/* Focável por código: depois de remover, o foco vem para cá (a linha sumiu). */}
+            <h1 id={ID_TITULO} tabIndex={-1} className="text-xl font-semibold tracking-[-0.01em] outline-none">
+              Triagem
+            </h1>
+            <Button type="button" size="sm" onClick={() => setPainel({ tipo: 'criar' })}>
+              <Plus aria-hidden />
+              Novo incidente
+            </Button>
+          </div>
           {resumo && (
             <span className="text-[13px] text-texto-3">
               {resumo.ativos} incidentes ativos · {resumo.fechados} fechados
@@ -218,7 +264,47 @@ export function TelaTriagem({ analista, aoSair }: Props) {
       <p role="status" className="sr-only">
         {acoes.anuncio}
       </p>
+      <p role="status" className="sr-only">
+        {sucesso?.texto}
+      </p>
+      <PainelIncidente
+        modo={painel}
+        itens={itens}
+        analista={analista}
+        aoFechar={() => setPainel(null)}
+        aoConcluir={concluir}
+        aoFocarDepois={focarTitulo}
+      />
+      <ConfirmarRemocao
+        incidente={removendo}
+        itens={itens}
+        analista={analista}
+        aoFechar={() => setRemovendo(null)}
+        aoConcluir={concluir}
+        aoFocarDepois={focarTitulo}
+      />
       <PilhaAvisos
+        sucesso={
+          sucesso && (
+            <div
+              key={sucesso.chave}
+              onMouseEnter={() => setSucessoParado(true)}
+              onMouseLeave={() => setSucessoParado(false)}
+              onFocus={() => setSucessoParado(true)}
+              onBlur={() => setSucessoParado(false)}
+            >
+              <AvisoSucesso
+                texto={sucesso.texto}
+                acao={
+                  sucesso.criado
+                    ? { rotulo: 'Mostrar na lista', aoClicar: () => mostrarNaLista(sucesso.id) }
+                    : undefined
+                }
+                aoFechar={() => setSucesso(null)}
+              />
+            </div>
+          )
+        }
         // Aviso de uma versão que já mudou (outro analista agiu, ou a linha sumiu) não vale mais.
         avisos={acoes.avisos.filter(
           (aviso) =>

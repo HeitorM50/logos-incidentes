@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react'
-import { useId, useRef, useState, type ReactNode, type Ref } from 'react'
+import { useRef, useState } from 'react'
 import { ROTULO_STATUS } from '@/api/rotulos'
 import type { Incidente, StatusIncidente } from '@/api/tipos'
 import { LogosLoader } from '@/components/LogosLoader'
@@ -20,75 +20,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { cn } from '@/lib/utils'
+import { BotaoComMotivo, CONTROLE } from './BotaoComMotivo'
 import { motivoBloqueio, TRANSICOES_DO_RESPONSAVEL, textoPendente, type Acao } from './acoes'
 
-const SEM_CONEXAO = 'Sem conexão com o servidor. As ações voltam quando a conexão voltar.'
-const EM_ANDAMENTO = 'Aguarde: há uma ação em andamento neste incidente.'
-
-const CONTROLE =
-  'h-8 rounded-[5px] border border-borda-forte bg-card text-[13px] outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
-
-interface PropsBotao {
-  ref?: Ref<HTMLButtonElement>
-  /** Motivo do bloqueio; null libera o botão. */
-  motivo: string | null
-  rotulo: string
-  className?: string
-  onClick?: () => void
-  children: ReactNode
-}
-
-/**
- * Botão que, bloqueado, continua focável e diz o motivo (decisão de 19/10: ação que só o
- * responsável pode fazer aparece desativada com o motivo). `disabled` tiraria o botão do Tab
- * e o leitor de tela nunca ouviria a explicação. O motivo aparece no foco, no mouse e no
- * toque (clique), e some com Esc.
- */
-function BotaoComMotivo({ ref, motivo, rotulo, className, onClick, children }: PropsBotao) {
-  const idMotivo = useId()
-  const [mostrar, setMostrar] = useState(false)
-  return (
-    <span
-      className="relative inline-flex"
-      onMouseEnter={() => setMostrar(true)}
-      onMouseLeave={() => setMostrar(false)}
-    >
-      <button
-        ref={ref}
-        type="button"
-        aria-label={rotulo}
-        aria-disabled={motivo ? true : undefined}
-        aria-describedby={motivo ? idMotivo : undefined}
-        onClick={motivo ? () => setMostrar(true) : onClick}
-        onFocus={() => setMostrar(true)}
-        onBlur={() => setMostrar(false)}
-        onKeyDown={(evento) => {
-          if (evento.key === 'Escape' && mostrar && motivo) {
-            evento.stopPropagation()
-            setMostrar(false)
-          }
-        }}
-        className={cn(
-          CONTROLE,
-          motivo ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-superficie-2',
-          className,
-        )}
-      >
-        {children}
-      </button>
-      {motivo && (
-        <span
-          id={idMotivo}
-          role="tooltip"
-          hidden={!mostrar}
-          className="pointer-events-none absolute right-0 bottom-full z-10 mb-1.5 w-max max-w-[260px] rounded-md bg-aviso-fundo px-2.5 py-1.5 text-xs leading-snug text-aviso-texto shadow-lg"
-        >
-          {motivo}
-        </span>
-      )}
-    </span>
-  )
-}
+export const SEM_CONEXAO = 'Sem conexão com o servidor. As ações voltam quando a conexão voltar.'
+export const EM_ANDAMENTO = 'Aguarde: há uma ação em andamento neste incidente.'
 
 /** Motivo para não abrir o menu de status, ou null quando o analista pode mudar. */
 function motivoStatus(incidente: Incidente, idAnalista: number): string | null {

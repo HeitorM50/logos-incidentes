@@ -15,7 +15,7 @@ export function respostaJson(status: number, corpo: unknown): Response {
 export function erroDaApi(
   status: number,
   codigo: string,
-  extra: { mensagem?: string; atual?: Incidente } = {},
+  extra: { mensagem?: string; atual?: Incidente; campos?: { campo: string; mensagem: string }[] } = {},
 ): Response {
   return respostaJson(status, { erro: { codigo, mensagem: extra.mensagem ?? codigo, ...extra } })
 }

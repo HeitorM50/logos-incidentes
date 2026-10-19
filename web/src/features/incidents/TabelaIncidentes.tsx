@@ -89,9 +89,19 @@ interface Props {
   agora: number
   acoes: AcoesIncidente
   semConexao: boolean
+  aoEditar: (incidente: Incidente) => void
+  aoRemover: (incidente: Incidente) => void
 }
 
-export function TabelaIncidentes({ itens, idAnalista, agora, acoes, semConexao }: Props) {
+export function TabelaIncidentes({
+  itens,
+  idAnalista,
+  agora,
+  acoes,
+  semConexao,
+  aoEditar,
+  aoRemover,
+}: Props) {
   const [abertas, setAbertas] = useState<ReadonlySet<number>>(() => new Set())
 
   function alternar(id: number) {
@@ -121,6 +131,8 @@ export function TabelaIncidentes({ itens, idAnalista, agora, acoes, semConexao }
             semConexao={semConexao}
             aoExecutar={(acao) => acoes.executar(incidente, acao)}
             aoDispensarConflito={() => acoes.dispensarConflito(incidente.id)}
+            aoEditar={() => aoEditar(incidente)}
+            aoRemover={() => aoRemover(incidente)}
           />
         ))}
       </ol>

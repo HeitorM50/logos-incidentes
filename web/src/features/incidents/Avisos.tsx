@@ -1,4 +1,5 @@
-import { Undo2, UserRoundCog, X } from 'lucide-react'
+import { CircleCheck, Undo2, UserRoundCog, X } from 'lucide-react'
+import type { ReactNode } from 'react'
 import type { Incidente } from '@/api/tipos'
 import { descreverEstado, motivoBloqueio, nomeDaAcao } from './acoes'
 import type { AvisoFalha, Conflito } from './useAcoesIncidente'
@@ -71,15 +72,59 @@ export function AvisoConflito({
   )
 }
 
+interface PropsSucesso {
+  texto: string
+  /** Botão opcional (ex.: mostrar o incidente criado na lista). */
+  acao?: { rotulo: string; aoClicar: () => void }
+  aoFechar: () => void
+}
+
+/**
+ * Confirmação visível de criar, editar ou remover. Não é região viva: o anúncio sai de uma
+ * região fixa da tela (uma região criada já com texto nem sempre é lida).
+ */
+export function AvisoSucesso({ texto, acao, aoFechar }: PropsSucesso) {
+  return (
+    <div
+      onKeyDown={(evento) => {
+        if (evento.key === 'Escape') aoFechar()
+      }}
+      className="flex items-center gap-3 rounded-lg border border-borda-forte bg-card py-2.5 pr-2 pl-4 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
+    >
+      <CircleCheck aria-hidden className="size-[18px] flex-none text-ao-vivo" />
+      <span className="min-w-0 flex-1 font-medium">{texto}</span>
+      {acao && (
+        <button
+          type="button"
+          onClick={acao.aoClicar}
+          className="h-8 cursor-pointer rounded-[5px] border border-borda-forte px-3 text-[13px] font-semibold outline-none hover:bg-superficie-2 focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          {acao.rotulo}
+        </button>
+      )}
+      <button
+        type="button"
+        aria-label="Fechar confirmação"
+        onClick={aoFechar}
+        className="flex size-8 flex-none cursor-pointer items-center justify-center rounded-[5px] outline-none hover:bg-superficie-2 focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        <X aria-hidden className="size-3.5" />
+      </button>
+    </div>
+  )
+}
+
 interface PropsFalha {
   avisos: AvisoFalha[]
+  /** Confirmação de sucesso, empilhada abaixo das falhas. */
+  sucesso?: ReactNode
   aoTentar: (aviso: AvisoFalha) => void
   aoFechar: (id: number) => void
 }
 
 /** Avisos flutuantes das ações que falharam (a linha já voltou ao estado anterior). */
-export function PilhaAvisos({ avisos, aoTentar, aoFechar }: PropsFalha) {
-  if (avisos.length === 0) return null
+export function PilhaAvisos({ avisos, sucesso, aoTentar, aoFechar }: PropsFalha) {
+  if (avisos.length === 0 && !sucesso) return null
   return (
     <div className="fixed right-6 bottom-6 z-20 flex w-[min(480px,calc(100%-48px))] flex-col gap-2">
       {avisos.map((aviso) => (
@@ -117,6 +162,7 @@ export function PilhaAvisos({ avisos, aoTentar, aoFechar }: PropsFalha) {
           </button>
         </div>
       ))}
+      {sucesso}
     </div>
   )
 }
