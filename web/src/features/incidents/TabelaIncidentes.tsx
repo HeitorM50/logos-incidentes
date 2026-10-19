@@ -3,6 +3,7 @@ import type { Incidente } from '@/api/tipos'
 import { LogosLoader } from '@/components/LogosLoader'
 import { cn } from '@/lib/utils'
 import { COLUNAS_TABELA, LinhaIncidente } from './LinhaIncidente'
+import type { AcoesIncidente, Conflito } from './useAcoesIncidente'
 
 const CABECALHOS = [
   'Criticidade',
@@ -12,13 +13,14 @@ const CABECALHOS = [
   'Tempo aberto',
   'Status',
   'Responsável',
+  'Ações',
 ]
 
 // Larguras fixas por linha: o esqueleto parece uma tabela de verdade, sem pular de tamanho.
 const LARGURAS_ESQUELETO = [
-  ['60%', '78%', '70%', '82%', '64%', '72%', '58%'],
-  ['56%', '64%', '84%', '66%', '70%', '60%', '74%'],
-  ['64%', '88%', '62%', '74%', '58%', '80%', '52%'],
+  ['60%', '78%', '70%', '82%', '64%', '72%', '58%', '180px'],
+  ['56%', '64%', '84%', '66%', '70%', '60%', '74%', '180px'],
+  ['64%', '88%', '62%', '74%', '58%', '80%', '52%', '180px'],
 ]
 
 function CabecalhoTabela() {
@@ -43,7 +45,7 @@ function CabecalhoTabela() {
 /** Esqueleto da tabela + cartão com o loader da marca por cima (o esqueleto continua). */
 export function TabelaCarregando() {
   return (
-    <div className="relative min-w-[1150px]">
+    <div className="relative min-w-[1366px]">
       <CabecalhoTabela />
       <div aria-hidden>
         {Array.from({ length: 12 }, (_, linha) => (
@@ -76,13 +78,20 @@ export function TabelaCarregando() {
   )
 }
 
+/** O aviso de conflito vale só enquanto a linha mostra a versão que veio no 409. */
+function conflitoAtual(conflito: Conflito | undefined, incidente: Incidente) {
+  return conflito?.versao === incidente.versao ? conflito : undefined
+}
+
 interface Props {
   itens: Incidente[]
   idAnalista: number
   agora: number
+  acoes: AcoesIncidente
+  semConexao: boolean
 }
 
-export function TabelaIncidentes({ itens, idAnalista, agora }: Props) {
+export function TabelaIncidentes({ itens, idAnalista, agora, acoes, semConexao }: Props) {
   const [abertas, setAbertas] = useState<ReadonlySet<number>>(() => new Set())
 
   function alternar(id: number) {
@@ -95,7 +104,7 @@ export function TabelaIncidentes({ itens, idAnalista, agora }: Props) {
   }
 
   return (
-    <div className="min-w-[1150px]">
+    <div className="min-w-[1366px]">
       <CabecalhoTabela />
       {/* A ordem vem da API: não fechados, criticidade (alta → baixa), mais antigo primeiro. */}
       <ol aria-label="Incidentes">
@@ -107,6 +116,11 @@ export function TabelaIncidentes({ itens, idAnalista, agora }: Props) {
             agora={agora}
             aberta={abertas.has(incidente.id)}
             aoAlternar={() => alternar(incidente.id)}
+            pendente={acoes.pendentes.get(incidente.id)}
+            conflito={conflitoAtual(acoes.conflitos[incidente.id], incidente)}
+            semConexao={semConexao}
+            aoExecutar={(acao) => acoes.executar(incidente, acao)}
+            aoDispensarConflito={() => acoes.dispensarConflito(incidente.id)}
           />
         ))}
       </ol>

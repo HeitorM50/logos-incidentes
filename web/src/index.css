@@ -61,6 +61,14 @@
     --color-info-fundo: var(--info-fundo);
     --color-info-texto: var(--info-texto);
     --color-info-borda: var(--info-borda);
+    --color-info-botao: var(--info-botao);
+    --color-info-sobre-botao: var(--info-sobre-botao);
+
+    --color-aviso-fundo: var(--aviso-fundo);
+    --color-aviso-texto: var(--aviso-texto);
+    --color-aviso-detalhe: var(--aviso-detalhe);
+    --color-aviso-icone: var(--aviso-icone);
+    --color-aviso-borda-botao: var(--aviso-borda-botao);
 
     --color-alta-fundo: var(--alta-fundo);
     --color-alta-texto: var(--alta-texto);
@@ -125,6 +133,15 @@
     --info-fundo: #eaf1fd;
     --info-texto: #173a75;
     --info-borda: #5b7fc2;
+    --info-botao: #173a75;
+    --info-sobre-botao: #ffffff;
+
+    /* Aviso flutuante de falha: cores invertidas em relação à página. */
+    --aviso-fundo: #12161c;
+    --aviso-texto: #ffffff;
+    --aviso-detalhe: #c9cfd8;
+    --aviso-icone: #ff8a7a;
+    --aviso-borda-botao: #8a94a3;
 
     --alta-fundo: #b42318;
     --alta-texto: #ffffff;
@@ -183,6 +200,14 @@
     --info-fundo: #13243f;
     --info-texto: #c7d8f7;
     --info-borda: #4a6da8;
+    --info-botao: #c7d8f7;
+    --info-sobre-botao: #0d1014;
+
+    --aviso-fundo: #e7eaee;
+    --aviso-texto: #0d1014;
+    --aviso-detalhe: #3f4856;
+    --aviso-icone: #b42318;
+    --aviso-borda-botao: #5a6474;
 
     --alta-fundo: #ff7b6b;
     --alta-texto: #2a0703;

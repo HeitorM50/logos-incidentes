@@ -4,6 +4,7 @@ import type { AnalistaLogado, Incidente } from '@/api/tipos'
 import { useAgora } from '@/lib/useAgora'
 import { useSegundosAguardando } from '@/lib/useSegundosAguardando'
 import { useValorAtrasado } from '@/lib/useValorAtrasado'
+import { PilhaAvisos } from './Avisos'
 import { BannerReconexao } from './BannerReconexao'
 import { BarraStatus } from './BarraStatus'
 import { CabecalhoTriagem } from './CabecalhoTriagem'
@@ -21,6 +22,7 @@ import { PainelAcordando, PainelErro, PainelVazio, PainelVazioFiltro } from './P
 import { resumirTriagem } from './resumo'
 import { TabelaCarregando, TabelaIncidentes } from './TabelaIncidentes'
 import { definirFiltros, useFiltros } from './useFiltros'
+import { useAcoesIncidente } from './useAcoesIncidente'
 import { estadoDaConexao, useIncidentes } from './useIncidentes'
 
 // Uma leitura normal leva menos de 1 s. Acima disto, o servidor do Render está acordando.
@@ -62,7 +64,11 @@ export function TelaTriagem({ analista, aoSair }: Props) {
   const consulta = useIncidentes()
   const agora = useAgora(30_000)
   const estado = estadoDaConexao(consulta)
-  const itens = consulta.data?.itens
+  const acoes = useAcoesIncidente(analista)
+  const confirmados = consulta.data?.itens
+  // Ações em andamento aparecem por cima da lista confirmada (contadores incluídos).
+  const { sobrepor } = acoes
+  const itens = useMemo(() => confirmados && sobrepor(confirmados), [confirmados, sobrepor])
   const resumo = useMemo(() => (itens ? resumirTriagem(itens, agora) : null), [itens, agora])
 
   const filtros = useFiltros()
@@ -115,7 +121,15 @@ export function TelaTriagem({ analista, aoSair }: Props) {
           />
         )
       }
-      return <TabelaIncidentes itens={resultado.itens} idAnalista={analista.id} agora={agora} />
+      return (
+        <TabelaIncidentes
+          itens={resultado.itens}
+          idAnalista={analista.id}
+          agora={agora}
+          acoes={acoes}
+          semConexao={estado !== 'ao_vivo'}
+        />
+      )
     }
     if (estado === 'sem_conexao') {
       return (
@@ -199,6 +213,24 @@ export function TelaTriagem({ analista, aoSair }: Props) {
           {conteudoDaTabela()}
         </div>
       </main>
+
+      {/* Região única para início, fim e conflito das ações. */}
+      <p role="status" className="sr-only">
+        {acoes.anuncio}
+      </p>
+      <PilhaAvisos
+        // Aviso de uma versão que já mudou (outro analista agiu, ou a linha sumiu) não vale mais.
+        avisos={acoes.avisos.filter(
+          (aviso) =>
+            aviso.removido ||
+            itens?.find((item) => item.id === aviso.id)?.versao === aviso.versao,
+        )}
+        aoFechar={acoes.fecharAviso}
+        aoTentar={(aviso) => {
+          const atual = itens?.find((item) => item.id === aviso.id)
+          if (atual) acoes.executar(atual, aviso.acao)
+        }}
+      />
     </div>
   )
 }

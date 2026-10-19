@@ -3,6 +3,7 @@ import type { Incidente, ListaIncidentes } from '@/api/tipos'
 // Dados de teste compartilhados entre os testes de tela.
 
 export const ANA = { id: 1, nome: 'Ana Souza', usuario: 'ana' }
+export const BRUNO = { id: 2, nome: 'Bruno Lima' }
 
 export function respostaJson(status: number, corpo: unknown): Response {
   return new Response(JSON.stringify(corpo), {
@@ -11,8 +12,12 @@ export function respostaJson(status: number, corpo: unknown): Response {
   })
 }
 
-export function erroDaApi(status: number, codigo: string): Response {
-  return respostaJson(status, { erro: { codigo, mensagem: codigo } })
+export function erroDaApi(
+  status: number,
+  codigo: string,
+  extra: { mensagem?: string; atual?: Incidente } = {},
+): Response {
+  return respostaJson(status, { erro: { codigo, mensagem: extra.mensagem ?? codigo, ...extra } })
 }
 
 export const nunca = () => new Promise<Response>(() => {})

@@ -2,11 +2,15 @@ import { ChevronRight } from 'lucide-react'
 import { ROTULO_CATEGORIA, ROTULO_CRITICIDADE, ROTULO_STATUS } from '@/api/rotulos'
 import type { Criticidade, Incidente } from '@/api/tipos'
 import { cn } from '@/lib/utils'
+import type { Acao } from './acoes'
+import { AcoesLinha } from './AcoesLinha'
+import { AvisoConflito } from './Avisos'
 import { IconeCriticidade, IconeStatus } from './Icones'
 import { formatarTempoAberto, minutosDesde } from './tempo'
+import type { Conflito } from './useAcoesIncidente'
 
 export const COLUNAS_TABELA =
-  'grid-cols-[96px_minmax(220px,2fr)_176px_minmax(190px,1.4fr)_128px_150px_minmax(140px,1fr)]'
+  'grid-cols-[96px_minmax(180px,2fr)_176px_minmax(190px,1.4fr)_120px_140px_140px_232px]'
 
 const SELO: Record<Criticidade, string> = {
   alta: 'bg-alta-fundo text-alta-texto border-alta-borda font-bold',
@@ -27,9 +31,25 @@ interface Props {
   agora: number
   aberta: boolean
   aoAlternar: () => void
+  pendente?: Acao
+  conflito?: Conflito
+  semConexao: boolean
+  aoExecutar: (acao: Acao) => void
+  aoDispensarConflito: () => void
 }
 
-export function LinhaIncidente({ incidente, idAnalista, agora, aberta, aoAlternar }: Props) {
+export function LinhaIncidente({
+  incidente,
+  idAnalista,
+  agora,
+  aberta,
+  aoAlternar,
+  pendente,
+  conflito,
+  semConexao,
+  aoExecutar,
+  aoDispensarConflito,
+}: Props) {
   const fechado = incidente.status === 'fechado'
   const meu = incidente.responsavel?.id === idAnalista
   const idDetalhes = `detalhes-incidente-${incidente.id}`
@@ -37,8 +57,9 @@ export function LinhaIncidente({ incidente, idAnalista, agora, aberta, aoAlterna
   return (
     <li
       className={cn(
-        'grid min-h-11 items-center gap-x-3 border-b bg-card px-3 py-1.5 last:border-b-0',
+        'grid min-h-11 items-center gap-x-3 border-b px-3 py-1.5 last:border-b-0',
         COLUNAS_TABELA,
+        conflito ? 'bg-info-fundo' : pendente ? 'bg-linha-pendente' : 'bg-card',
         fechado && 'text-texto-3',
       )}
     >
@@ -108,6 +129,24 @@ export function LinhaIncidente({ incidente, idAnalista, agora, aberta, aoAlterna
       >
         {incidente.responsavel ? (meu ? 'Você' : incidente.responsavel.nome) : 'Sem responsável'}
       </span>
+
+      <AcoesLinha
+        incidente={incidente}
+        idAnalista={idAnalista}
+        pendente={pendente}
+        semConexao={semConexao}
+        aoExecutar={aoExecutar}
+      />
+
+      {conflito && (
+        <AvisoConflito
+          conflito={conflito}
+          incidente={incidente}
+          idAnalista={idAnalista}
+          aoManter={aoDispensarConflito}
+          aoRefazer={() => aoExecutar(conflito.acao)}
+        />
+      )}
 
       {aberta && (
         <section

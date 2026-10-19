@@ -3,6 +3,8 @@ import { listarIncidentes } from '@/api/incidentes'
 import type { ListaIncidentes } from '@/api/tipos'
 
 export const CHAVE_INCIDENTES = ['incidentes'] as const
+/** Assumir, liberar e mudar status (useAcoesIncidente). */
+export const CHAVE_ACAO_INCIDENTE = ['acao-incidente'] as const
 
 // Atualização entre analistas por polling (sem WebSocket). O 409 da API cobre a janela
 // entre duas leituras (ADR 0002).
