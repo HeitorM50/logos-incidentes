@@ -257,4 +257,18 @@ html.tema-em-transicao *::after {
   html.tema-em-transicao * {
     transition: none !important;
   }
+
+  /*
+   * Menos movimento vale para tudo: entrada de telas, painel lateral, diálogos e menus. A
+   * duração quase zero (e não "none") mantém o evento animationend, que o Radix espera para
+   * desmontar o painel e os diálogos. O loader e o fundo de pontos já param por conta própria.
+   */
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

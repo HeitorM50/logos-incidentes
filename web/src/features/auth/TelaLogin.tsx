@@ -76,7 +76,8 @@ export function TelaLogin({ aoEntrar }: Props) {
   }
 
   return (
-    <div className="relative flex min-h-svh flex-col">
+    // Entrada suave ao abrir o app e ao voltar para cá depois de sair.
+    <div className="relative flex min-h-svh flex-col animate-in duration-300 fade-in-0">
       <FundoPontos />
 
       <header className="relative flex flex-wrap items-center justify-between gap-4 px-4 py-5 sm:px-8">

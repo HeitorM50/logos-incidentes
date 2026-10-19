@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
 import { ehErroApi } from '@/api/erros'
 import type { AnalistaLogado, Incidente } from '@/api/tipos'
 import { Button } from '@/components/ui/button'
@@ -47,6 +47,11 @@ function mensagemFalhaLista(erro: unknown): string {
     return `O servidor recusou a leitura (erro ${erro.status}). Nenhum dado foi alterado.`
   }
   return 'Erro inesperado. Nenhum dado foi alterado.'
+}
+
+/** Troca de estado da tabela (carregando, lista, vazio, erro) com entrada suave. */
+function Entrada({ children }: { children: ReactNode }) {
+  return <div className="h-full animate-in duration-200 fade-in-0">{children}</div>
 }
 
 function textoMostrando(visiveis: Incidente[], total: number, filtrando: boolean): string {
@@ -146,38 +151,56 @@ export function TelaTriagem({ analista, aoSair }: Props) {
 
   function conteudoDaTabela() {
     if (itens && resultado) {
-      if (itens.length === 0) return <PainelVazio />
+      if (itens.length === 0) {
+        return (
+          <Entrada key="vazio">
+            <PainelVazio />
+          </Entrada>
+        )
+      }
       if (resultado.itens.length === 0) {
         return (
-          <PainelVazioFiltro
-            descricao={descreverFiltros(filtros)}
-            ativos={resumo?.ativos ?? 0}
-            aoLimpar={limparFiltros}
-          />
+          <Entrada key="vazio-filtro">
+            <PainelVazioFiltro
+              descricao={descreverFiltros(filtros)}
+              ativos={resumo?.ativos ?? 0}
+              aoLimpar={limparFiltros}
+            />
+          </Entrada>
         )
       }
       return (
-        <TabelaIncidentes
-          itens={resultado.itens}
-          idAnalista={analista.id}
-          agora={agora}
-          acoes={acoes}
-          semConexao={estado !== 'ao_vivo'}
-          aoEditar={(incidente) => setPainel({ tipo: 'editar', id: incidente.id })}
-          aoRemover={setRemovendo}
-        />
+        <Entrada key="lista">
+          <TabelaIncidentes
+            itens={resultado.itens}
+            idAnalista={analista.id}
+            agora={agora}
+            acoes={acoes}
+            semConexao={estado !== 'ao_vivo'}
+            aoEditar={(incidente) => setPainel({ tipo: 'editar', id: incidente.id })}
+            aoRemover={setRemovendo}
+          />
+        </Entrada>
       )
     }
     if (estado === 'sem_conexao') {
       return (
-        <PainelErro
-          mensagem={mensagemFalhaLista(ultimoErro)}
-          tentando={consulta.isFetching}
-          aoTentar={() => void consulta.refetch()}
-        />
+        <Entrada key="erro">
+          <PainelErro
+            mensagem={mensagemFalhaLista(ultimoErro)}
+            tentando={consulta.isFetching}
+            aoTentar={() => void consulta.refetch()}
+          />
+        </Entrada>
       )
     }
-    return acordando ? <PainelAcordando segundos={segundosAguardando} /> : <TabelaCarregando />
+    return acordando ? (
+      <Entrada key="acordando">
+        <PainelAcordando segundos={segundosAguardando} />
+      </Entrada>
+    ) : (
+      <TabelaCarregando />
+    )
   }
 
   return (
