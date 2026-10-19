@@ -7,6 +7,10 @@ on:
     - cron: "*/10 * * * *"
   workflow_dispatch:
 
+# O token do GitHub só lê o código: o repositório fica público e nenhum job publica nada.
+permissions:
+  contents: read
+
 jobs:
   ping:
     runs-on: ubuntu-latest
