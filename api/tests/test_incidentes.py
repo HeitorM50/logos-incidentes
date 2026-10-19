@@ -3,6 +3,7 @@ from sqlalchemy import update
 from sqlalchemy.orm import Session
 
 from app.models import Incidente
+from tests.apoio import criar_incidente as criar
 
 
 def payload(**sobrescrever) -> dict:
@@ -13,12 +14,6 @@ def payload(**sobrescrever) -> dict:
         "local": "BR-116, km 212 — Registro/SP",
     }
     return base | sobrescrever
-
-
-def criar(cliente: TestClient, **sobrescrever) -> dict:
-    resposta = cliente.post("/incidentes", json=payload(**sobrescrever))
-    assert resposta.status_code == 201, resposta.text
-    return resposta.json()
 
 
 # --- Criação e validação -------------------------------------------------------------

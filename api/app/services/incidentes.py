@@ -20,6 +20,7 @@ from app.schemas.incidente import (
     IncidenteResposta,
     ListaIncidentes,
 )
+from app.services.ciclo_vida import PODE_ASSUMIR, status_apos_liberar, transicao_permitida
 
 
 @dataclass(frozen=True)
@@ -82,7 +83,7 @@ def obter(sessao: Session, incidente_id: int) -> IncidenteResposta:
     return IncidenteResposta.model_validate(_buscar(sessao, incidente_id))
 
 
-def criar(sessao: Session, dados: IncidenteCriar, analista_id: int | None) -> IncidenteResposta:
+def criar(sessao: Session, dados: IncidenteCriar, analista_id: int) -> IncidenteResposta:
     incidente = Incidente(
         **dados.model_dump(),
         status=StatusIncidente.ABERTO,
@@ -104,21 +105,31 @@ def _conflito(sessao: Session, incidente_id: int) -> ErroApi:
     )
 
 
-def _carregar_para_alterar(sessao: Session, incidente_id: int, versao_lida: int) -> Incidente:
-    """Busca o incidente e confirma que o cliente está alterando a versão mais recente."""
-    incidente = _buscar(sessao, incidente_id)
+def _exigir_versao_atual(sessao: Session, incidente: Incidente, versao_lida: int) -> None:
     if incidente.versao != versao_lida:
-        raise _conflito(sessao, incidente_id)
+        raise _conflito(sessao, incidente.id)
+
+
+def _exigir_aberto_para_alteracao(incidente: Incidente) -> None:
     if incidente.status == StatusIncidente.FECHADO:
         raise ErroApi(422, "incidente_fechado", "Incidente fechado não pode ser alterado.")
-    return incidente
+
+
+def _exigir_responsavel_ou_livre(incidente: Incidente, analista_id: int) -> None:
+    """Com responsável definido, só ele altera o incidente (ADR 0002)."""
+    if incidente.responsavel is not None and incidente.responsavel_id != analista_id:
+        raise ErroApi(
+            403,
+            "nao_responsavel",
+            f"Este incidente está sendo tratado por {incidente.responsavel.nome}.",
+        )
 
 
 def _gravar_com_versao(
     sessao: Session,
     incidente_id: int,
     versao_lida: int,
-    analista_id: int | None,
+    analista_id: int,
     valores: dict[str, Any],
 ) -> IncidenteResposta:
     resultado = sessao.execute(
@@ -141,16 +152,87 @@ def _gravar_com_versao(
 
 
 def editar(
-    sessao: Session, incidente_id: int, dados: IncidenteEditar, analista_id: int | None
+    sessao: Session, incidente_id: int, dados: IncidenteEditar, analista_id: int
 ) -> IncidenteResposta:
-    _carregar_para_alterar(sessao, incidente_id, dados.versao)
+    incidente = _buscar(sessao, incidente_id)
+    _exigir_versao_atual(sessao, incidente, dados.versao)
+    _exigir_aberto_para_alteracao(incidente)
+    _exigir_responsavel_ou_livre(incidente, analista_id)
     return _gravar_com_versao(sessao, incidente_id, dados.versao, analista_id, dados.alteracoes())
 
 
-def remover(sessao: Session, incidente_id: int, versao_lida: int) -> None:
+def assumir(
+    sessao: Session, incidente_id: int, versao_lida: int, analista_id: int
+) -> IncidenteResposta:
     incidente = _buscar(sessao, incidente_id)
-    if incidente.versao != versao_lida:
-        raise _conflito(sessao, incidente_id)
+    if incidente.responsavel_id == analista_id:
+        return IncidenteResposta.model_validate(incidente)  # já é dele: nada a fazer
+    # "Já assumido" vem antes da versão: é a mensagem que explica o conflito ao analista.
+    if incidente.responsavel is not None:
+        raise ErroApi(
+            409,
+            "ja_assumido",
+            f"{incidente.responsavel.nome} já assumiu este incidente.",
+            atual=IncidenteResposta.model_validate(incidente),
+        )
+    _exigir_versao_atual(sessao, incidente, versao_lida)
+    _exigir_aberto_para_alteracao(incidente)
+    if incidente.status not in PODE_ASSUMIR:
+        raise ErroApi(422, "transicao_invalida", "Este incidente não pode ser assumido agora.")
+    return _gravar_com_versao(
+        sessao,
+        incidente_id,
+        versao_lida,
+        analista_id,
+        {"responsavel_id": analista_id, "status": StatusIncidente.EM_INVESTIGACAO},
+    )
+
+
+def liberar(
+    sessao: Session, incidente_id: int, versao_lida: int, analista_id: int
+) -> IncidenteResposta:
+    incidente = _buscar(sessao, incidente_id)
+    _exigir_versao_atual(sessao, incidente, versao_lida)
+    _exigir_aberto_para_alteracao(incidente)
+    if incidente.responsavel_id != analista_id:
+        raise ErroApi(403, "nao_responsavel", "Só o responsável pode liberar o incidente.")
+    return _gravar_com_versao(
+        sessao,
+        incidente_id,
+        versao_lida,
+        analista_id,
+        {"responsavel_id": None, "status": status_apos_liberar(incidente.status)},
+    )
+
+
+def mudar_status(
+    sessao: Session,
+    incidente_id: int,
+    versao_lida: int,
+    novo_status: StatusIncidente,
+    analista_id: int,
+) -> IncidenteResposta:
+    incidente = _buscar(sessao, incidente_id)
+    _exigir_versao_atual(sessao, incidente, versao_lida)
+    _exigir_aberto_para_alteracao(incidente)
+    if incidente.responsavel_id is None:
+        raise ErroApi(422, "transicao_invalida", "Assuma o incidente antes de mudar o status.")
+    _exigir_responsavel_ou_livre(incidente, analista_id)
+    if not transicao_permitida(incidente.status, novo_status):
+        raise ErroApi(
+            422,
+            "transicao_invalida",
+            f"Não é possível mudar de {incidente.status.value} para {novo_status.value}.",
+        )
+    return _gravar_com_versao(
+        sessao, incidente_id, versao_lida, analista_id, {"status": novo_status}
+    )
+
+
+def remover(sessao: Session, incidente_id: int, versao_lida: int, analista_id: int) -> None:
+    incidente = _buscar(sessao, incidente_id)
+    _exigir_versao_atual(sessao, incidente, versao_lida)
+    _exigir_responsavel_ou_livre(incidente, analista_id)
     resultado = sessao.execute(
         delete(Incidente)
         .where(Incidente.id == incidente_id, Incidente.versao == versao_lida)

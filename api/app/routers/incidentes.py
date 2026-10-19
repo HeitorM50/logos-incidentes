@@ -10,6 +10,8 @@ from app.schemas.incidente import (
     IncidenteEditar,
     IncidenteResposta,
     ListaIncidentes,
+    MudarStatus,
+    VersaoLida,
 )
 from app.services import incidentes as servico
 from app.services.incidentes import FiltrosIncidentes
@@ -56,6 +58,44 @@ def editar_incidente(
 @router.delete(
     "/{incidente_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remove um incidente"
 )
-def remover_incidente(incidente_id: int, sessao: SessaoDep, versao: Annotated[int, Query(ge=1)]):
-    servico.remover(sessao, incidente_id, versao)
+def remover_incidente(
+    incidente_id: int,
+    sessao: SessaoDep,
+    analista: AnalistaAtualDep,
+    versao: Annotated[int, Query(ge=1)],
+):
+    servico.remover(sessao, incidente_id, versao, analista.id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+@router.post(
+    "/{incidente_id}/assumir",
+    response_model=IncidenteResposta,
+    summary="Assume o incidente e inicia a investigação",
+)
+def assumir_incidente(
+    incidente_id: int, dados: VersaoLida, sessao: SessaoDep, analista: AnalistaAtualDep
+):
+    return servico.assumir(sessao, incidente_id, dados.versao, analista.id)
+
+
+@router.post(
+    "/{incidente_id}/liberar",
+    response_model=IncidenteResposta,
+    summary="Libera o incidente para outro analista",
+)
+def liberar_incidente(
+    incidente_id: int, dados: VersaoLida, sessao: SessaoDep, analista: AnalistaAtualDep
+):
+    return servico.liberar(sessao, incidente_id, dados.versao, analista.id)
+
+
+@router.post(
+    "/{incidente_id}/status",
+    response_model=IncidenteResposta,
+    summary="Muda o status (somente o responsável)",
+)
+def mudar_status_incidente(
+    incidente_id: int, dados: MudarStatus, sessao: SessaoDep, analista: AnalistaAtualDep
+):
+    return servico.mudar_status(sessao, incidente_id, dados.versao, dados.status, analista.id)
