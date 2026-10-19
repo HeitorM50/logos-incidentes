@@ -7,8 +7,8 @@ from app.core.banco import criar_engine, obter_sessao
 from app.main import criar_app
 
 
-def test_health_responde_ok_com_banco_ativo(cliente: TestClient):
-    resposta = cliente.get("/health")
+def test_health_responde_ok_com_banco_ativo(cliente_anonimo: TestClient):
+    resposta = cliente_anonimo.get("/health")
 
     assert resposta.status_code == 200
     assert resposta.json() == {"status": "ok", "banco": "ok"}

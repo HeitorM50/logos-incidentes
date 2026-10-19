@@ -1,7 +1,8 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Query, Response, status
+from fastapi import APIRouter, Depends, Query, Response, status
 
+from app.core.autenticacao import AnalistaAtualDep, obter_analista_atual
 from app.core.banco import SessaoDep
 from app.core.dominio import Categoria, Criticidade, StatusIncidente
 from app.schemas.incidente import (
@@ -13,7 +14,10 @@ from app.schemas.incidente import (
 from app.services import incidentes as servico
 from app.services.incidentes import FiltrosIncidentes
 
-router = APIRouter(prefix="/incidentes", tags=["incidentes"])
+# Todas as rotas de incidentes exigem um analista autenticado.
+router = APIRouter(
+    prefix="/incidentes", tags=["incidentes"], dependencies=[Depends(obter_analista_atual)]
+)
 
 
 @router.get("", response_model=ListaIncidentes, summary="Lista incidentes em ordem de triagem")
@@ -38,13 +42,15 @@ def obter_incidente(incidente_id: int, sessao: SessaoDep):
     status_code=status.HTTP_201_CREATED,
     summary="Registra um incidente",
 )
-def criar_incidente(dados: IncidenteCriar, sessao: SessaoDep):
-    return servico.criar(sessao, dados, analista_id=None)
+def criar_incidente(dados: IncidenteCriar, sessao: SessaoDep, analista: AnalistaAtualDep):
+    return servico.criar(sessao, dados, analista.id)
 
 
 @router.patch("/{incidente_id}", response_model=IncidenteResposta, summary="Edita um incidente")
-def editar_incidente(incidente_id: int, dados: IncidenteEditar, sessao: SessaoDep):
-    return servico.editar(sessao, incidente_id, dados, analista_id=None)
+def editar_incidente(
+    incidente_id: int, dados: IncidenteEditar, sessao: SessaoDep, analista: AnalistaAtualDep
+):
+    return servico.editar(sessao, incidente_id, dados, analista.id)
 
 
 @router.delete(
