@@ -10,6 +10,9 @@ o Render hiberna o serviço após ~15 min sem tráfego, e o Supabase pausa proje
 ## Decisão
 
 - **Banco:** Postgres no Supabase, acessado pelo *session pooler* (IPv4, compatível com o Render).
+  - A API conecta com um usuário próprio (`logos_api`), sem privilégio de superusuário.
+  - As tabelas ficam no schema `logos`, fora do `public` que o Supabase expõe pela Data API.
+    Assim os dados só são acessíveis pela API do Logos, com as regras dela.
 - **API:** web service no Render.
 - **Front:** site estático na Vercel.
 - **Testes automatizados** rodam no mesmo Postgres, mas num **schema temporário** criado e
