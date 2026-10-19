@@ -1,11 +1,12 @@
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { CircleAlert, Loader2 } from 'lucide-react'
+import { CircleAlert } from 'lucide-react'
 import { useId, useState, type FormEvent } from 'react'
 import { entrar } from '@/api/auth'
 import { verificarSaude } from '@/api/saude'
 import type { AnalistaLogado } from '@/api/tipos'
 import { BotaoTema } from '@/components/BotaoTema'
 import { FundoPontos } from '@/components/FundoPontos'
+import { LogosLoader } from '@/components/LogosLoader'
 import { MarcaLogos } from '@/components/MarcaLogos'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -143,9 +144,12 @@ export function TelaLogin({ aoEntrar }: Props) {
               <div role="status">
                 {acordando && (
                   <div className="flex items-start gap-2.5 rounded-md border border-info-borda bg-info-fundo px-3 py-2.5 text-sm leading-snug text-info-texto">
-                    <Loader2
-                      aria-hidden
-                      className="mt-px size-[18px] flex-none motion-safe:animate-spin"
+                    <LogosLoader
+                      tamanho={18}
+                      decorativo
+                      cor="var(--info-texto)"
+                      fundo="var(--info-fundo)"
+                      className="mt-px flex-none"
                     />
                     <div className="flex flex-col gap-0.5">
                       <span className="font-semibold">Acordando o servidor…</span>
@@ -169,7 +173,12 @@ export function TelaLogin({ aoEntrar }: Props) {
               >
                 {login.isPending ? (
                   <>
-                    <Loader2 aria-hidden className="motion-safe:animate-spin" />
+                    <LogosLoader
+                      tamanho={16}
+                      decorativo
+                      cor="var(--primary-foreground)"
+                      fundo="var(--primary)"
+                    />
                     <span>Entrando…</span>
                   </>
                 ) : (
