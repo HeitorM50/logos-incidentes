@@ -5,6 +5,7 @@ from threading import Barrier
 
 from fastapi.testclient import TestClient
 
+from app.services import incidentes as servico
 from tests.apoio import acao, criar_incidente
 
 
@@ -101,3 +102,40 @@ def test_duas_edicoes_simultaneas_na_mesma_versao_so_uma_e_gravada(
     assert sorted(r.status_code for r in respostas) == [200, 409]
     gravado = next(r for r in respostas if r.status_code == 200).json()
     assert cliente.get(rota).json()["titulo"] == gravado["titulo"]
+
+
+# --- A última barreira: o próprio UPDATE ---------------------------------------------
+# Os testes com Barrier quase sempre param na checagem de versão feita na leitura. Estes
+# desligam essa checagem para forçar o caminho em que a leitura passou, outra gravação entrou
+# antes do UPDATE, e só o "WHERE versao = :lida" impede a atualização perdida.
+
+
+def test_update_com_versao_velha_nao_grava_mesmo_se_a_leitura_passar(
+    cliente: TestClient, monkeypatch
+):
+    incidente = criar_incidente(cliente)
+    rota = f"/incidentes/{incidente['id']}"
+    cliente.patch(rota, json={"versao": 1, "titulo": "Gravação que chegou primeiro"})
+    monkeypatch.setattr(servico, "_exigir_versao_atual", lambda *_: None)
+
+    resposta = cliente.patch(rota, json={"versao": 1, "titulo": "Gravação atrasada"})
+
+    assert resposta.status_code == 409
+    assert resposta.json()["erro"]["codigo"] == "conflito_versao"
+    atual = cliente.get(rota).json()
+    assert atual["titulo"] == "Gravação que chegou primeiro"
+    assert atual["versao"] == 2
+
+
+def test_delete_com_versao_velha_nao_remove_mesmo_se_a_leitura_passar(
+    cliente: TestClient, monkeypatch
+):
+    incidente = criar_incidente(cliente)
+    rota = f"/incidentes/{incidente['id']}"
+    cliente.patch(rota, json={"versao": 1, "titulo": "Alterado antes da remoção"})
+    monkeypatch.setattr(servico, "_exigir_versao_atual", lambda *_: None)
+
+    resposta = cliente.delete(rota, params={"versao": 1})
+
+    assert resposta.status_code == 409
+    assert cliente.get(rota).status_code == 200

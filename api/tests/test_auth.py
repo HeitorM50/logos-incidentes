@@ -1,5 +1,9 @@
+from datetime import UTC, datetime, timedelta
+
+import jwt
 from fastapi.testclient import TestClient
 
+from app.core.seguranca import ALGORITMO_JWT
 from app.seed.analistas import SENHA_DEMO
 
 
@@ -85,3 +89,41 @@ def test_cors_libera_apenas_a_origem_configurada(cliente_anonimo: TestClient):
 
     assert permitida.headers.get("access-control-allow-origin") == "http://localhost:5173"
     assert "access-control-allow-origin" not in bloqueada.headers
+
+
+def _token_manual(conteudo: dict, segredo: str) -> dict:
+    return {"Authorization": f"Bearer {jwt.encode(conteudo, segredo, ALGORITMO_JWT)}"}
+
+
+def test_token_expirado_responde_401(cliente_anonimo: TestClient, analistas, configuracao):
+    expirado = datetime.now(UTC) - timedelta(minutes=1)
+    cabecalho = _token_manual(
+        {"sub": str(analistas["ana"].id), "exp": expirado}, configuracao.jwt_segredo
+    )
+
+    assert cliente_anonimo.get("/auth/eu", headers=cabecalho).status_code == 401
+
+
+def test_token_assinado_com_outro_segredo_responde_401(cliente_anonimo: TestClient, analistas):
+    validade = datetime.now(UTC) + timedelta(hours=1)
+    cabecalho = _token_manual(
+        {"sub": str(analistas["ana"].id), "exp": validade}, "um-segredo-diferente-com-32-chars!!"
+    )
+
+    assert cliente_anonimo.get("/auth/eu", headers=cabecalho).status_code == 401
+
+
+def test_token_sem_identificacao_do_analista_responde_401(
+    cliente_anonimo: TestClient, configuracao
+):
+    validade = datetime.now(UTC) + timedelta(hours=1)
+    cabecalho = _token_manual({"exp": validade}, configuracao.jwt_segredo)
+
+    assert cliente_anonimo.get("/auth/eu", headers=cabecalho).status_code == 401
+
+
+def test_token_de_analista_removido_responde_401(cliente_anonimo: TestClient, configuracao, sessao):
+    validade = datetime.now(UTC) + timedelta(hours=1)
+    cabecalho = _token_manual({"sub": "9999", "exp": validade}, configuracao.jwt_segredo)
+
+    assert cliente_anonimo.get("/auth/eu", headers=cabecalho).status_code == 401

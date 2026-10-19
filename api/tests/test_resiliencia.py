@@ -2,12 +2,14 @@
 
 from collections.abc import Iterator
 
+import psycopg
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import text
+from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.core import banco
 from app.core.banco import criar_engine, obter_sessao
 from app.core.config import Configuracao
 from app.core.resiliencia import com_retry
@@ -117,3 +119,28 @@ def test_simulacao_desligada_por_padrao(cliente: TestClient):
     incidente = criar_incidente(cliente)
 
     assert acao(cliente, incidente, "assumir").status_code == 200
+
+
+def test_dependencia_real_de_sessao_tenta_de_novo_ao_abrir_a_conexao(
+    configuracao: Configuracao, monkeypatch
+):
+    tentativas = []
+    url_libpq = configuracao.database_url.replace("postgresql+psycopg://", "postgresql://")
+
+    def conectar_com_falhas():
+        tentativas.append(1)
+        if len(tentativas) < 3:
+            raise psycopg.OperationalError("conexão recusada (simulada)")
+        return psycopg.connect(url_libpq)
+
+    engine = create_engine("postgresql+psycopg://", creator=conectar_com_falhas)
+    monkeypatch.setattr(banco, "obter_fabrica_sessoes", lambda: sessionmaker(bind=engine))
+    try:
+        dependencia = banco.obter_sessao()
+        sessao = next(dependencia)
+        assert sessao.execute(text("SELECT 1")).scalar() == 1
+        dependencia.close()
+    finally:
+        engine.dispose()
+
+    assert len(tentativas) == 3
