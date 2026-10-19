@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { ehErroApi } from '@/api/erros'
-import type { AnalistaLogado } from '@/api/tipos'
+import type { AnalistaLogado, Incidente } from '@/api/tipos'
 import { useAgora } from '@/lib/useAgora'
 import { useSegundosAguardando } from '@/lib/useSegundosAguardando'
 import { useValorAtrasado } from '@/lib/useValorAtrasado'
@@ -41,9 +41,16 @@ function mensagemFalhaLista(erro: unknown): string {
   return 'Erro inesperado. Nenhum dado foi alterado.'
 }
 
-function textoMostrando(visiveis: number, total: number, filtrando: boolean): string {
-  const texto = `Mostrando ${visiveis} de ${total} ${total === 1 ? 'incidente' : 'incidentes'}`
-  return filtrando ? `${texto} (filtrado)` : texto
+function textoMostrando(visiveis: Incidente[], total: number, filtrando: boolean): string {
+  const palavra = total === 1 ? 'incidente' : 'incidentes'
+  const texto = `Mostrando ${visiveis.length} de ${total} ${palavra}`
+  if (!filtrando) return texto
+  // Os cartões contam só ativos; a lista filtrada traz também os fechados, no fim. O aviso
+  // explica a diferença entre "ALTA 26" e "Mostrando 31".
+  const fechados = visiveis.filter((i) => i.status === 'fechado').length
+  if (!fechados) return `${texto} (filtrado)`
+  const rotulo = fechados === 1 ? 'fechado' : 'fechados'
+  return `${texto} (filtrado) · ${fechados} ${rotulo} no fim da lista`
 }
 
 interface Props {
@@ -87,7 +94,7 @@ export function TelaTriagem({ analista, aoSair }: Props) {
   const acordando = segundosAguardando >= ESPERA_NORMAL_S
 
   const linhaEstado = resultado
-    ? textoMostrando(resultado.itens.length, itens?.length ?? 0, filtrando)
+    ? textoMostrando(resultado.itens, itens?.length ?? 0, filtrando)
     : estado === 'sem_conexao'
       ? 'Falha ao carregar a lista'
       : acordando
