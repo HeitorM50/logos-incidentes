@@ -12,5 +12,8 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
+    // Testes de tela com vários cliques: com a suíte em paralelo e a primeira importação fria,
+    // os 5 s padrão estouravam de vez em quando sem erro no código.
+    testTimeout: 15_000,
   },
 })
