@@ -6,6 +6,7 @@ from typing import Any
 from fastapi import FastAPI, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 logger = logging.getLogger("logos")
 
@@ -28,6 +29,12 @@ class ErroApi(Exception):
         self.mensagem = mensagem
         self.atual = atual
         self.cabecalhos = cabecalhos
+
+
+CODIGOS_HTTP: dict[int, tuple[str, str]] = {
+    404: ("nao_encontrado", "Recurso não encontrado."),
+    405: ("metodo_nao_permitido", "Método não permitido nesta rota."),
+}
 
 
 def corpo_erro(codigo: str, mensagem: str, **extras: Any) -> dict[str, Any]:
@@ -63,11 +70,25 @@ def registrar_tratadores(app: FastAPI) -> None:
             content=corpo_erro("validacao", "Dados inválidos.", campos=campos),
         )
 
-    @app.exception_handler(Exception)
-    async def tratar_inesperado(_: Request, erro: Exception):
-        # O detalhe vai para o log do servidor, nunca para o cliente.
-        logger.exception("Erro inesperado", exc_info=erro)
+    @app.exception_handler(StarletteHTTPException)
+    async def tratar_http(_: Request, erro: StarletteHTTPException):
+        # Rotas inexistentes e métodos não suportados também seguem o formato do contrato.
+        codigo, mensagem = CODIGOS_HTTP.get(erro.status_code, ("erro_http", str(erro.detail)))
         return JSONResponse(
-            status_code=500,
-            content=corpo_erro("erro_interno", "Erro inesperado. Tente novamente."),
+            status_code=erro.status_code,
+            content=corpo_erro(codigo, mensagem),
+            headers=getattr(erro, "headers", None),
         )
+
+    @app.middleware("http")
+    async def tratar_inesperado(request: Request, proximo):
+        # Middleware (e não exception_handler) para que o 500 passe pelo CORS: sem o
+        # cabeçalho Access-Control-Allow-Origin o navegador esconderia o erro do front.
+        try:
+            return await proximo(request)
+        except Exception:
+            logger.exception("Erro inesperado em %s %s", request.method, request.url.path)
+            return JSONResponse(
+                status_code=500,
+                content=corpo_erro("erro_interno", "Erro inesperado. Tente novamente."),
+            )

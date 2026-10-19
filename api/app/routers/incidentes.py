@@ -1,11 +1,13 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, Path, Query, Response, status
 
 from app.core.autenticacao import AnalistaAtualDep, obter_analista_atual
 from app.core.banco import SessaoDep
 from app.core.dominio import Categoria, Criticidade, StatusIncidente
 from app.schemas.incidente import (
+    MAXIMO_BIGINT,
+    MAXIMO_INTEGER,
     IncidenteCriar,
     IncidenteEditar,
     IncidenteResposta,
@@ -15,6 +17,8 @@ from app.schemas.incidente import (
 )
 from app.services import incidentes as servico
 from app.services.incidentes import FiltrosIncidentes
+
+IdIncidente = Annotated[int, Path(ge=1, le=MAXIMO_BIGINT)]
 
 # Todas as rotas de incidentes exigem um analista autenticado.
 router = APIRouter(
@@ -34,7 +38,7 @@ def listar_incidentes(
 
 
 @router.get("/{incidente_id}", response_model=IncidenteResposta, summary="Detalha um incidente")
-def obter_incidente(incidente_id: int, sessao: SessaoDep):
+def obter_incidente(incidente_id: IdIncidente, sessao: SessaoDep):
     return servico.obter(sessao, incidente_id)
 
 
@@ -50,7 +54,7 @@ def criar_incidente(dados: IncidenteCriar, sessao: SessaoDep, analista: Analista
 
 @router.patch("/{incidente_id}", response_model=IncidenteResposta, summary="Edita um incidente")
 def editar_incidente(
-    incidente_id: int, dados: IncidenteEditar, sessao: SessaoDep, analista: AnalistaAtualDep
+    incidente_id: IdIncidente, dados: IncidenteEditar, sessao: SessaoDep, analista: AnalistaAtualDep
 ):
     return servico.editar(sessao, incidente_id, dados, analista.id)
 
@@ -59,10 +63,10 @@ def editar_incidente(
     "/{incidente_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Remove um incidente"
 )
 def remover_incidente(
-    incidente_id: int,
+    incidente_id: IdIncidente,
     sessao: SessaoDep,
     analista: AnalistaAtualDep,
-    versao: Annotated[int, Query(ge=1)],
+    versao: Annotated[int, Query(ge=1, le=MAXIMO_INTEGER)],
 ):
     servico.remover(sessao, incidente_id, versao, analista.id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
@@ -74,7 +78,7 @@ def remover_incidente(
     summary="Assume o incidente e inicia a investigação",
 )
 def assumir_incidente(
-    incidente_id: int, dados: VersaoLida, sessao: SessaoDep, analista: AnalistaAtualDep
+    incidente_id: IdIncidente, dados: VersaoLida, sessao: SessaoDep, analista: AnalistaAtualDep
 ):
     return servico.assumir(sessao, incidente_id, dados.versao, analista.id)
 
@@ -85,7 +89,7 @@ def assumir_incidente(
     summary="Libera o incidente para outro analista",
 )
 def liberar_incidente(
-    incidente_id: int, dados: VersaoLida, sessao: SessaoDep, analista: AnalistaAtualDep
+    incidente_id: IdIncidente, dados: VersaoLida, sessao: SessaoDep, analista: AnalistaAtualDep
 ):
     return servico.liberar(sessao, incidente_id, dados.versao, analista.id)
 
@@ -96,6 +100,6 @@ def liberar_incidente(
     summary="Muda o status (somente o responsável)",
 )
 def mudar_status_incidente(
-    incidente_id: int, dados: MudarStatus, sessao: SessaoDep, analista: AnalistaAtualDep
+    incidente_id: IdIncidente, dados: MudarStatus, sessao: SessaoDep, analista: AnalistaAtualDep
 ):
     return servico.mudar_status(sessao, incidente_id, dados.versao, dados.status, analista.id)

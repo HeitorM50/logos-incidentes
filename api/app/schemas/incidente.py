@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Annotated
 
 from pydantic import (
+    AfterValidator,
     BaseModel,
     ConfigDict,
     Field,
@@ -16,10 +17,29 @@ from app.core.dominio import Categoria, Criticidade, StatusIncidente
 # Placa no padrão antigo (ABC1234) ou Mercosul (ABC1D23).
 PADRAO_PLACA = re.compile(r"^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$")
 
-Titulo = Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=120)]
-Descricao = Annotated[str, StringConstraints(strip_whitespace=True, max_length=2000)]
-Local = Annotated[str, StringConstraints(strip_whitespace=True, min_length=3, max_length=160)]
-Versao = Annotated[int, Field(ge=1, description="Versão do incidente que o cliente leu")]
+# Limites das colunas no Postgres: valores acima deles virariam erro 500 no banco.
+MAXIMO_INTEGER = 2**31 - 1
+MAXIMO_BIGINT = 2**63 - 1
+
+
+def _sem_caractere_nulo(valor: str) -> str:
+    # O Postgres não aceita \x00 em texto; sem esta checagem o erro estouraria no banco.
+    if "\x00" in valor:
+        raise ValueError("o texto contém caracteres inválidos")
+    return valor
+
+
+TextoSeguro = AfterValidator(_sem_caractere_nulo)
+Titulo = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=3, max_length=120), TextoSeguro
+]
+Descricao = Annotated[str, StringConstraints(strip_whitespace=True, max_length=2000), TextoSeguro]
+Local = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=3, max_length=160), TextoSeguro
+]
+Versao = Annotated[
+    int, Field(ge=1, le=MAXIMO_INTEGER, description="Versão do incidente que o cliente leu")
+]
 
 
 def _normalizar_placa(valor: str | None) -> str | None:
