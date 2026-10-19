@@ -25,7 +25,9 @@ o Render hiberna o serviço após ~15 min sem tráfego, e o Supabase pausa proje
 - **Postgres do Render:** o plano gratuito expira em 30 dias, possivelmente antes da avaliação.
 - **SQLite:** o disco do Render gratuito é efêmero; os dados sumiriam a cada deploy.
 - **Postgres local em Docker para testes:** isolamento maior, mas exigiria Docker de quem for rodar
-  o projeto.
+  o projeto. Atualização (19/10): o `docker-compose.yml` da raiz entrou como caminho **opcional**
+  para desenvolvimento local, para quem avalia rodar o projeto sem criar conta no Supabase. A API
+  e os testes funcionam igual nos dois bancos; nada em produção depende do Docker.
 
 ## Consequências
 
