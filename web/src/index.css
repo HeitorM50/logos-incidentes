@@ -47,6 +47,12 @@
     --color-esqueleto: var(--esqueleto);
     --color-ao-vivo: var(--ao-vivo);
     --color-pontos: var(--pontos);
+    --color-cabecalho: var(--cabecalho);
+    --color-linha-pendente: var(--linha-pendente);
+    --color-faixa: var(--faixa);
+    --color-seg-aberto: var(--seg-aberto);
+    --color-seg-investigacao: var(--seg-investigacao);
+    --color-seg-inconclusivo: var(--seg-inconclusivo);
 
     --color-erro-fundo: var(--erro-fundo);
     --color-erro-texto: var(--erro-texto);
@@ -105,6 +111,12 @@
     --esqueleto: #e1e5ea;
     --ao-vivo: #1f7a4d;
     --pontos: #12161c;
+    --cabecalho: #f0f2f5;
+    --linha-pendente: #f1f4f8;
+    --faixa: #e4e8ee;
+    --seg-aberto: #12161c;
+    --seg-investigacao: #6b7686;
+    --seg-inconclusivo: #c3cad4;
 
     --erro-fundo: #fdecea;
     --erro-texto: #8a1c12;
@@ -157,6 +169,12 @@
     --esqueleto: #252c35;
     --ao-vivo: #4cc38a;
     --pontos: #e7eaee;
+    --cabecalho: #1a2027;
+    --linha-pendente: #1b2129;
+    --faixa: #222932;
+    --seg-aberto: #e7eaee;
+    --seg-investigacao: #8a94a3;
+    --seg-inconclusivo: #3a434f;
 
     --erro-fundo: #3a1512;
     --erro-texto: #ffc2ba;

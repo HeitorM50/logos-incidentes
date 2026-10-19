@@ -2,16 +2,22 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useEffect, useState } from 'react'
 import { aoExpirarSessao, encerrarSessao, lerSessao } from '@/api/sessao'
 import type { AnalistaLogado } from '@/api/tipos'
-import { BotaoTema } from '@/components/BotaoTema'
-import { MarcaLogos } from '@/components/MarcaLogos'
-import { Button } from '@/components/ui/button'
+import { TelaAbertura } from '@/components/TelaAbertura'
 import { TelaLogin } from '@/features/auth/TelaLogin'
+import { TelaTriagem } from '@/features/incidents/TelaTriagem'
+
+// A abertura dura um ciclo completo do loader (2 s) e some em 300 ms.
+const DURACAO_ABERTURA_MS = 2_000
+const DURACAO_SAIDA_ABERTURA_MS = 300
+
+type FaseAbertura = 'oculta' | 'visivel' | 'saindo'
 
 function App() {
   const clienteDeConsultas = useQueryClient()
   const [analista, setAnalista] = useState<AnalistaLogado | null>(
     () => lerSessao()?.analista ?? null,
   )
+  const [abertura, setAbertura] = useState<FaseAbertura>('oculta')
 
   // A API recusou o token (expirado ou inválido): volta para o login sem dados de outra sessão.
   useEffect(
@@ -23,32 +29,37 @@ function App() {
     [clienteDeConsultas],
   )
 
+  useEffect(() => {
+    if (abertura === 'oculta') return
+    const proxima = abertura === 'visivel' ? 'saindo' : 'oculta'
+    const espera = abertura === 'visivel' ? DURACAO_ABERTURA_MS : DURACAO_SAIDA_ABERTURA_MS
+    const id = setTimeout(() => setAbertura(proxima), espera)
+    return () => clearTimeout(id)
+  }, [abertura])
+
+  function entrar(novoAnalista: AnalistaLogado) {
+    setAnalista(novoAnalista)
+    setAbertura('visivel')
+  }
+
   function sair() {
     encerrarSessao()
     clienteDeConsultas.clear()
     setAnalista(null)
+    setAbertura('oculta')
   }
 
-  if (!analista) return <TelaLogin aoEntrar={setAnalista} />
+  if (!analista) return <TelaLogin aoEntrar={entrar} />
 
-  // Provisório até a tela de triagem (issue #16).
   return (
-    <div className="flex min-h-svh flex-col">
-      <header className="flex items-center justify-between gap-4 border-b px-4 py-3 sm:px-6">
-        <MarcaLogos />
-        <div className="flex items-center gap-3">
-          <BotaoTema />
-          <span className="text-sm">{analista.nome}</span>
-          <Button variant="link" onClick={sair} className="px-0 underline">
-            Sair
-          </Button>
-        </div>
-      </header>
-      <main className="p-6">
-        <h1 className="text-xl font-semibold">Triagem</h1>
-        <p className="text-texto-2">A lista de incidentes entra na próxima etapa.</p>
-      </main>
-    </div>
+    <>
+      {/* A triagem monta por baixo da abertura (a lista já começa a carregar), mas fica
+          inerte até a abertura sair: sem foco por Tab e fora do leitor de tela. */}
+      <div inert={abertura !== 'oculta'}>
+        <TelaTriagem analista={analista} aoSair={sair} />
+      </div>
+      {abertura !== 'oculta' && <TelaAbertura saindo={abertura === 'saindo'} />}
+    </>
   )
 }
 
