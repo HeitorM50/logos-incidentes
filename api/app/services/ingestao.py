@@ -12,6 +12,7 @@ from app.core.dominio import StatusIncidente, TipoEvento
 from app.core.erros import ErroApi
 from app.models import Dispositivo, EventoIncidente, Incidente, Ingestao
 from app.schemas.incidente import IncidenteCriar, IncidenteResposta
+from app.services.frota import completar_motorista
 from app.services.incidentes import obter
 
 # Cota por dispositivo: protege a triagem de um rastreador com defeito (ou da chave de
@@ -87,6 +88,8 @@ def receber(
     # Sem placa no corpo, vale a placa cadastrada do caminhão.
     if valores.get("placa") is None:
         valores["placa"] = dispositivo.placa
+    # O caminhão não sabe o telefone do motorista: a API copia do cadastro da frota.
+    valores = completar_motorista(sessao, valores)
     incidente = Incidente(
         **valores,
         status=StatusIncidente.ABERTO,

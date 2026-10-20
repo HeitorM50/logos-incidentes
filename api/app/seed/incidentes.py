@@ -7,7 +7,8 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
 from app.core.dominio import Categoria, Criticidade, StatusIncidente, TipoEvento
-from app.models import Analista, EventoIncidente, Incidente
+from app.models import Analista, EventoIncidente, Incidente, Veiculo
+from app.seed.frota import PLACAS_DA_FROTA
 from app.services.ciclo_vida import PRAZO_PARA_ASSUMIR_MIN
 
 TOTAL_INCIDENTES = 100
@@ -83,23 +84,6 @@ DESCRICOES = [
     "Carga refrigerada; risco de perda se a parada passar de 2 horas.",
     None,
 ]
-
-
-def _gerar_placa(gerador: random.Random) -> str:
-    letras = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    return (
-        "".join(gerador.choices(letras, k=3))
-        + str(gerador.randint(0, 9))
-        + gerador.choice(letras)
-        + f"{gerador.randint(0, 99):02d}"
-    )
-
-
-# Frota de demonstração: 70 caminhões com placa Mercosul fictícia. Os incidentes sorteiam a placa
-# daqui, então o mesmo caminhão aparece em mais de um incidente (problema recorrente), como numa
-# frota real. Gerador próprio: a frota não muda quando o sorteio dos incidentes muda.
-_gerador_frota = random.Random(2026)
-PLACAS_DA_FROTA: list[str] = ["RTA4E21"] + [_gerar_placa(_gerador_frota) for _ in range(69)]
 
 
 def _placa(gerador: random.Random) -> str:
@@ -200,6 +184,13 @@ def semear_incidentes(sessao: Session, analistas: list[Analista], recriar: bool 
     elif sessao.scalar(select(func.count()).select_from(Incidente)):
         return 0
     incidentes = gerar_incidentes(analistas)
+    # Contato do motorista copiado do cadastro, como faz POST /incidentes.
+    motoristas = {v.placa: v.motorista for v in sessao.scalars(select(Veiculo))}
+    for incidente in incidentes:
+        motorista = motoristas.get(incidente.placa)
+        if motorista:
+            incidente.motorista_nome = motorista.nome
+            incidente.motorista_telefone = motorista.telefone
     sessao.add_all(incidentes)
     sessao.flush()  # ids para os eventos
     for incidente in incidentes:

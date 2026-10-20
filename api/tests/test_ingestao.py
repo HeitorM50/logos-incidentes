@@ -223,3 +223,23 @@ def test_outra_violacao_de_integridade_nao_vira_reenvio(
 
     assert enviar(cliente_anonimo).status_code == 500
     assert total_de_incidentes(sessao) == 1
+
+
+def test_ingestao_copia_o_motorista_do_caminhao(
+    cliente_anonimo: TestClient, sessao: Session, caminhao: Dispositivo
+):
+    from app.models import Motorista, Veiculo
+
+    sessao.add(
+        Veiculo(
+            placa="RTA4E21",
+            modelo="Volvo FH 540",
+            motorista=Motorista(nome="José Almeida", telefone="+5510912345678"),
+        )
+    )
+    sessao.commit()
+
+    resposta = enviar(cliente_anonimo)
+
+    assert resposta.status_code == 201
+    assert resposta.json()["motorista_nome"] == "José Almeida"

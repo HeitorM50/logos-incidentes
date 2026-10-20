@@ -42,6 +42,10 @@ class Incidente(Base):
     )
     local: Mapped[str] = mapped_column(String(160))
     placa: Mapped[str | None] = mapped_column(String(8))
+    # Contato do motorista NO MOMENTO do incidente: copiado do cadastro da frota (ou digitado
+    # pelo analista). Não aponta para o motorista: o motorista do veículo muda com o tempo.
+    motorista_nome: Mapped[str | None] = mapped_column(String(80))
+    motorista_telefone: Mapped[str | None] = mapped_column(String(16))
     responsavel_id: Mapped[int | None] = mapped_column(ForeignKey("analistas.id"))
     atualizado_por_id: Mapped[int | None] = mapped_column(ForeignKey("analistas.id"))
     # Preenchido quando o incidente chegou direto de um caminhão (POST /ingestao/incidentes).

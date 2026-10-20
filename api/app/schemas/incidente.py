@@ -40,6 +40,9 @@ Local = Annotated[
 ]
 Comentario = Annotated[str, StringConstraints(strip_whitespace=True, max_length=500), TextoSeguro]
 MINIMO_COMENTARIO = 3
+NomeMotorista = Annotated[
+    str, StringConstraints(strip_whitespace=True, min_length=2, max_length=80), TextoSeguro
+]
 Versao = Annotated[
     int, Field(ge=1, le=MAXIMO_INTEGER, description="Versão do incidente que o cliente leu")
 ]
@@ -56,6 +59,23 @@ def normalizar_placa(valor: str | None) -> str | None:
     return placa
 
 
+def normalizar_telefone(valor: str | None) -> str | None:
+    """Aceita "(11) 98765-4321", "11987654321" ou "+55 11 98765-4321"; grava +5511987654321."""
+    if valor is None:
+        return None
+    digitos = re.sub(r"\D", "", valor)
+    if not digitos:
+        return None
+    internacional = valor.strip().startswith("+")
+    if internacional and not digitos.startswith("55"):
+        raise ValueError("telefone inválido; use um número do Brasil (+55)")
+    if (internacional or len(digitos) > 11) and digitos.startswith("55"):
+        digitos = digitos[2:]
+    if len(digitos) not in (10, 11):
+        raise ValueError("telefone inválido; use DDD + número, ex.: (11) 98765-4321")
+    return f"+55{digitos}"
+
+
 class EntradaEstrita(BaseModel):
     # Campos desconhecidos são rejeitados: o cliente não consegue gravar o que não deveria.
     model_config = ConfigDict(extra="forbid")
@@ -68,8 +88,12 @@ class IncidenteCriar(EntradaEstrita):
     criticidade: Criticidade
     local: Local
     placa: str | None = None
+    # Opcionais: sem eles, a API copia o motorista atual do veículo cadastrado com a placa.
+    motorista_nome: NomeMotorista | None = None
+    motorista_telefone: str | None = None
 
     _placa = field_validator("placa")(normalizar_placa)
+    _telefone = field_validator("motorista_telefone")(normalizar_telefone)
 
 
 class IncidenteEditar(EntradaEstrita):
@@ -80,16 +104,19 @@ class IncidenteEditar(EntradaEstrita):
     criticidade: Criticidade | None = None
     local: Local | None = None
     placa: str | None = None
+    motorista_nome: NomeMotorista | None = None
+    motorista_telefone: str | None = None
 
     _placa = field_validator("placa")(normalizar_placa)
+    _telefone = field_validator("motorista_telefone")(normalizar_telefone)
 
     @model_validator(mode="after")
     def validar_campos(self):
         alterados = self.model_fields_set - {"versao"}
         if not alterados:
             raise ValueError("informe ao menos um campo para alterar")
-        # descricao e placa podem ser apagadas (null); os demais campos são obrigatórios.
-        for campo in alterados - {"descricao", "placa"}:
+        # Os opcionais podem ser apagados (null); os demais campos são obrigatórios.
+        for campo in alterados - {"descricao", "placa", "motorista_nome", "motorista_telefone"}:
             if getattr(self, campo) is None:
                 raise ValueError(f"{campo} não pode ser nulo")
         return self
@@ -162,6 +189,8 @@ class IncidenteResposta(BaseModel):
     status: StatusIncidente
     local: str
     placa: str | None
+    motorista_nome: str | None = None
+    motorista_telefone: str | None = None
     responsavel: AnalistaResumo | None
     atualizado_por: AnalistaResumo | None
     # Caminhão que enviou o incidente pela ingestão; nulo quando um analista o registrou.

@@ -22,6 +22,7 @@ from app.schemas.incidente import (
     ListaIncidentes,
 )
 from app.services.ciclo_vida import PODE_ASSUMIR, status_apos_liberar, transicao_permitida
+from app.services.frota import completar_motorista
 
 
 @dataclass(frozen=True)
@@ -88,7 +89,7 @@ def obter(sessao: Session, incidente_id: int) -> IncidenteResposta:
 
 def criar(sessao: Session, dados: IncidenteCriar, analista_id: int) -> IncidenteResposta:
     incidente = Incidente(
-        **dados.model_dump(),
+        **completar_motorista(sessao, dados.model_dump()),
         status=StatusIncidente.ABERTO,
         versao=1,
         atualizado_por_id=analista_id,

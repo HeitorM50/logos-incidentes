@@ -52,7 +52,9 @@ def regras() -> dict[str, Any]:
         "status_final": [
             s.value for s in ORDEM if s not in TRANSICOES_DO_RESPONSAVEL and s not in PODE_ASSUMIR
         ],
-        "limites": {campo: _limites(campo) for campo in ("titulo", "descricao", "local")},
+        "limites": {
+            campo: _limites(campo) for campo in ("titulo", "descricao", "local", "motorista_nome")
+        },
         "padrao_placa": PADRAO_PLACA.pattern,
         "prazo_para_assumir_min": {c.value: m for c, m in PRAZO_PARA_ASSUMIR_MIN.items()},
         "comentario": {
