@@ -11,8 +11,10 @@ import { IconeCriticidade, IconeStatus } from './Icones'
 import { formatarTempoAberto, minutosDesde } from './tempo'
 import type { Conflito } from './useAcoesIncidente'
 
+// Mínimos somam 1.280 px com espaços: a tabela cabe sem rolagem lateral num notebook de 1366
+// px (com a margem da página e a barra de rolagem). Em telas maiores, título e local crescem.
 export const COLUNAS_TABELA =
-  'grid-cols-[96px_minmax(180px,2fr)_176px_minmax(190px,1.4fr)_120px_140px_140px_232px]'
+  'grid-cols-[88px_minmax(160px,2fr)_160px_minmax(170px,1.4fr)_104px_136px_120px_232px]'
 
 const SELO: Record<Criticidade, string> = {
   alta: 'bg-alta-fundo text-alta-texto border-alta-borda font-bold',

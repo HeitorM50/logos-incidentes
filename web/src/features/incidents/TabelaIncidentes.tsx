@@ -45,7 +45,7 @@ function CabecalhoTabela() {
 /** Esqueleto da tabela + cartão com o loader da marca por cima (o esqueleto continua). */
 export function TabelaCarregando() {
   return (
-    <div className="relative min-w-[1366px]">
+    <div className="relative min-w-[1280px]">
       <CabecalhoTabela />
       <div aria-hidden>
         {Array.from({ length: 12 }, (_, linha) => (
@@ -114,7 +114,7 @@ export function TabelaIncidentes({
   }
 
   return (
-    <div className="min-w-[1366px]">
+    <div className="min-w-[1280px]">
       <CabecalhoTabela />
       {/* A ordem vem da API: não fechados, criticidade (alta → baixa), mais antigo primeiro. */}
       <ol aria-label="Incidentes">
