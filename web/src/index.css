@@ -89,6 +89,51 @@
     --radius-xl: calc(var(--radius) * 1.5);
 }
 
+/*
+ * Movimentos do Logos (mapa de motions, issue #26). Só apontam mudança de estado; o único loop
+ * na triagem é o pulso do "Ao vivo". Com prefers-reduced-motion, a regra no fim do arquivo zera
+ * todas as durações.
+ */
+@theme {
+    --animate-tremer: tremer 320ms cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+    --animate-pulso-vivo: pulso-vivo 3s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+    --animate-pulso-anel: pulso-anel 700ms ease-out;
+
+    /* Erro no login: três oscilações curtas, como um "não" com a cabeça. */
+    @keyframes tremer {
+        10%, 90% { transform: translateX(-1px); }
+        20%, 80% { transform: translateX(2px); }
+        30%, 50%, 70% { transform: translateX(-4px); }
+        40%, 60% { transform: translateX(4px); }
+    }
+    /* "Ao vivo": um anel que se expande e some no começo de cada ciclo de 3 s. */
+    @keyframes pulso-vivo {
+        0% { transform: scale(1); opacity: 0.55; }
+        45%, 100% { transform: scale(2.8); opacity: 0; }
+    }
+    /* O número de Alta subiu: um anel uma vez só em volta do ícone. */
+    @keyframes pulso-anel {
+        0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--alta-borda) 55%, transparent); }
+        100% { box-shadow: 0 0 0 10px transparent; }
+    }
+    @keyframes brilho {
+        from { background-position: 200% 0; }
+        to { background-position: -200% 0; }
+    }
+}
+
+/* Linha com ação no servidor: um brilho diagonal atravessa devagar ("estou falando com a API"). */
+@utility brilho-pendente {
+    background-image: linear-gradient(
+        100deg,
+        transparent 35%,
+        color-mix(in oklab, var(--foreground) 7%, transparent) 50%,
+        transparent 65%
+    );
+    background-size: 200% 100%;
+    animation: brilho 1.8s linear infinite;
+}
+
 :root {
     color-scheme: light;
     --radius: 0.5rem;

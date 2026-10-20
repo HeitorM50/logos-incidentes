@@ -91,7 +91,7 @@ export function AvisoSucesso({ texto, acao, aoFechar }: PropsSucesso) {
       onKeyDown={(evento) => {
         if (evento.key === 'Escape') aoFechar()
       }}
-      className="flex items-center gap-3 rounded-lg border border-borda-forte bg-card py-2.5 pr-2 pl-4 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
+      className="animate-in fade-in-0 slide-in-from-bottom-2 duration-200 flex items-center gap-3 rounded-lg border border-borda-forte bg-card py-2.5 pr-2 pl-4 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
     >
       <CircleCheck aria-hidden className="size-[18px] flex-none text-ao-vivo" />
       <span className="min-w-0 flex-1 font-medium">{texto}</span>
@@ -173,7 +173,7 @@ export function AvisoDesfazer({ texto, aoDesfazer, aoFechar, aoExpirar }: PropsD
       onKeyDown={(evento) => {
         if (evento.key === 'Escape') aoFechar()
       }}
-      className="overflow-hidden rounded-lg bg-aviso-fundo text-aviso-texto shadow-[0_10px_30px_rgba(0,0,0,0.28)]"
+      className="animate-in fade-in-0 slide-in-from-bottom-2 duration-200 overflow-hidden rounded-lg bg-aviso-fundo text-aviso-texto shadow-[0_10px_30px_rgba(0,0,0,0.28)]"
     >
       <div className="flex items-center gap-3 py-2.5 pr-2 pl-4">
         {/* Cor do texto, e não o verde de sucesso: o fundo do aviso inverte com o tema. */}
@@ -228,7 +228,7 @@ export function AvisoAltaNova({ aviso, aoVer, aoFechar }: PropsAltaNova) {
       onKeyDown={(evento) => {
         if (evento.key === 'Escape') aoFechar()
       }}
-      className="flex items-center gap-3 rounded-lg border-2 border-alta-borda bg-card py-2.5 pr-2 pl-3.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
+      className="animate-in fade-in-0 slide-in-from-bottom-2 duration-200 flex items-center gap-3 rounded-lg border-2 border-alta-borda bg-card py-2.5 pr-2 pl-3.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
     >
       <span className="flex size-7 flex-none items-center justify-center rounded-md bg-alta-fundo text-alta-texto">
         <IconeCriticidade criticidade="alta" />
@@ -282,7 +282,7 @@ export function PilhaAvisos({ avisos, outros, aoTentar, aoFechar }: PropsFalha) 
           onKeyDown={(evento) => {
             if (evento.key === 'Escape') aoFechar(aviso.id)
           }}
-          className="flex items-start gap-3 rounded-lg bg-aviso-fundo py-3.5 pr-3 pl-4 text-aviso-texto shadow-[0_10px_30px_rgba(0,0,0,0.28)]"
+          className="animate-in fade-in-0 slide-in-from-bottom-2 duration-200 flex items-start gap-3 rounded-lg bg-aviso-fundo py-3.5 pr-3 pl-4 text-aviso-texto shadow-[0_10px_30px_rgba(0,0,0,0.28)]"
         >
           <Undo2 aria-hidden className="mt-px size-5 flex-none text-aviso-icone" />
           <div className="flex min-w-0 flex-1 flex-col gap-1">

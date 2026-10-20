@@ -84,6 +84,7 @@ const PARES: [string, string, number, string][] = [
   ['erro-borda', 'erro-fundo', NAO_TEXTO, 'borda da caixa de erro'],
   ['media-borda', 'card', NAO_TEXTO, 'borda do selo Média'],
   ['baixa-borda', 'card', NAO_TEXTO, 'borda do selo Baixa'],
+  ['ao-vivo', 'faixa', NAO_TEXTO, 'ícone de "Conexão restabelecida" na faixa'],
   ['seg-aberto', 'faixa', NAO_TEXTO, 'segmento Aberto na faixa'],
   ['seg-investigacao', 'faixa', NAO_TEXTO, 'segmento Em Investigação na faixa'],
   ['seg-investigacao', 'seg-aberto', NAO_TEXTO, 'segmentos Aberto e Em Investigação lado a lado'],

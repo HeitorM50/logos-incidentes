@@ -79,6 +79,20 @@ describe('TelaLogin', () => {
     expect(chamadasDeLogin(fetchFalso)).toHaveLength(0)
   })
 
+  it('o cartão treme uma vez com o erro e para no fim da animação', async () => {
+    simularApi({})
+    renderizar()
+
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+    const titulo = screen.getByRole('heading', { name: 'Entrar na central' })
+    const cartao = titulo.closest('.animate-tremer')
+    expect(cartao).not.toBeNull()
+
+    // O jsdom não tem AnimationEvent, e o React escuta a versão prefixada do fim da animação.
+    fireEvent(cartao!, new Event('webkitAnimationEnd', { bubbles: true }))
+    expect(cartao).not.toHaveClass('animate-tremer')
+  })
+
   it('entra com as credenciais certas e guarda a sessão', async () => {
     simularApi({
       login: async () =>

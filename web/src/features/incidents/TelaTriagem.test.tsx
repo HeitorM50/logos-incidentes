@@ -177,6 +177,10 @@ describe('TelaTriagem', () => {
     expect(screen.getByText('Conexão de volta')).toBeInTheDocument()
     expect(screen.queryByText('Conexão perdida. Reconectando…')).not.toBeInTheDocument()
     expect(screen.getByText('Ao vivo')).toBeInTheDocument()
+    // A queda termina com um estado positivo, que some sozinho.
+    expect(screen.getByText('Conexão restabelecida.')).toBeInTheDocument()
+    await act(() => vi.advanceTimersByTimeAsync(2_500))
+    expect(screen.queryByText('Conexão restabelecida.')).not.toBeInTheDocument()
   })
 })
 

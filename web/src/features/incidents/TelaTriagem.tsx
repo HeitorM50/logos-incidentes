@@ -7,7 +7,7 @@ import { useAgora } from '@/lib/useAgora'
 import { useSegundosAguardando } from '@/lib/useSegundosAguardando'
 import { useValorAtrasado } from '@/lib/useValorAtrasado'
 import { AvisoAltaNova, AvisoDesfazer, AvisoSucesso, PilhaAvisos } from './Avisos'
-import { BannerReconexao } from './BannerReconexao'
+import { AvisoReconectado, BannerReconexao } from './BannerReconexao'
 import { BarraStatus } from './BarraStatus'
 import { CabecalhoTriagem } from './CabecalhoTriagem'
 import { CampoBusca, ID_CAMPO_BUSCA } from './CampoBusca'
@@ -84,6 +84,19 @@ export function TelaTriagem({ analista, aoSair }: Props) {
   // Ações em andamento aparecem por cima da lista confirmada (contadores incluídos).
   const { sobrepor } = acoes
   const itens = useMemo(() => confirmados && sobrepor(confirmados), [confirmados, sobrepor])
+  // Queda e volta da conexão: quando a lista volta a ficar ao vivo, avisa por alguns segundos.
+  const [conexao, setConexao] = useState({ estado, reconectou: false })
+  if (estado !== conexao.estado) {
+    const caiu = conexao.estado === 'reconectando' || conexao.estado === 'sem_conexao'
+    setConexao({ estado, reconectou: estado === 'ao_vivo' && caiu })
+  }
+  const reconectou = conexao.reconectou
+  useEffect(() => {
+    if (!reconectou) return
+    const id = setTimeout(() => setConexao((atual) => ({ ...atual, reconectou: false })), 2_500)
+    return () => clearTimeout(id)
+  }, [reconectou])
+
   const altaNova = useAltaNova(confirmados, analista.id, TITULO_DA_ABA)
   const guia = useGuia()
   const resumo = useMemo(() => (itens ? resumirTriagem(itens, agora) : null), [itens, agora])
@@ -304,6 +317,7 @@ export function TelaTriagem({ analista, aoSair }: Props) {
           />
         }
       />
+      {reconectou && <AvisoReconectado />}
       {estado === 'reconectando' && (
         <BannerReconexao
           tentativas={consulta.failureCount}

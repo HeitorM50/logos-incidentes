@@ -21,7 +21,11 @@ export function IndicadorConexao({ estado, atualizadoEm }: Props) {
     >
       {estado === 'ao_vivo' && (
         <>
-          <span aria-hidden className="size-2 rounded-full bg-ao-vivo" />
+          {/* O único loop da triagem: um anel discreto a cada 3 s diz "está vivo". */}
+          <span aria-hidden className="relative flex size-2">
+            <span className="absolute inset-0 animate-pulso-vivo rounded-full bg-ao-vivo" />
+            <span className="relative size-2 rounded-full bg-ao-vivo" />
+          </span>
           <span>
             <strong className="font-semibold text-foreground">Ao vivo</strong>
             {/* Fora da região viva: o contador muda a cada segundo e viraria ruído. */}

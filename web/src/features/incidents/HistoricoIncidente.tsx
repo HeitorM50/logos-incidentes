@@ -46,7 +46,12 @@ export function HistoricoIncidente({ incidente, idAnalista, agora }: Props) {
           {consulta.data.map((evento, i) => {
             const ultimo = i === consulta.data.length - 1
             return (
-              <li key={evento.id} className="relative flex gap-3 pb-2.5 last:pb-0">
+              <li
+                key={evento.id}
+                // Entrada em cascata (30 ms por evento, até 8): a linha do tempo "se desenha".
+                style={{ animationDelay: `${Math.min(i, 8) * 30}ms` }}
+                className="relative flex animate-in gap-3 pb-2.5 duration-300 fill-mode-backwards fade-in-0 slide-in-from-left-1 last:pb-0"
+              >
                 {/* Linha do tempo: ponto e traço até o próximo evento (decorativo). */}
                 <span aria-hidden className="relative flex w-2 flex-none justify-center">
                   <span

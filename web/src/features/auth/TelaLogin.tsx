@@ -7,6 +7,7 @@ import type { AnalistaLogado } from '@/api/tipos'
 import { BotaoTema } from '@/components/BotaoTema'
 import { FundoPontos } from '@/components/FundoPontos'
 import { LogosLoader } from '@/components/LogosLoader'
+import { cn } from '@/lib/utils'
 import { MarcaLogos } from '@/components/MarcaLogos'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -38,10 +39,13 @@ export function TelaLogin({ aoEntrar }: Props) {
     queryFn: ({ signal }) => verificarSaude(signal),
   })
 
+  // Erro: o cartão treme uma vez (o texto do erro continua sendo a informação principal).
+  const [tremer, setTremer] = useState(false)
   const login = useMutation({
     mutationFn: (credenciais: { usuario: string; senha: string }) =>
       entrar(credenciais.usuario, credenciais.senha),
     onSuccess: aoEntrar,
+    onError: () => setTremer(true),
   })
 
   const segundosAguardando = useSegundosAguardando(saude.isPending || login.isPending)
@@ -64,6 +68,7 @@ export function TelaLogin({ aoEntrar }: Props) {
     if (login.isPending) return
     if (!usuario.trim() || !senha) {
       setFaltaPreencher(true)
+      setTremer(true)
       return
     }
     login.mutate({ usuario: usuario.trim(), senha })
@@ -87,7 +92,15 @@ export function TelaLogin({ aoEntrar }: Props) {
 
       <main className="relative flex flex-1 items-center justify-center px-4 pt-4 pb-12">
         <div className="flex w-full max-w-[420px] flex-col gap-4">
-          <div className="flex flex-col gap-6 rounded-lg border bg-card p-6 shadow-[0_10px_40px_-12px_rgb(0_0_0/0.25)] sm:p-8">
+          <div
+            onAnimationEnd={(evento) => {
+              if (evento.target === evento.currentTarget) setTremer(false)
+            }}
+            className={cn(
+              'flex flex-col gap-6 rounded-lg border bg-card p-6 shadow-[0_10px_40px_-12px_rgb(0_0_0/0.25)] sm:p-8',
+              tremer && 'animate-tremer',
+            )}
+          >
             <div className="flex flex-col gap-1.5">
               <h1 className="text-2xl font-semibold tracking-[-0.01em]">Entrar na central</h1>
               <p className="text-sm leading-normal text-texto-2">

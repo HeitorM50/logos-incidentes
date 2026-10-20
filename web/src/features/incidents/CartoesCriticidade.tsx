@@ -1,4 +1,5 @@
 import { Check } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
 import { ROTULO_CRITICIDADE } from '@/api/rotulos'
 import { CRITICIDADES, type Criticidade } from '@/api/tipos'
 import { cn } from '@/lib/utils'
@@ -35,6 +36,64 @@ interface Props {
 
 // Cada cartão é também o filtro da sua criticidade (gestão por exceção: um clique em ALTA
 // deixa só o que pede ação imediata).
+/** Para onde o número foi na última mudança (null na primeira leitura e sem mudança). */
+function useDirecao(valor: number | null): { direcao: 'sobe' | 'desce' | null; chave: number } {
+  const [estado, setEstado] = useState<{
+    valor: number | null
+    direcao: 'sobe' | 'desce' | null
+    chave: number
+  }>({ valor, direcao: null, chave: 0 })
+  if (valor !== estado.valor) {
+    const anterior = estado.valor
+    const direcao =
+      anterior === null || valor === null ? null : valor > anterior ? 'sobe' : 'desce'
+    setEstado({ valor, direcao, chave: estado.chave + 1 })
+  }
+  return { direcao: estado.direcao, chave: estado.chave }
+}
+
+/** O número novo entra pela direção da mudança: de baixo quando sobe, de cima quando desce. */
+function NumeroDeslizante({ valor }: { valor: number }) {
+  const { direcao, chave } = useDirecao(valor)
+  return (
+    <span
+      key={chave}
+      className={cn(
+        'inline-block',
+        direcao && 'animate-in duration-300 fade-in-0',
+        direcao === 'sobe' && 'slide-in-from-bottom-3',
+        direcao === 'desce' && 'slide-in-from-top-3',
+      )}
+    >
+      {valor}
+    </span>
+  )
+}
+
+/** Alta aumentou: um anel em volta do ícone, uma vez (a chave nova reinicia a animação). */
+function PulsoAoSubir({
+  valor,
+  ativo,
+  children,
+}: {
+  valor: number | null
+  ativo: boolean
+  children: ReactNode
+}) {
+  const { direcao, chave } = useDirecao(valor)
+  return (
+    <span
+      key={chave}
+      className={cn(
+        'flex flex-none rounded-md',
+        ativo && direcao === 'sobe' && 'animate-pulso-anel',
+      )}
+    >
+      {children}
+    </span>
+  )
+}
+
 export function CartoesCriticidade({ porCriticidade, selecionadas, aoAlternar }: Props) {
   return (
     <ul
@@ -70,14 +129,16 @@ export function CartoesCriticidade({ porCriticidade, selecionadas, aoAlternar }:
                   : 'bg-card hover:border-borda-forte',
               )}
             >
-              <span
-                className={cn(
-                  'flex size-9 flex-none items-center justify-center rounded-md border',
-                  estilo.icone,
-                )}
-              >
-                <IconeCriticidade criticidade={criticidade} tamanho={18} />
-              </span>
+              <PulsoAoSubir valor={resumo?.quantidade ?? null} ativo={criticidade === 'alta'}>
+                <span
+                  className={cn(
+                    'flex size-9 flex-none items-center justify-center rounded-md border',
+                    estilo.icone,
+                  )}
+                >
+                  <IconeCriticidade criticidade={criticidade} tamanho={18} />
+                </span>
+              </PulsoAoSubir>
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span className="flex items-center gap-1.5">
                   <span className={cn('text-[15px] tracking-[0.04em] uppercase', estilo.rotulo)}>
@@ -101,7 +162,7 @@ export function CartoesCriticidade({ porCriticidade, selecionadas, aoAlternar }:
                   estilo.numero,
                 )}
               >
-                {resumo ? resumo.quantidade : '–'}
+                {resumo ? <NumeroDeslizante valor={resumo.quantidade} /> : '–'}
               </span>
             </button>
           </li>

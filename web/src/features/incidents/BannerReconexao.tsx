@@ -1,3 +1,4 @@
+import { CircleCheck } from 'lucide-react'
 import { LogosLoader } from '@/components/LogosLoader'
 import { Button } from '@/components/ui/button'
 import { useAgora } from '@/lib/useAgora'
@@ -16,7 +17,7 @@ export function BannerReconexao({ tentativas, atualizadoEm, aoTentarAgora }: Pro
 
   return (
     <div
-      className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-borda-forte bg-faixa px-4 py-2.5 text-sm sm:px-6"
+      className="flex animate-in flex-wrap items-center gap-x-3 gap-y-2 border-b border-borda-forte bg-faixa px-4 py-2.5 text-sm duration-200 fade-in-0 slide-in-from-top-1 sm:px-6"
     >
       <LogosLoader tamanho={16} letreiro={false} decorativo fundo="var(--faixa)" />
       {/* Só o título é região viva; a linha de detalhe muda a cada segundo. */}
@@ -38,3 +39,15 @@ export function BannerReconexao({ tentativas, atualizadoEm, aoTentarAgora }: Pro
     </div>
   )
 }
+
+/** Fecha o ciclo da queda com um estado positivo: some sozinho depois de alguns segundos. */
+export function AvisoReconectado() {
+  return (
+    <div className="flex animate-in items-center gap-2 border-b border-borda-forte bg-faixa px-4 py-2 text-sm duration-200 fade-in-0 slide-in-from-top-1 sm:px-6">
+      <CircleCheck aria-hidden className="size-4 text-ao-vivo" />
+      <strong className="font-semibold">Conexão restabelecida.</strong>
+      <span className="text-texto-2">A lista está ao vivo de novo.</span>
+    </div>
+  )
+}
+

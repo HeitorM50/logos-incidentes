@@ -76,18 +76,27 @@ export function LinhaIncidente({
       role="none"
       data-incidente={incidente.id}
       className={cn(
-        'border-b px-3 py-1.5 last:border-b-0',
-        conflito
-          ? 'bg-info-fundo'
-          : pendente
-            ? 'bg-linha-pendente'
-            : novo
-              ? 'bg-alta-fundo/10'
-              : 'bg-card',
+        'relative border-b px-3 py-1.5 last:border-b-0',
+        conflito ? 'bg-info-fundo' : pendente ? 'bg-linha-pendente' : 'bg-card',
         fechado && 'text-texto-3',
+        // Alta novo: a linha entra deslizando.
+        novo && 'animate-in duration-500 fade-in-0 slide-in-from-left-2',
       )}
     >
-      <div role="row" className={cn('grid min-h-8 items-center gap-x-3', COLUNAS_TABELA)}>
+      {/* Realce do Alta novo numa camada própria: quando o destaque acaba, ele some devagar
+          (transição de 1,5 s), sem atrasar as outras cores da linha. */}
+      <span
+        aria-hidden
+        className={cn(
+          'pointer-events-none absolute inset-0 bg-alta-fundo/10 transition-opacity duration-[1500ms]',
+          novo ? 'opacity-100' : 'opacity-0',
+        )}
+      />
+      {pendente && (
+        <span aria-hidden className="pointer-events-none absolute inset-0 brilho-pendente" />
+      )}
+      {/* relative: o conteúdo fica por cima das camadas de realce e de brilho. */}
+      <div role="row" className={cn('relative grid min-h-8 items-center gap-x-3', COLUNAS_TABELA)}>
         <span
           role="cell"
           className={cn(
@@ -114,7 +123,11 @@ export function LinhaIncidente({
           >
             <ChevronRight
               aria-hidden
-              className={cn('size-4 transition-transform duration-150', aberta && 'rotate-90')}
+              // Gira com um pequeno exagero no fim (passa de 90° e assenta).
+            className={cn(
+              'size-4 transition-transform duration-200 ease-[cubic-bezier(0.34,1.56,0.64,1)]',
+              aberta && 'rotate-90',
+            )}
             />
           </button>
           <span className="flex-none font-mono text-xs text-texto-3">#{incidente.id}</span>
@@ -195,7 +208,7 @@ export function LinhaIncidente({
               id={idDetalhes}
               role="group"
               aria-label={`Detalhes de #${incidente.id}`}
-              className="col-span-full mt-1.5 mb-2 grid gap-x-8 gap-y-3 rounded-md border bg-superficie-2 px-4 py-3 text-[13px] sm:grid-cols-[2fr_1fr_1fr]"
+              className="col-span-full mt-1.5 mb-2 grid animate-in gap-x-8 duration-200 fade-in-0 slide-in-from-top-1 gap-y-3 rounded-md border bg-superficie-2 px-4 py-3 text-[13px] sm:grid-cols-[2fr_1fr_1fr]"
             >
               <div className="flex flex-col gap-1">
                 <p className="text-xs font-semibold tracking-[0.04em] text-texto-2 uppercase">
