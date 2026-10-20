@@ -31,3 +31,11 @@ class TipoEvento(StrEnum):
     LIBERADO = "liberado"
     STATUS = "status"
     EDITADO = "editado"
+    TRANSFERIDO = "transferido"
+
+
+class PapelAnalista(StrEnum):
+    """Supervisor pode transferir incidentes entre analistas; o resto é igual para todos."""
+
+    ANALISTA = "analista"
+    SUPERVISOR = "supervisor"

@@ -12,7 +12,7 @@ from pydantic import (
     model_validator,
 )
 
-from app.core.dominio import Categoria, Criticidade, StatusIncidente, TipoEvento
+from app.core.dominio import Categoria, Criticidade, PapelAnalista, StatusIncidente, TipoEvento
 from app.services.ciclo_vida import EXIGE_COMENTARIO
 
 # Placa no padrão antigo (ABC1234) ou Mercosul (ABC1D23).
@@ -170,6 +170,18 @@ class AnalistaResumo(BaseModel):
     nome: str
 
 
+class AnalistaComPapel(AnalistaResumo):
+    papel: PapelAnalista
+
+
+class TransferirIncidente(EntradaEstrita):
+    versao: Versao
+    analista_id: Annotated[int, Field(ge=1, le=MAXIMO_BIGINT, description="Novo responsável")]
+    comentario: Comentario | None = None
+
+    _comentario = field_validator("comentario")(_comentario_ou_nulo)
+
+
 class DispositivoResumo(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -226,4 +238,6 @@ class EventoResposta(BaseModel):
     status_novo: StatusIncidente | None
     campos: list[str] | None
     comentario: str | None
+    # Transferência: para quem o supervisor passou o incidente.
+    responsavel_novo: AnalistaResumo | None = None
     criado_em: datetime

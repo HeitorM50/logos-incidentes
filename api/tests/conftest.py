@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.banco import criar_engine, obter_sessao, obter_sessao_sem_retry
 from app.core.config import Configuracao, obter_configuracao
+from app.core.dominio import PapelAnalista
 from app.core.limite import falhas_login, limitador
 from app.core.seguranca import criar_token, gerar_hash_senha
 from app.main import criar_app
@@ -105,6 +106,12 @@ def analistas(sessao: Session, hash_senha_demo: str) -> dict[str, Analista]:
     contas = {
         "ana": Analista(usuario="ana", nome="Ana Souza", senha_hash=hash_senha_demo),
         "bruno": Analista(usuario="bruno", nome="Bruno Lima", senha_hash=hash_senha_demo),
+        "carla": Analista(
+            usuario="carla",
+            nome="Carla Mendes",
+            senha_hash=hash_senha_demo,
+            papel=PapelAnalista.SUPERVISOR,
+        ),
     }
     sessao.add_all(contas.values())
     sessao.commit()
@@ -125,6 +132,12 @@ def cliente_anonimo(app_teste: FastAPI) -> TestClient:
 def cliente(app_teste, analistas, configuracao) -> TestClient:
     """Cliente autenticado como Ana."""
     return _cliente_de(app_teste, analistas["ana"], configuracao)
+
+
+@pytest.fixture
+def cliente_carla(app_teste, analistas, configuracao) -> TestClient:
+    """Supervisora: transfere incidentes."""
+    return _cliente_de(app_teste, analistas["carla"], configuracao)
 
 
 @pytest.fixture

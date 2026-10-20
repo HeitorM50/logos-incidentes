@@ -26,7 +26,7 @@ def test_seed_e_idempotente(sessao: Session):
 
     assert semear_incidentes(sessao, analistas) == TOTAL_INCIDENTES
     assert semear_incidentes(sessao, analistas) == 0
-    assert len(semear_analistas(sessao)) == 2
+    assert len(semear_analistas(sessao)) == 3
     assert _total(sessao) == TOTAL_INCIDENTES
 
 

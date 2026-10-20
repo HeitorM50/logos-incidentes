@@ -12,7 +12,12 @@ def test_login_com_credenciais_corretas_devolve_token(cliente_anonimo: TestClien
 
     assert resposta.status_code == 200
     corpo = resposta.json()
-    assert corpo["analista"] == {"id": analistas["ana"].id, "nome": "Ana Souza", "usuario": "ana"}
+    assert corpo["analista"] == {
+        "id": analistas["ana"].id,
+        "nome": "Ana Souza",
+        "usuario": "ana",
+        "papel": "analista",
+    }
 
     eu = cliente_anonimo.get("/auth/eu", headers={"Authorization": f"Bearer {corpo['token']}"})
     assert eu.json()["usuario"] == "ana"

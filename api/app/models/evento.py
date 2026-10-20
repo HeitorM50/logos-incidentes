@@ -42,6 +42,9 @@ class EventoIncidente(Base):
     # Comentário do analista: como resolveu (fechado), por que ficou inconclusivo ou o contexto
     # para o próximo analista (liberar).
     comentario: Mapped[str | None] = mapped_column(String(500))
+    # Transferência: o novo responsável (o autor, o supervisor, fica em analista_id).
+    responsavel_novo_id: Mapped[int | None] = mapped_column(ForeignKey("analistas.id"))
     criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
-    analista: Mapped[Analista | None] = relationship()
+    analista: Mapped[Analista | None] = relationship(foreign_keys=[analista_id])
+    responsavel_novo: Mapped[Analista | None] = relationship(foreign_keys=[responsavel_novo_id])

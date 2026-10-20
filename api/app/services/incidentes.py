@@ -10,9 +10,9 @@ from typing import Any
 from sqlalchemy import case, delete, func, select, update
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.dominio import Categoria, Criticidade, StatusIncidente, TipoEvento
+from app.core.dominio import Categoria, Criticidade, PapelAnalista, StatusIncidente, TipoEvento
 from app.core.erros import ErroApi
-from app.models import EventoIncidente, Incidente
+from app.models import Analista, EventoIncidente, Incidente
 from app.schemas.incidente import (
     ContagemCriticidade,
     EventoResposta,
@@ -301,6 +301,49 @@ def mudar_status(
     )
 
 
+def transferir(
+    sessao: Session,
+    incidente_id: int,
+    versao_lida: int,
+    supervisor: Analista,
+    destino_id: int,
+    comentario: str | None = None,
+) -> IncidenteResposta:
+    """O supervisor passa o incidente para outro analista (ex.: troca de turno, sobrecarga).
+
+    Passa pelo controle de versão como qualquer alteração; um Aberto vai para Em Investigação,
+    como ao assumir.
+    """
+    if supervisor.papel != PapelAnalista.SUPERVISOR:
+        raise ErroApi(403, "so_supervisor", "Só um supervisor pode transferir incidentes.")
+    incidente = _buscar(sessao, incidente_id)
+    _exigir_versao_atual(sessao, incidente, versao_lida)
+    _exigir_aberto_para_alteracao(incidente)
+    if sessao.get(Analista, destino_id) is None:
+        raise ErroApi(422, "analista_invalido", "O analista de destino não existe.")
+    if incidente.responsavel_id == destino_id:
+        raise ErroApi(422, "ja_responsavel", "Este analista já é o responsável.")
+    novo_status = (
+        StatusIncidente.EM_INVESTIGACAO
+        if incidente.status == StatusIncidente.ABERTO
+        else incidente.status
+    )
+    return _gravar_com_versao(
+        sessao,
+        incidente_id,
+        versao_lida,
+        supervisor.id,
+        {"responsavel_id": destino_id, "status": novo_status},
+        EventoIncidente(
+            tipo=TipoEvento.TRANSFERIDO,
+            status_anterior=incidente.status,
+            status_novo=novo_status,
+            comentario=comentario,
+            responsavel_novo_id=destino_id,
+        ),
+    )
+
+
 def remover(sessao: Session, incidente_id: int, versao_lida: int, analista_id: int) -> None:
     incidente = _buscar(sessao, incidente_id)
     _exigir_versao_atual(sessao, incidente, versao_lida)
@@ -323,7 +366,7 @@ def listar_eventos(sessao: Session, incidente_id: int) -> list[EventoResposta]:
     _buscar(sessao, incidente_id)  # 404 se não existe
     consulta = (
         select(EventoIncidente)
-        .options(joinedload(EventoIncidente.analista))
+        .options(joinedload(EventoIncidente.analista), joinedload(EventoIncidente.responsavel_novo))
         .where(EventoIncidente.incidente_id == incidente_id)
         .order_by(EventoIncidente.criado_em, EventoIncidente.id)
     )

@@ -15,6 +15,7 @@ from app.schemas.incidente import (
     LiberarIncidente,
     ListaIncidentes,
     MudarStatus,
+    TransferirIncidente,
     VersaoLida,
 )
 from app.services import incidentes as servico
@@ -127,4 +128,20 @@ def mudar_status_incidente(
 ):
     return servico.mudar_status(
         sessao, incidente_id, dados.versao, dados.status, analista.id, dados.comentario
+    )
+
+
+@router.post(
+    "/{incidente_id}/transferir",
+    response_model=IncidenteResposta,
+    summary="Transfere o incidente para outro analista (somente supervisor)",
+)
+def transferir_incidente(
+    incidente_id: IdIncidente,
+    dados: TransferirIncidente,
+    sessao: SessaoDep,
+    analista: AnalistaAtualDep,
+):
+    return servico.transferir(
+        sessao, incidente_id, dados.versao, analista, dados.analista_id, dados.comentario
     )

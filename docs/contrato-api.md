@@ -104,6 +104,14 @@ por status e ordenada por criticidade e tempo aberto.
 - Telefone aceito como `(11) 98765-4321`, `11987654321` ou `+55 11 98765-4321`; gravado como
   `+5511987654321`. Número estrangeiro é recusado (422).
 
+**Papel do analista e transferência** (migração 0006)
+
+- `analistas.papel`: `analista` ou `supervisor`. O papel é lido do banco a cada requisição (não só
+  do token): rebaixar um supervisor vale na hora.
+- Só o supervisor transfere um incidente para outro analista (`so_supervisor`, 403). Passa pelo
+  controle de versão (409); um Aberto vai para Em Investigação, como ao assumir. O evento
+  `transferido` guarda o autor (`analista`) e o novo responsável (`responsavel_novo`).
+
 ## Rotas
 
 | Método e rota | Corpo | Sucesso | Erros |
@@ -118,6 +126,8 @@ por status e ordenada por criticidade e tempo aberto.
 | `POST /incidentes/{id}/assumir` | `{versao}` | 200 `Incidente` | 401, 404, 409, 422 |
 | `POST /incidentes/{id}/liberar` | `{versao, comentario?}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
 | `POST /incidentes/{id}/status` | `{versao, status, comentario?}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
+| `POST /incidentes/{id}/transferir` | `{versao, analista_id, comentario?}` (só supervisor) | 200 `Incidente` | 401, 403, 404, 409, 422 |
+| `GET /analistas` | — | 200 `[{id, nome, papel}]` | 401 |
 | `DELETE /incidentes/{id}?versao=N` | — | 204 | 401, 403, 404, 409, 422 |
 | `GET /incidentes/{id}/eventos` | — | 200 `[Evento]`, do mais antigo ao mais novo | 401, 404 |
 | `GET /veiculos/{placa}` | — | 200 `{placa, modelo, motorista: {nome, telefone} \| null}` | 401, 404 |

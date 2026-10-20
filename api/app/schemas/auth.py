@@ -3,7 +3,7 @@ from typing import Annotated
 
 from pydantic import BaseModel, StringConstraints, field_validator
 
-from app.schemas.incidente import AnalistaResumo, EntradaEstrita, TextoSeguro
+from app.schemas.incidente import AnalistaComPapel, EntradaEstrita, TextoSeguro
 
 # O bcrypt só considera os primeiros 72 bytes da senha e rejeita entradas maiores.
 MAXIMO_BYTES_SENHA = 72
@@ -23,7 +23,7 @@ class Credenciais(EntradaEstrita):
         return senha
 
 
-class AnalistaLogado(AnalistaResumo):
+class AnalistaLogado(AnalistaComPapel):
     usuario: str
 
 
