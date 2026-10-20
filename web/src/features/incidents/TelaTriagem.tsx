@@ -1,8 +1,9 @@
-import { Plus } from 'lucide-react'
+import { ChartNoAxesColumn, Plus } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ehErroApi } from '@/api/erros'
 import type { AnalistaLogado, Incidente } from '@/api/tipos'
 import { Button } from '@/components/ui/button'
+import { PainelRelatorio } from '@/features/relatorio/PainelRelatorio'
 import { useAgora } from '@/lib/useAgora'
 import { useSegundosAguardando } from '@/lib/useSegundosAguardando'
 import { useValorAtrasado } from '@/lib/useValorAtrasado'
@@ -154,6 +155,7 @@ export function TelaTriagem({ analista, aoSair }: Props) {
   }
 
   const [painel, setPainel] = useState<ModoPainel | null>(null)
+  const [relatorioAberto, setRelatorioAberto] = useState(false)
   const [removendo, setRemovendo] = useState<Incidente | null>(null)
   const [sucesso, setSucesso] = useState<(Concluido & { chave: number }) | null>(null)
   // O aviso de sucesso para de contar enquanto o mouse ou o foco estão nele.
@@ -404,6 +406,16 @@ export function TelaTriagem({ analista, aoSair }: Props) {
                 <Plus aria-hidden />
                 Novo incidente
               </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => setRelatorioAberto(true)}
+                className="bg-pilula"
+              >
+                <ChartNoAxesColumn aria-hidden />
+                Relatório
+              </Button>
             </span>
           </div>
           <div className="w-full lg:w-[min(560px,45%)]">
@@ -486,6 +498,7 @@ export function TelaTriagem({ analista, aoSair }: Props) {
         {reconectou ? 'Conexão restabelecida. A lista está ao vivo de novo.' : ''}
       </p>
       <GuiaTriagem aberto={guia.aberto} aoMudar={guia.setAberto} />
+      <PainelRelatorio aberto={relatorioAberto} aoMudar={setRelatorioAberto} />
       <PainelIncidente
         modo={painel}
         itens={itens}

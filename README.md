@@ -53,6 +53,10 @@ anônima ou em outro navegador e altere o mesmo incidente nas duas. A supervisor
   igual à da API. A edição envia só os campos alterados; se outro analista mudou o incidente com o
   painel aberto, o painel mostra quais campos mudaram e deixa escolher entre usar a versão atual
   ou manter as próprias mudanças.
+- **Relatório:** o botão "Relatório" abre um painel com o funil do atendimento (recebidos →
+  assumidos → assumidos no prazo → fechados), os Alta e o total recebidos, o tempo médio até
+  assumir e até fechar, a taxa de atraso e os recebidos por hora, nas últimas 6 h, 24 h ou 7 dias,
+  sempre comparados com o período anterior. Tudo sai do histórico (`GET /relatorio`).
 - **Contato do motorista:** cadastro da frota (veículo → motorista atual) e, no incidente, uma
   cópia do contato no momento em que ele foi aberto. Os detalhes trazem "Ligar" e "WhatsApp"; o
   formulário mostra o motorista que será copiado antes de salvar. Telefone é dado pessoal: só sai
@@ -126,6 +130,7 @@ docs/
 | Dados | **SQLAlchemy 2 + Alembic + Postgres** | `UPDATE ... WHERE id = :id AND versao = :v` explícito para o controle otimista; migrations versionadas; transações reais. |
 | Estado no front | **TanStack Query** | Cache, leitura periódica, retry com backoff e estado das mutações; a atualização otimista é aplicada **por cima** da lista confirmada, então a leitura de 5 s nunca apaga uma ação em andamento e uma falha nunca desfaz outra linha. |
 | UI | **Tailwind + shadcn/ui (Radix)** | Tokens de cor em variáveis CSS (tema claro/escuro num lugar só) e menus, diálogos e painel acessíveis por teclado. |
+| Relatório | **reaviz, react-countup e framer-motion** | Funil do atendimento, números animados e entrada das métricas no painel "Relatório". Carregados só quando o painel abre (`React.lazy`): a triagem não fica mais pesada. As animações respeitam `prefers-reduced-motion`. |
 | Testes | **pytest e Vitest + Testing Library** | Testes de regra (versão, transições, validação) e de tela (otimista, rollback, 409, filtros, formulário). |
 | Deploy | **Vercel + Render + Supabase** | Planos gratuitos que continuam no ar durante a avaliação; o Postgres do Render expiraria em 30 dias. API e banco na mesma região (Virgínia): a lista responde em ~0,3 s ([ADR 0006](docs/decisoes/0006-deploy-e-ambientes.md)). |
 

@@ -181,7 +181,10 @@ export function GuiaTriagem({ aberto, aoMudar }: PropsGuia) {
               sobrescrito sem você ver.
             </p>
             <p>
-              Botão desativado sempre diz o motivo ao passar o mouse, tocar ou focar com o teclado.
+              <strong className="font-semibold text-foreground">Relatório</strong>, ao lado de
+              "Novo incidente", mostra como a central está atendendo: o funil do atendimento, os
+              tempos médios e a taxa de atraso, comparados com o período anterior. Botão
+              desativado sempre diz o motivo ao passar o mouse, tocar ou focar com o teclado.
               Quando chega um incidente Alta novo, um aviso no canto leva até ele. O marcador{' '}
               <strong className="font-semibold text-foreground">Dup. #N</strong> indica que o
               incidente parece o mesmo problema de outro aberto pouco antes (mesma placa, ou mesmo
