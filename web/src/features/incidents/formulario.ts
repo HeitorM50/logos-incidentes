@@ -1,14 +1,20 @@
 import { ehErroApi } from '@/api/erros'
+import { ehFinal, REGRAS } from '@/api/regras'
 import type { Categoria, Criticidade, Incidente, NovoIncidente } from '@/api/tipos'
 
 // Espelho da validação da API (api/app/schemas/incidente.py). O formulário barra o que a API
 // recusaria, e a API continua sendo a autoridade: um 422 dela também aparece no campo.
 
-export const LIMITES = { titulo: 120, descricao: 2000, local: 160 } as const
-const MINIMO = { titulo: 3, local: 3 } as const
+// Limites e padrão da placa vêm das regras geradas pela API (src/api/regras.ts).
+export const LIMITES = {
+  titulo: REGRAS.limites.titulo.max,
+  descricao: REGRAS.limites.descricao.max,
+  local: REGRAS.limites.local.max,
+}
+const MINIMO = { titulo: REGRAS.limites.titulo.min, local: REGRAS.limites.local.min }
 
 // Placa no padrão antigo (ABC1234) ou Mercosul (ABC1D23), depois de tirar hífen e espaço.
-const PADRAO_PLACA = /^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$/
+const PADRAO_PLACA = REGRAS.padraoPlaca
 
 export const CAMPOS = ['titulo', 'categoria', 'criticidade', 'local', 'placa', 'descricao'] as const
 export type Campo = (typeof CAMPOS)[number]
@@ -131,7 +137,7 @@ export const ROTULO_CAMPO: Record<Campo, string> = {
 
 /** Motivo pelo qual o analista não pode editar nem remover, ou null quando pode. */
 export function motivoEdicao(incidente: Incidente, idAnalista: number): string | null {
-  if (incidente.status === 'fechado') return 'Incidente fechado: não aceita mais alterações.'
+  if (ehFinal(incidente.status)) return 'Incidente fechado: não aceita mais alterações.'
   const responsavel = incidente.responsavel
   if (responsavel && responsavel.id !== idAnalista) {
     return `Só ${responsavel.nome} pode editar ou remover este incidente.`

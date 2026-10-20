@@ -1,21 +1,17 @@
+import { ehFinal, REGRAS } from '@/api/regras'
 import { ROTULO_STATUS } from '@/api/rotulos'
 import type { AnalistaResumo, Incidente, StatusIncidente } from '@/api/tipos'
 
-// Espelho das regras da API (api/app/services/ciclo_vida.py e incidentes.py). O front usa
-// estas regras para desativar o que a API recusaria e dizer o motivo; a API continua sendo
-// a autoridade e devolve 403/409/422 se o estado mudou entre a leitura e o clique.
+// O front usa as regras da API (src/api/regras.ts, geradas do código da API) para desativar
+// o que a API recusaria e dizer o motivo; a API continua sendo a autoridade e devolve
+// 403/409/422 se o estado mudou entre a leitura e o clique.
 
 export type Acao =
   | { tipo: 'assumir' }
   | { tipo: 'liberar' }
   | { tipo: 'status'; status: StatusIncidente }
 
-const PODE_ASSUMIR: StatusIncidente[] = ['aberto', 'inconclusivo']
-
-export const TRANSICOES_DO_RESPONSAVEL: Partial<Record<StatusIncidente, StatusIncidente[]>> = {
-  em_investigacao: ['inconclusivo', 'fechado'],
-  inconclusivo: ['em_investigacao', 'fechado'],
-}
+export const TRANSICOES_DO_RESPONSAVEL = REGRAS.transicoesDoResponsavel
 
 /** Nome curto da ação, como aparece nos avisos. */
 export function nomeDaAcao(acao: Acao): string {
@@ -47,14 +43,14 @@ export function motivoBloqueio(
   acao: Acao,
   idAnalista: number,
 ): string | null {
-  if (incidente.status === 'fechado') return 'Incidente fechado: não aceita mais alterações.'
+  if (ehFinal(incidente.status)) return 'Incidente fechado: não aceita mais alterações.'
   const responsavel = incidente.responsavel
   const meu = responsavel?.id === idAnalista
 
   if (acao.tipo === 'assumir') {
     if (meu) return 'Você já é o responsável.'
     if (responsavel) return `${responsavel.nome} é o responsável por este incidente.`
-    if (!PODE_ASSUMIR.includes(incidente.status)) {
+    if (!REGRAS.podeAssumir.includes(incidente.status)) {
       return 'Este incidente não pode ser assumido agora.'
     }
     return null
@@ -92,7 +88,7 @@ export function aplicarAcao(
     return { ...base, responsavel: analista, status: 'em_investigacao' }
   }
   if (acao.tipo === 'liberar') {
-    const status = incidente.status === 'em_investigacao' ? 'aberto' : incidente.status
+    const status = REGRAS.statusAposLiberar[incidente.status]
     return { ...base, responsavel: null, status }
   }
   return { ...base, status: acao.status }
@@ -126,6 +122,6 @@ export function acoesParaDesfazer(antes: Incidente, acao: Acao): Acao[] | null {
       ? [{ tipo: 'assumir' }, inconclusivo]
       : [{ tipo: 'assumir' }]
   }
-  if (acao.status === 'fechado') return null
+  if (ehFinal(acao.status)) return null
   return [{ tipo: 'status', status: antes.status }]
 }
