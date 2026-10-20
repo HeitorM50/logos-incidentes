@@ -4,7 +4,14 @@ import { ehErroApi } from '@/api/erros'
 import { assumirIncidente, liberarIncidente, mudarStatus } from '@/api/incidentes'
 import { ROTULO_STATUS } from '@/api/rotulos'
 import type { AnalistaResumo, Incidente } from '@/api/tipos'
-import { anuncioPendente, aplicarAcao, descreverEstado, motivoBloqueio, type Acao } from './acoes'
+import {
+  acoesParaDesfazer,
+  anuncioPendente,
+  aplicarAcao,
+  descreverEstado,
+  motivoBloqueio,
+  type Acao,
+} from './acoes'
 import { gravarVersao, relerLista, removerDaLista } from './cacheIncidentes'
 import { CHAVE_ACAO_INCIDENTE } from './useIncidentes'
 
@@ -19,6 +26,8 @@ interface Variaveis {
   /** O incidente como o analista o via no clique (inclui a versão lida). */
   incidente: Incidente
   acao: Acao
+  /** Passo de um "Desfazer": não oferece desfazer de novo. */
+  desfazendo?: boolean
 }
 
 /** 409: outro analista alterou o incidente antes. A linha já mostra a versão atual. */
@@ -28,6 +37,16 @@ export interface Conflito {
   versao: number
   /** Nome de quem alterou; null quando a API não informa. */
   autor: string | null
+}
+
+/** Última ação confirmada que ainda pode ser desfeita ("Desfazer" por alguns segundos). */
+export interface UltimaAcao {
+  id: number
+  /** Versão que a ação gerou: se o incidente mudar depois, o desfazer deixa de valer. */
+  versao: number
+  texto: string
+  passos: Acao[]
+  chave: number
 }
 
 /** Falha de uma ação; a linha já voltou ao último estado confirmado. */
@@ -125,13 +144,23 @@ export function useAcoesIncidente(analista: AnalistaResumo) {
   const [anuncio, setAnuncio] = useState('')
   // Guarda contra clique duplo: o estado do React só atualiza no próximo render, o ref na hora.
   const emAndamento = useRef(new Set<number>())
+  const [ultima, setUltima] = useState<UltimaAcao | null>(null)
 
-  const { mutate } = useMutation({
+  const { mutate, mutateAsync } = useMutation({
     mutationKey: CHAVE_ACAO_INCIDENTE,
     mutationFn: chamarApi,
-    onSuccess: (novo, { acao }) => {
+    onSuccess: (novo, { incidente, acao, desfazendo }) => {
       gravarVersao(cliente, novo)
-      setAnuncio(textoSucesso(acao, novo))
+      if (desfazendo) {
+        setAnuncio(`Ação desfeita: #${novo.id} está ${descreverEstado(novo, analista.id)}.`)
+        return
+      }
+      const texto = textoSucesso(acao, novo)
+      setAnuncio(texto)
+      const passos = acoesParaDesfazer(incidente, acao)
+      setUltima(
+        passos ? { id: novo.id, versao: novo.versao, texto, passos, chave: Date.now() } : null,
+      )
     },
     onError: (erro, variaveis) => {
       const { incidente, acao } = variaveis
@@ -181,6 +210,45 @@ export function useAcoesIncidente(analista: AnalistaResumo) {
     [mutate, fecharAviso, analista.id],
   )
 
+  /**
+   * Desfaz a última ação com ações novas (versão atual, mesmas regras). Os passos rodam em
+   * sequência: cada um parte da versão que o anterior gravou.
+   */
+  const desfazer = useCallback(
+    async (incidente: Incidente) => {
+      const alvo = ultima
+      if (!alvo || alvo.id !== incidente.id || alvo.versao !== incidente.versao) return
+      setUltima(null)
+      let atual = incidente
+      for (const passo of alvo.passos) {
+        if (emAndamento.current.has(atual.id)) return
+        const motivo = motivoBloqueio(atual, passo, analista.id)
+        if (motivo) {
+          const aviso: AvisoFalha = {
+            id: atual.id,
+            versao: atual.versao,
+            acao: passo,
+            titulo: `Não foi possível desfazer em #${atual.id}.`,
+            detalhe: motivo,
+            podeRepetir: false,
+          }
+          setAvisos((todos) => [...todos.filter((a) => a.id !== aviso.id), aviso])
+          return
+        }
+        emAndamento.current.add(atual.id)
+        setAnuncio(`Desfazendo a ação em #${atual.id}…`)
+        try {
+          atual = await mutateAsync({ incidente: atual, acao: passo, desfazendo: true })
+        } catch {
+          return // onError já mostrou o conflito ou a falha
+        }
+      }
+    },
+    [ultima, mutateAsync, analista.id],
+  )
+
+  const dispensarUltima = useCallback(() => setUltima(null), [])
+
   const dispensarConflito = useCallback((id: number) => {
     setConflitos((todos) => semChave(todos, id))
   }, [])
@@ -216,5 +284,8 @@ export function useAcoesIncidente(analista: AnalistaResumo) {
     avisos,
     fecharAviso,
     anuncio,
+    ultima,
+    desfazer,
+    dispensarUltima,
   }
 }

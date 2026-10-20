@@ -105,3 +105,27 @@ export function descreverEstado(incidente: Incidente, idAnalista: number): strin
   if (!r) return `${status}, sem responsável`
   return `${status}, com ${r.id === idAnalista ? 'você' : r.nome}`
 }
+
+/**
+ * Ações que devolvem o incidente ao estado de antes, ou null quando não há desfazer (fechar é
+ * final). Usa só as regras normais da API: o desfazer é uma ação nova, com a versão atual.
+ * Dois casos pedem dois passos, porque assumir sempre leva a Em Investigação e liberar só
+ * devolve Em Investigação para Aberto:
+ * - assumir um Inconclusivo → voltar a Inconclusivo e liberar;
+ * - liberar um Inconclusivo → assumir e voltar a Inconclusivo.
+ */
+export function acoesParaDesfazer(antes: Incidente, acao: Acao): Acao[] | null {
+  const inconclusivo: Acao = { tipo: 'status', status: 'inconclusivo' }
+  if (acao.tipo === 'assumir') {
+    return antes.status === 'inconclusivo'
+      ? [inconclusivo, { tipo: 'liberar' }]
+      : [{ tipo: 'liberar' }]
+  }
+  if (acao.tipo === 'liberar') {
+    return antes.status === 'inconclusivo'
+      ? [{ tipo: 'assumir' }, inconclusivo]
+      : [{ tipo: 'assumir' }]
+  }
+  if (acao.status === 'fechado') return null
+  return [{ tipo: 'status', status: antes.status }]
+}

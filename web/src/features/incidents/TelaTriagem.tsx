@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { useAgora } from '@/lib/useAgora'
 import { useSegundosAguardando } from '@/lib/useSegundosAguardando'
 import { useValorAtrasado } from '@/lib/useValorAtrasado'
-import { AvisoAltaNova, AvisoSucesso, PilhaAvisos } from './Avisos'
+import { AvisoAltaNova, AvisoDesfazer, AvisoSucesso, PilhaAvisos } from './Avisos'
 import { BannerReconexao } from './BannerReconexao'
 import { BarraStatus } from './BarraStatus'
 import { CabecalhoTriagem } from './CabecalhoTriagem'
@@ -126,6 +126,14 @@ export function TelaTriagem({ analista, aoSair }: Props) {
     setSucessoParado(false)
     setSucesso({ ...concluido, chave: Date.now() })
   }
+
+  // "Desfazer" só vale enquanto o incidente está na versão que a ação gerou: se alguém mudou
+  // depois (outro analista, outra janela), desfazer apagaria essa mudança sem ninguém ver.
+  const desfazivel = (() => {
+    const ultima = acoes.ultima
+    const incidente = ultima && confirmados?.find((i) => i.id === ultima.id)
+    return ultima && incidente && incidente.versao === ultima.versao ? { ultima, incidente } : null
+  })()
 
   // O botão que abriu o painel ou o diálogo pode ter saído da tela (linha removida ou lista
   // reordenada): o foco vem para o título, e não para o topo da página.
@@ -352,6 +360,26 @@ export function TelaTriagem({ analista, aoSair }: Props) {
                   altaNova.dispensar()
                   focarTitulo()
                 }}
+              />
+            )}
+            {desfazivel && (
+              <AvisoDesfazer
+                key={desfazivel.ultima.chave}
+                texto={desfazivel.ultima.texto}
+                aoDesfazer={() => {
+                  // O aviso some com o clique: o foco vai antes para a linha do incidente.
+                  document
+                    .querySelector<HTMLElement>(
+                      `[data-incidente="${desfazivel.incidente.id}"] button[aria-expanded]`,
+                    )
+                    ?.focus()
+                  void acoes.desfazer(desfazivel.incidente)
+                }}
+                aoFechar={() => {
+                  acoes.dispensarUltima()
+                  focarTitulo()
+                }}
+                aoExpirar={acoes.dispensarUltima}
               />
             )}
             {sucesso && (

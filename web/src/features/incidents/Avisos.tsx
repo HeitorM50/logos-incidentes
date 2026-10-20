@@ -1,5 +1,5 @@
-import { CircleCheck, Undo2, UserRoundCog, X } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { CircleCheck, RotateCcw, Undo2, UserRoundCog, X } from 'lucide-react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { IconeCriticidade } from './Icones'
 import type { AvisoAltaNova as DadosAltaNova } from './useAltaNova'
 import type { Incidente } from '@/api/tipos'
@@ -112,6 +112,81 @@ export function AvisoSucesso({ texto, acao, aoFechar }: PropsSucesso) {
       >
         <X aria-hidden className="size-3.5" />
       </button>
+    </div>
+  )
+}
+
+export const DURACAO_DESFAZER_MS = 6_000
+const PASSO_CONTAGEM_MS = 100
+
+interface PropsDesfazer {
+  texto: string
+  aoDesfazer: () => void
+  /** X ou Esc (o foco está no aviso e precisa de outro lugar). */
+  aoFechar: () => void
+  /** Tempo esgotado (só corre com o foco fora do aviso). Precisa ser estável. */
+  aoExpirar: () => void
+}
+
+/**
+ * "Você assumiu #12 · Desfazer" (desenho do protótipo). A contagem para enquanto o mouse ou o
+ * foco estão no aviso: quem está lendo ou chegando pelo Tab não perde o botão (WCAG 2.2.1).
+ */
+export function AvisoDesfazer({ texto, aoDesfazer, aoFechar, aoExpirar }: PropsDesfazer) {
+  const [restante, setRestante] = useState(DURACAO_DESFAZER_MS)
+  const [mouse, setMouse] = useState(false)
+  const [foco, setFoco] = useState(false)
+  const parado = mouse || foco
+
+  useEffect(() => {
+    if (parado) return
+    const id = setInterval(() => setRestante((r) => r - PASSO_CONTAGEM_MS), PASSO_CONTAGEM_MS)
+    return () => clearInterval(id)
+  }, [parado])
+
+  useEffect(() => {
+    if (restante <= 0) aoExpirar()
+  }, [restante, aoExpirar])
+
+  return (
+    <div
+      onMouseEnter={() => setMouse(true)}
+      onMouseLeave={() => setMouse(false)}
+      onFocus={() => setFoco(true)}
+      onBlur={() => setFoco(false)}
+      onKeyDown={(evento) => {
+        if (evento.key === 'Escape') aoFechar()
+      }}
+      className="overflow-hidden rounded-lg bg-aviso-fundo text-aviso-texto shadow-[0_10px_30px_rgba(0,0,0,0.28)]"
+    >
+      <div className="flex items-center gap-3 py-2.5 pr-2 pl-4">
+        {/* Cor do texto, e não o verde de sucesso: o fundo do aviso inverte com o tema. */}
+        <CircleCheck aria-hidden className="size-[18px] flex-none" />
+        <span className="min-w-0 flex-1 text-sm font-medium">{texto}</span>
+        <button
+          type="button"
+          onClick={aoDesfazer}
+          className="flex h-8 flex-none cursor-pointer items-center gap-1.5 rounded-[5px] border border-aviso-borda-botao px-3 text-[13px] font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <RotateCcw aria-hidden className="size-3.5" />
+          Desfazer
+        </button>
+        <button
+          type="button"
+          aria-label="Fechar aviso de desfazer"
+          onClick={aoFechar}
+          className="flex size-8 flex-none cursor-pointer items-center justify-center rounded-[5px] outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
+          <X aria-hidden className="size-3.5" />
+        </button>
+      </div>
+      {/* Tempo que falta para o "Desfazer" sumir (decorativo: o texto não depende dele). */}
+      <div aria-hidden className="h-0.5 bg-aviso-borda-botao/30">
+        <div
+          className="h-full bg-aviso-texto/70"
+          style={{ width: `${Math.max(0, (restante / DURACAO_DESFAZER_MS) * 100)}%` }}
+        />
+      </div>
     </div>
   )
 }

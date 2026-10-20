@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ANA, BRUNO, incidente } from '@/test/fabricas'
-import { aplicarAcao, motivoBloqueio } from './acoes'
+import { acoesParaDesfazer, aplicarAcao, motivoBloqueio, type Acao } from './acoes'
 
 describe('motivoBloqueio', () => {
   it.each([
@@ -75,5 +75,46 @@ describe('aplicarAcao', () => {
       status: 'inconclusivo',
       responsavel: null,
     })
+  })
+})
+
+describe('acoesParaDesfazer', () => {
+  // Cada caso: estado antes da ação e a ação. Desfazer = aplicar os passos devolvidos, cada um
+  // permitido pelas regras no momento em que roda, até voltar ao status e responsável de antes.
+  const casos: [string, Parameters<typeof incidente>[0], Acao][] = [
+    ['assumir um Aberto', { status: 'aberto' }, { tipo: 'assumir' }],
+    ['assumir um Inconclusivo', { status: 'inconclusivo' }, { tipo: 'assumir' }],
+    [
+      'liberar um Em Investigação',
+      { status: 'em_investigacao', responsavel: ANA },
+      { tipo: 'liberar' },
+    ],
+    ['liberar um Inconclusivo', { status: 'inconclusivo', responsavel: ANA }, { tipo: 'liberar' }],
+    [
+      'Em Investigação → Inconclusivo',
+      { status: 'em_investigacao', responsavel: ANA },
+      { tipo: 'status', status: 'inconclusivo' },
+    ],
+    [
+      'Inconclusivo → Em Investigação',
+      { status: 'inconclusivo', responsavel: ANA },
+      { tipo: 'status', status: 'em_investigacao' },
+    ],
+  ]
+
+  it.each(casos)('%s volta ao estado de antes', (_nome, dados, acao) => {
+    const antes = incidente(dados)
+    let atual = aplicarAcao(antes, acao, ANA)
+    for (const passo of acoesParaDesfazer(antes, acao)!) {
+      expect(motivoBloqueio(atual, passo, ANA.id)).toBeNull()
+      atual = aplicarAcao(atual, passo, ANA)
+    }
+    expect(atual.status).toBe(antes.status)
+    expect(atual.responsavel?.id ?? null).toBe(antes.responsavel?.id ?? null)
+  })
+
+  it('fechar não tem desfazer', () => {
+    const antes = incidente({ status: 'em_investigacao', responsavel: ANA })
+    expect(acoesParaDesfazer(antes, { tipo: 'status', status: 'fechado' })).toBeNull()
   })
 })

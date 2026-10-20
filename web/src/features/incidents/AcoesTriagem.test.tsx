@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { Incidente } from '@/api/tipos'
 import { criarClienteDeConsultas } from '@/lib/consultas'
 import { ANA, BRUNO, erroDaApi, incidente, lista, respostaJson } from '@/test/fabricas'
+import { aplicarAcao } from './acoes'
 import { TelaTriagem } from './TelaTriagem'
 import { CHAVE_INCIDENTES } from './useIncidentes'
 
@@ -359,4 +360,88 @@ describe('TelaTriagem — ações', () => {
     expect(screen.queryByText('Novo incidente Alta')).toBeNull()
     expect(within((await linhaDe(7))!).queryByText('Novo')).toBeNull()
   })
+
+  it('"Desfazer" depois de assumir libera com a versão nova', async () => {
+    const livre = incidente({ id: 7, versao: 3 })
+    const servidor = simularServidor([livre])
+    const assumido = { ...livre, versao: 4, status: 'em_investigacao' as const, responsavel: ANA }
+    servidor.responder = async () => {
+      servidor.itens = [assumido]
+      return respostaJson(200, assumido)
+    }
+    renderizar()
+    await userEvent.click(await screen.findByRole('button', { name: 'Assumir #7' }))
+    await screen.findByRole('button', { name: 'Desfazer' })
+
+    servidor.responder = async () => {
+      const liberado = { ...assumido, versao: 5, status: 'aberto' as const, responsavel: null }
+      servidor.itens = [liberado]
+      return respostaJson(200, liberado)
+    }
+    await userEvent.click(screen.getByRole('button', { name: 'Desfazer' }))
+
+    expect(servidor.chamadas.at(-1)).toEqual({
+      url: expect.stringMatching(/\/incidentes\/7\/liberar$/),
+      corpo: { versao: 4 },
+    })
+    expect(await screen.findByRole('button', { name: 'Assumir #7' })).not.toHaveAttribute(
+      'aria-disabled',
+    )
+    await waitFor(() => expect(anuncio()).toHaveTextContent('Ação desfeita: #7 está Aberto'))
+    expect(screen.queryByRole('button', { name: 'Desfazer' })).toBeNull()
+  })
+
+  it('desfazer um "assumir" de Inconclusivo volta o status e libera, em sequência', async () => {
+    const antes = incidente({ id: 7, versao: 3, status: 'inconclusivo' })
+    const servidor = simularServidor([antes])
+    let versao = 3
+    // Servidor que aplica as regras de verdade (via aplicarAcao) e sobe a versão.
+    servidor.responder = async ({ url, corpo }) => {
+      const atual = servidor.itens[0]
+      const tipo = url.split('/').at(-1)
+      const acao =
+        tipo === 'status'
+          ? { tipo: 'status' as const, status: (corpo as { status: 'inconclusivo' }).status }
+          : { tipo: tipo as 'assumir' | 'liberar' }
+      const novo = { ...aplicarAcao(atual, acao, ANA), versao: ++versao }
+      servidor.itens = [novo]
+      return respostaJson(200, novo)
+    }
+    renderizar()
+    await userEvent.click(await screen.findByRole('button', { name: 'Assumir #7' }))
+    await screen.findByRole('button', { name: 'Desfazer' })
+
+    await userEvent.click(screen.getByRole('button', { name: 'Desfazer' }))
+
+    await waitFor(() => expect(servidor.chamadas).toHaveLength(3))
+    expect(servidor.chamadas.slice(1)).toEqual([
+      {
+        url: expect.stringMatching(/\/status$/),
+        corpo: { versao: 4, status: 'inconclusivo' },
+      },
+      { url: expect.stringMatching(/\/liberar$/), corpo: { versao: 5 } },
+    ])
+    expect(servidor.itens[0]).toMatchObject({ status: 'inconclusivo', responsavel: null })
+  })
+
+  it('o "Desfazer" some quando outro analista muda o incidente', async () => {
+    const livre = incidente({ id: 7, versao: 3 })
+    const servidor = simularServidor([livre])
+    const assumido = { ...livre, versao: 4, status: 'em_investigacao' as const, responsavel: ANA }
+    servidor.responder = async () => {
+      servidor.itens = [assumido]
+      return respostaJson(200, assumido)
+    }
+    const cliente = renderizar()
+    await userEvent.click(await screen.findByRole('button', { name: 'Assumir #7' }))
+    expect(await screen.findByRole('button', { name: 'Desfazer' })).toBeInTheDocument()
+
+    servidor.itens = [
+      { ...assumido, versao: 5, titulo: 'Editado pelo Bruno', atualizado_por: BRUNO },
+    ]
+    await cliente.refetchQueries()
+
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Desfazer' })).toBeNull())
+  })
 })
+
