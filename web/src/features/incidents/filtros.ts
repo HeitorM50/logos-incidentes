@@ -15,14 +15,18 @@ export interface Filtros {
   criticidades: Criticidade[]
   categorias: Categoria[]
   busca: string
+  /** "Minha fila": só os incidentes que o analista assumiu. */
+  minhaFila: boolean
 }
 
-export const SEM_FILTROS: Filtros = { criticidades: [], categorias: [], busca: '' }
+export const SEM_FILTROS: Filtros = { criticidades: [], categorias: [], busca: '', minhaFila: false }
 
 // Nomes curtos na URL: `?criticidade=alta,media&categoria=bloqueio_pista&busca=br-116`.
+// `responsavel=eu` é o mesmo parâmetro que a API aceita em GET /incidentes.
 const PARAM_CRITICIDADE = 'criticidade'
 const PARAM_CATEGORIA = 'categoria'
 const PARAM_BUSCA = 'busca'
+const PARAM_RESPONSAVEL = 'responsavel'
 
 /** Lê uma lista da URL e descarta valores desconhecidos (link antigo ou editado à mão). */
 function lerLista<T extends string>(valor: string | null, validos: readonly T[]): T[] {
@@ -38,6 +42,7 @@ export function filtrosDaUrl(consulta: string): Filtros {
     criticidades: lerLista(params.get(PARAM_CRITICIDADE), CRITICIDADES),
     categorias: lerLista(params.get(PARAM_CATEGORIA), CATEGORIAS),
     busca: params.get(PARAM_BUSCA) ?? '',
+    minhaFila: params.get(PARAM_RESPONSAVEL) === 'eu',
   }
 }
 
@@ -51,6 +56,7 @@ export function filtrosParaUrl(filtros: Filtros): string {
   if (filtros.categorias.length) {
     params.set(PARAM_CATEGORIA, CATEGORIAS.filter((c) => filtros.categorias.includes(c)).join(','))
   }
+  if (filtros.minhaFila) params.set(PARAM_RESPONSAVEL, 'eu')
   if (!buscaVazia(filtros.busca)) params.set(PARAM_BUSCA, filtros.busca)
   // URLSearchParams codifica a vírgula como %2C; a vírgula pura deixa a URL legível.
   return params.toString().replaceAll('%2C', ',')
@@ -58,7 +64,10 @@ export function filtrosParaUrl(filtros: Filtros): string {
 
 export function temFiltro(filtros: Filtros): boolean {
   return (
-    filtros.criticidades.length > 0 || filtros.categorias.length > 0 || !buscaVazia(filtros.busca)
+    filtros.criticidades.length > 0 ||
+    filtros.categorias.length > 0 ||
+    filtros.minhaFila ||
+    !buscaVazia(filtros.busca)
   )
 }
 
@@ -71,6 +80,7 @@ export function descreverFiltros(filtros: Filtros): string {
   if (filtros.categorias.length) {
     partes.push(filtros.categorias.map((c) => ROTULO_CATEGORIA[c]).join(', '))
   }
+  if (filtros.minhaFila) partes.push('atribuídos a mim')
   if (!buscaVazia(filtros.busca)) partes.push(`busca "${filtros.busca.trim()}"`)
   return partes.join(' · ')
 }
@@ -129,6 +139,8 @@ export interface ResultadoFiltro {
   semFiltroDeCriticidade: Incidente[]
   /** Ativos que cada categoria mostraria se fosse escolhida. */
   ativosPorCategoria: Record<Categoria, number>
+  /** Ativos atribuídos ao analista que "Minha fila" mostraria. */
+  ativosNaMinhaFila: number
 }
 
 /**
@@ -136,8 +148,13 @@ export interface ResultadoFiltro {
  * já escolhidos: o número no botão é quantos incidentes ATIVOS a lista mostra ao clicar nele.
  * A lista também traz os fechados (no fim), que não pedem ação e não entram na contagem.
  */
-export function filtrarIncidentes(itens: Incidente[], filtros: Filtros): ResultadoFiltro {
+export function filtrarIncidentes(
+  itens: Incidente[],
+  filtros: Filtros,
+  idAnalista: number,
+): ResultadoFiltro {
   const busca = criarBusca(filtros.busca)
+  const meu = (i: Incidente) => i.responsavel?.id === idAnalista
   const criticidadeOk = (i: Incidente) =>
     !filtros.criticidades.length || filtros.criticidades.includes(i.criticidade)
   const categoriaOk = (i: Incidente) =>
@@ -149,15 +166,19 @@ export function filtrarIncidentes(itens: Incidente[], filtros: Filtros): Resulta
     number
   >
   const visiveis: Incidente[] = []
+  let ativosNaMinhaFila = 0
 
   for (const incidente of itens) {
     if (!busca(incidente)) continue
     const critOk = criticidadeOk(incidente)
     const catOk = categoriaOk(incidente)
+    const ativo = incidente.status !== 'fechado'
+    if (critOk && catOk && ativo && meu(incidente)) ativosNaMinhaFila++
+    if (filtros.minhaFila && !meu(incidente)) continue
     if (critOk && catOk) visiveis.push(incidente)
     if (catOk) semFiltroDeCriticidade.push(incidente)
-    if (critOk && incidente.status !== 'fechado') ativosPorCategoria[incidente.categoria]++
+    if (critOk && ativo) ativosPorCategoria[incidente.categoria]++
   }
 
-  return { itens: visiveis, semFiltroDeCriticidade, ativosPorCategoria }
+  return { itens: visiveis, semFiltroDeCriticidade, ativosPorCategoria, ativosNaMinhaFila }
 }

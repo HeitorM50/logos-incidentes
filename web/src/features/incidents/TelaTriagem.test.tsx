@@ -3,7 +3,7 @@ import { act, fireEvent, render, screen, waitFor, within } from '@testing-librar
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { criarClienteDeConsultas } from '@/lib/consultas'
-import { ANA, erroDaApi, incidente, lista, nunca, respostaJson } from '@/test/fabricas'
+import { ANA, BRUNO, erroDaApi, incidente, lista, nunca, respostaJson } from '@/test/fabricas'
 import { TelaTriagem } from './TelaTriagem'
 import { estadoDaConexao } from './useIncidentes'
 
@@ -227,6 +227,29 @@ describe('TelaTriagem — filtros', () => {
       'Mostrando 3 de 5 incidentes (filtrado) · 1 fechado no fim da lista',
     )
     await waitFor(() => expect(window.location.search).toBe('?criticidade=alta'))
+  })
+
+  it('"Atribuídos a mim" mostra só os incidentes assumidos pelo analista', async () => {
+    window.history.replaceState(null, '', '/')
+    simularLista(async () =>
+      respostaJson(
+        200,
+        lista([
+          incidente({ id: 1, status: 'em_investigacao', responsavel: ANA }),
+          incidente({ id: 2, status: 'em_investigacao', responsavel: BRUNO }),
+          incidente({ id: 3 }),
+          incidente({ id: 4, status: 'fechado', responsavel: ANA }),
+        ]),
+      ),
+    )
+    renderizar()
+
+    const fila = await screen.findByRole('button', { name: 'Atribuídos a mim, 1 ativo' })
+    await userEvent.click(fila)
+
+    expect(fila).toHaveAttribute('aria-pressed', 'true')
+    expect(await idsVisiveis()).toEqual(['#1', '#4'])
+    await waitFor(() => expect(window.location.search).toBe('?responsavel=eu'))
   })
 
   it('recarregar a página mantém os filtros da URL', async () => {

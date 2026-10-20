@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { incidente } from '@/test/fabricas'
+import { ANA, BRUNO, incidente } from '@/test/fabricas'
 import {
   alternar,
   criarBusca,
@@ -17,11 +17,14 @@ describe('filtros na URL', () => {
       criticidades: ['alta' as const, 'baixa' as const],
       categorias: ['bloqueio_pista' as const],
       busca: 'BR-116',
+      minhaFila: true,
     }
 
     const query = filtrosParaUrl(filtros)
 
-    expect(query).toBe('criticidade=alta,baixa&categoria=bloqueio_pista&busca=BR-116')
+    expect(query).toBe(
+      'criticidade=alta,baixa&categoria=bloqueio_pista&responsavel=eu&busca=BR-116',
+    )
     expect(filtrosDaUrl(`?${query}`)).toEqual(filtros)
   })
 
@@ -32,10 +35,11 @@ describe('filtros na URL', () => {
   })
 
   it('descarta valores desconhecidos de um link editado à mão', () => {
-    expect(filtrosDaUrl('?criticidade=alta,urgente&categoria=xyz')).toEqual({
+    expect(filtrosDaUrl('?criticidade=alta,urgente&categoria=xyz&responsavel=bruno')).toEqual({
       criticidades: ['alta'],
       categorias: [],
       busca: '',
+      minhaFila: false,
     })
   })
 
@@ -88,7 +92,7 @@ describe('filtrarIncidentes', () => {
       ...SEM_FILTROS,
       criticidades: ['alta'],
       categorias: ['bloqueio_pista'],
-    })
+    }, ANA.id)
 
     expect(visiveis.map((i) => i.id)).toEqual([1, 4])
   })
@@ -97,7 +101,7 @@ describe('filtrarIncidentes', () => {
     const { ativosPorCategoria } = filtrarIncidentes(itens, {
       ...SEM_FILTROS,
       criticidades: ['alta'],
-    })
+    }, ANA.id)
 
     expect(ativosPorCategoria.bloqueio_pista).toBe(1)
     expect(ativosPorCategoria.problema_mecanico).toBe(1)
@@ -108,9 +112,29 @@ describe('filtrarIncidentes', () => {
       ...SEM_FILTROS,
       criticidades: ['alta'],
       categorias: ['bloqueio_pista'],
-    })
+    }, ANA.id)
 
     expect(semFiltroDeCriticidade.map((i) => i.id)).toEqual([1, 3, 4])
+  })
+
+  it('minha fila mostra só os assumidos pelo analista e conta com os outros filtros', () => {
+    const fila = [
+      incidente({ id: 1, criticidade: 'alta', responsavel: ANA }),
+      incidente({ id: 2, criticidade: 'alta', responsavel: BRUNO }),
+      incidente({ id: 3, criticidade: 'baixa', responsavel: ANA }),
+      incidente({ id: 4, criticidade: 'alta', responsavel: ANA, status: 'fechado' }),
+      incidente({ id: 5, criticidade: 'alta' }),
+    ]
+
+    const desligado = filtrarIncidentes(fila, { ...SEM_FILTROS, criticidades: ['alta'] }, ANA.id)
+    // A contagem do botão vale com a fila desligada: é o que ele mostraria ao ser ligado.
+    expect(desligado.ativosNaMinhaFila).toBe(1)
+
+    const ligado = filtrarIncidentes(fila, { ...SEM_FILTROS, minhaFila: true }, ANA.id)
+    expect(ligado.itens.map((i) => i.id)).toEqual([1, 3, 4])
+    expect(ligado.ativosNaMinhaFila).toBe(2)
+    // Os cartões de criticidade também respeitam a fila.
+    expect(ligado.semFiltroDeCriticidade.map((i) => i.id)).toEqual([1, 3, 4])
   })
 })
 
@@ -126,7 +150,8 @@ describe('auxiliares', () => {
         criticidades: ['alta', 'media'],
         categorias: ['bloqueio_pista'],
         busca: ' br ',
+        minhaFila: true,
       }),
-    ).toBe('Criticidade Alta, Média · Bloqueio de Pista · busca "br"')
+    ).toBe('Criticidade Alta, Média · Bloqueio de Pista · atribuídos a mim · busca "br"')
   })
 })
