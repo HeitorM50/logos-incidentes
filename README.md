@@ -79,7 +79,7 @@ api/                FastAPI
   app/core/         configuração, banco, segurança, erros, resiliência, limite de login
   app/seed/         analistas e 100 incidentes de demonstração
   alembic/          migrations
-  tests/            pytest (120 testes)
+  tests/            pytest (123 testes)
   scripts/          simulador de caminhão para a ingestão
 web/                React + Vite + TypeScript
   src/api/          cliente tipado da API, erros e sessão
@@ -127,6 +127,15 @@ mudar status, liberar e remover.
 - A API também aceita os mesmos filtros (`GET /incidentes?criticidade=alta&status=aberto`), para
   quando o volume não couber mais em uma lista.
 
+### Regras numa fonte só
+
+O front repete algumas regras para explicar um bloqueio antes do clique ("só o responsável
+muda o status") e validar o formulário antes de enviar. Para as cópias não se afastarem da API,
+o módulo `app/regras.py` **deriva** as regras do próprio código (ciclo de vida e schema
+Pydantic), publica em `GET /regras` e gera o `web/src/api/regras.json` que o front lê. Um teste
+da API falha se o JSON divergir do código, e um teste ponta a ponta compara a API rodando com o
+front publicado.
+
 ### Segurança básica da API
 
 - **JWT** (HS256, 8 h) em todas as rotas, exceto login e `/health`; senhas com **bcrypt**.
@@ -168,16 +177,16 @@ Postgres (o projeto usa a versão 17 localmente e o Postgres do Supabase em prod
 ### Testes e qualidade
 
 ```bash
-cd api && uv run pytest && uv run ruff check .        # 120 testes
-cd web && npm test && npm run lint && npm run build   # 267 testes
+cd api && uv run pytest && uv run ruff check .        # 123 testes
+cd web && npm test && npm run lint && npm run build   # 269 testes
 ```
 
 Os testes da API rodam num schema temporário, criado e apagado a cada execução.
 
-**Ponta a ponta (Playwright):** navegador de verdade contra a API e o Postgres de verdade, em 7
+**Ponta a ponta (Playwright):** navegador de verdade contra a API e o Postgres de verdade, em 8
 cenários — triagem e filtros, login, dois analistas no mesmo incidente (409), CRUD com dado
-inválido barrado, rollback com falha na escrita, desfazer e histórico, e ingestão pelo caminhão
-aparecendo na triagem.
+inválido barrado, rollback com falha na escrita, desfazer e histórico, ingestão pelo caminhão
+aparecendo na triagem e paridade das regras entre a API rodando e o front.
 
 ```bash
 docker compose up -d
@@ -235,6 +244,7 @@ por `uv run python -m app.dispositivos criar "Caminhão 042" --placa ABC1D23`.
 | `POST` | `/incidentes/{id}/assumir` · `/liberar` · `/status` | Ciclo de vida, com `versao` |
 | `GET` | `/incidentes/{id}/eventos` | Histórico, gravado na mesma transação de cada alteração |
 | `POST` | `/ingestao/incidentes` | Envio direto pelo caminhão (chave de dispositivo + `Idempotency-Key`) |
+| `GET` | `/regras` | Transições, limites dos campos e padrão da placa, derivados do código |
 | `GET` | `/health` | API e banco respondendo |
 
 Erros sempre no formato `{"erro": {"codigo", "mensagem", ...}}`. Contrato completo, códigos de
@@ -249,8 +259,6 @@ erro e transições permitidas: [`docs/contrato-api.md`](docs/contrato-api.md).
 - **Token no `localStorage`.** Mitigado por CSP e ausência de HTML injetado; em produção real, o
   ideal é cookie `HttpOnly` no mesmo domínio.
 - **Limite de login em memória.** Vale para uma instância da API; com várias, precisaria de Redis.
-- **Regras repetidas no front.** Transições e validações existem na API (a autoridade) e no front
-  (para explicar o bloqueio antes do clique), sem um teste que compare as duas.
 - **Hibernação do plano gratuito.** Um job agendado chama `/health` a cada 10 min, mas o
   primeiro acesso ainda pode esperar o servidor acordar.
 
