@@ -57,6 +57,10 @@ anônima ou em outro navegador e altere o mesmo incidente nas duas. A supervisor
   assumidos → assumidos no prazo → fechados), os Alta e o total recebidos, o tempo médio até
   assumir e até fechar, a taxa de atraso e os recebidos por hora, nas últimas 6 h, 24 h ou 7 dias,
   sempre comparados com o período anterior. Tudo sai do histórico (`GET /relatorio`).
+  **Exportar PDF** gera o documento do período em A4: resumo, funil, os incidentes recebidos ou
+  fechados (com motorista, horários e comentário de fechamento) e a linha do tempo dos eventos.
+  O PDF sai da impressão do navegador ("Salvar como PDF"), sem biblioteca de PDF: fonte, acentos
+  e layout são os do próprio app.
 - **Contato do motorista:** cadastro da frota (veículo → motorista atual) e, no incidente, uma
   cópia do contato no momento em que ele foi aberto. Os detalhes trazem "Ligar" e "WhatsApp"; o
   formulário mostra o motorista que será copiado antes de salvar. Telefone é dado pessoal: só sai

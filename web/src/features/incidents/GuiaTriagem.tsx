@@ -232,7 +232,10 @@ export function GuiaTriagem({ aberto, aoMudar }: PropsGuia) {
               <strong className="font-semibold text-foreground">Relatório</strong>, ao lado de
               "Novo incidente", mostra o funil do atendimento (recebidos, assumidos, assumidos no
               prazo e fechados), os tempos médios até assumir e até fechar e a taxa de atraso,
-              comparados com o período anterior.
+              comparados com o período anterior.{' '}
+              <strong className="font-semibold text-foreground">Exportar PDF</strong> abre a
+              impressão com o documento do período (resumo, incidentes e linha do tempo): escolha
+              "Salvar como PDF".
             </p>
           </Secao>
 

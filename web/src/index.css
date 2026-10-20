@@ -404,6 +404,39 @@ html.tema-instantaneo *::after {
   mix-blend-mode: normal;
 }
 
+/*
+ * "Exportar PDF" do relatório (DocumentoRelatorio): o documento fica fora da tela e, durante a
+ * impressão, é a única coisa na página. A classe "imprimindo" só existe enquanto o diálogo de
+ * impressão está aberto; um Ctrl+P comum continua imprimindo a tela.
+ */
+.documento-impressao {
+  display: none;
+}
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+  /* Papel é sempre claro; e a trava de rolagem do painel lateral (margem no body) não pode
+     empurrar o documento para fora da página. */
+  html.imprimindo {
+    color-scheme: light;
+  }
+  html.imprimindo,
+  html.imprimindo body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    min-width: 0 !important;
+  }
+  html.imprimindo body > *:not(.documento-impressao) {
+    display: none !important;
+  }
+  html.imprimindo .documento-impressao {
+    display: block;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html.tema-em-transicao,
   html.tema-em-transicao * {

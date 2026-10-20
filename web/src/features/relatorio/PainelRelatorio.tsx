@@ -1,7 +1,18 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { lazy, Suspense, useId, useState } from 'react'
-import { obterRelatorio, PERIODOS_HORAS, type PeriodoHoras } from '@/api/relatorio'
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query'
+import { FileDown } from 'lucide-react'
+import { lazy, Suspense, useEffect, useId, useState } from 'react'
+import { createPortal } from 'react-dom'
+import {
+  obterRegistro,
+  obterRelatorio,
+  PERIODOS_HORAS,
+  type PeriodoHoras,
+  type RegistroDoPeriodo,
+  type Relatorio,
+} from '@/api/relatorio'
+import type { AnalistaResumo } from '@/api/tipos'
 import { LogosLoader } from '@/components/LogosLoader'
+import { Button } from '@/components/ui/button'
 import {
   Sheet,
   SheetContent,
@@ -9,6 +20,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { DocumentoRelatorio } from './DocumentoRelatorio'
 
 // Painel lateral do relatório, aberto pelo botão "Relatório" da triagem: a lista continua
 // no topo, e o resumo da central fica a um clique. O conteúdo (com os gráficos) é carregado
@@ -33,9 +45,70 @@ function Carregando({ texto }: { texto: string }) {
 interface Props {
   aberto: boolean
   aoMudar: (aberto: boolean) => void
+  /** Quem está gerando: vai para o rodapé do PDF. */
+  analista: AnalistaResumo
 }
 
-export function PainelRelatorio({ aberto, aoMudar }: Props) {
+/**
+ * "Exportar PDF": busca o registro do período, monta o documento fora da tela e abre a
+ * impressão do navegador, onde o analista escolhe "Salvar como PDF". Sem biblioteca de PDF:
+ * fonte, acentos e layout são os do próprio app.
+ */
+function useExportarPdf(horas: PeriodoHoras, relatorio: Relatorio | undefined) {
+  const cliente = useQueryClient()
+  const [documento, setDocumento] = useState<{
+    relatorio: Relatorio
+    registro: RegistroDoPeriodo
+  } | null>(null)
+  const [gerando, setGerando] = useState(false)
+  const [erro, setErro] = useState(false)
+
+  async function exportar() {
+    if (!relatorio) return
+    setGerando(true)
+    setErro(false)
+    try {
+      const registro = await cliente.fetchQuery({
+        queryKey: ['relatorio-registro', horas],
+        queryFn: ({ signal }) => obterRegistro(horas, signal),
+        staleTime: 0,
+      })
+      setDocumento({ relatorio, registro })
+    } catch {
+      setErro(true)
+    } finally {
+      setGerando(false)
+    }
+  }
+
+  // Com o documento na página, abre a impressão; ao fechar o diálogo, desmonta e devolve o
+  // título da aba (que vira o nome sugerido do arquivo).
+  useEffect(() => {
+    if (!documento) return
+    const raiz = document.documentElement
+    const tituloAntes = document.title
+    const data = new Date(documento.registro.gerado_em).toISOString().slice(0, 10)
+    document.title = `Logos - relatorio de incidentes - ${data}`
+    raiz.classList.add('imprimindo')
+    const terminar = () => {
+      raiz.classList.remove('imprimindo')
+      document.title = tituloAntes
+      setDocumento(null)
+    }
+    window.addEventListener('afterprint', terminar, { once: true })
+    const quadro = requestAnimationFrame(() => window.print())
+    return () => {
+      cancelAnimationFrame(quadro)
+      window.removeEventListener('afterprint', terminar)
+      raiz.classList.remove('imprimindo')
+      document.title = tituloAntes
+    }
+  }, [documento])
+
+  return { exportar, gerando, erro, documento }
+}
+
+export function PainelRelatorio({ aberto, aoMudar, analista }: Props) {
   const idPeriodo = useId()
   // 6 h por padrão: os dados de demonstração cobrem poucas horas, e o período anterior também
   // tem incidentes para comparar.
@@ -47,6 +120,7 @@ export function PainelRelatorio({ aberto, aoMudar }: Props) {
     refetchInterval: aberto ? 30_000 : false,
     placeholderData: keepPreviousData,
   })
+  const pdf = useExportarPdf(horas, consulta.data)
 
   return (
     <Sheet open={aberto} onOpenChange={aoMudar}>
@@ -64,6 +138,7 @@ export function PainelRelatorio({ aberto, aoMudar }: Props) {
           <label htmlFor={idPeriodo} className="sr-only">
             Período
           </label>
+          <span className="flex items-center gap-2">
           <select
             id={idPeriodo}
             value={horas}
@@ -76,7 +151,34 @@ export function PainelRelatorio({ aberto, aoMudar }: Props) {
               </option>
             ))}
           </select>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={() => void pdf.exportar()}
+            disabled={!consulta.data || pdf.gerando}
+            title="Abre a impressão do navegador: escolha Salvar como PDF"
+            className="h-9 bg-pilula px-3.5"
+          >
+            <FileDown aria-hidden />
+            {pdf.gerando ? 'Gerando…' : 'Exportar PDF'}
+          </Button>
+          </span>
+          {pdf.erro && (
+            <p role="alert" className="w-full text-[13px] text-erro-texto">
+              Não foi possível gerar o PDF. Tente de novo.
+            </p>
+          )}
         </SheetHeader>
+        {pdf.documento &&
+          createPortal(
+            <DocumentoRelatorio
+              relatorio={pdf.documento.relatorio}
+              registro={pdf.documento.registro}
+              analista={analista}
+            />,
+            document.body,
+          )}
         <div
           className="min-h-0 flex-1 overflow-y-auto px-5 py-5"
           aria-busy={consulta.isFetching}

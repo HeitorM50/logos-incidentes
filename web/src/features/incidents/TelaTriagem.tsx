@@ -498,7 +498,11 @@ export function TelaTriagem({ analista, aoSair }: Props) {
         {reconectou ? 'Conexão restabelecida. A lista está ao vivo de novo.' : ''}
       </p>
       <GuiaTriagem aberto={guia.aberto} aoMudar={guia.setAberto} />
-      <PainelRelatorio aberto={relatorioAberto} aoMudar={setRelatorioAberto} />
+      <PainelRelatorio
+        aberto={relatorioAberto}
+        aoMudar={setRelatorioAberto}
+        analista={{ id: analista.id, nome: analista.nome }}
+      />
       <PainelIncidente
         modo={painel}
         itens={itens}
