@@ -2,6 +2,7 @@ import { expect, type Page } from '@playwright/test'
 
 export const SESSAO_ANA = 'e2e/.sessoes/ana.json'
 export const SESSAO_BRUNO = 'e2e/.sessoes/bruno.json'
+export const SESSAO_CARLA = 'e2e/.sessoes/carla.json'
 export const API = 'http://localhost:8000'
 export const CHAVE_DEMO = 'demo-caminhao-logos-2026'
 

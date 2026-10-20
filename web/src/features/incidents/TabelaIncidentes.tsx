@@ -134,6 +134,7 @@ interface Props {
   porPlaca: ReadonlyMap<string, Incidente[]>
   /** Leva a lista até um incidente (busca por #número). */
   aoVerIncidente: (id: number) => void
+  ehSupervisor: boolean
 }
 
 export function TabelaIncidentes({
@@ -147,6 +148,7 @@ export function TabelaIncidentes({
   destaques,
   porPlaca,
   aoVerIncidente,
+  ehSupervisor,
 }: Props) {
   const [abertas, setAbertas] = useState<ReadonlySet<number>>(() => new Set())
   // As primeiras linhas entram em cascata só quando a tabela aparece; linhas que chegam depois
@@ -211,6 +213,7 @@ export function TabelaIncidentes({
           : []
       }
       aoVerIncidente={aoVerIncidente}
+      ehSupervisor={ehSupervisor}
     />
   ))
   const cascata = cn(primeiraPintura && 'cascata [--cascata-passo:20ms]')

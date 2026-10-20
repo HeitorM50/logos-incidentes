@@ -37,6 +37,17 @@ describe('descreverEvento', () => {
     ).toBe('Bruno Lima mudou o status de Em Investigação para Inconclusivo')
   })
 
+  it('transferência diz quem passou e para quem', () => {
+    const carla = { id: 3, nome: 'Carla Mendes' }
+    const base = { tipo: 'transferido' as const, analista: carla }
+    expect(descreverEvento(evento({ ...base, responsavel_novo: BRUNO }), ANA.id)).toBe(
+      'Carla Mendes transferiu o incidente para Bruno Lima',
+    )
+    expect(descreverEvento(evento({ ...base, responsavel_novo: ANA }), ANA.id)).toBe(
+      'Carla Mendes transferiu o incidente para você',
+    )
+  })
+
   it('liberar diz para onde o incidente voltou só quando o status mudou', () => {
     const base = { tipo: 'liberado' as const, analista: ANA }
     expect(

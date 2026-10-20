@@ -58,7 +58,9 @@ export function CabecalhoTriagem({
           </span>
           <span className="flex flex-col leading-tight max-sm:hidden">
             <span className="text-sm font-medium">{analista.nome}</span>
-            <span className="text-xs text-texto-3">Analista</span>
+            <span className="text-xs text-texto-3">
+              {analista.papel === 'supervisor' ? 'Supervisor' : 'Analista'}
+            </span>
           </span>
         </div>
         <Button

@@ -22,8 +22,16 @@ export interface AnalistaResumo {
   nome: string
 }
 
+export type PapelAnalista = 'analista' | 'supervisor'
+
+export interface AnalistaComPapel extends AnalistaResumo {
+  papel: PapelAnalista
+}
+
 export interface AnalistaLogado extends AnalistaResumo {
   usuario: string
+  /** Ausente numa sessão salva antes do papel existir: vale como analista. */
+  papel?: PapelAnalista
 }
 
 export interface DispositivoResumo {
@@ -55,7 +63,13 @@ export interface Incidente {
   atualizado_em: string
 }
 
-export type TipoEvento = 'criado' | 'assumido' | 'liberado' | 'status' | 'editado'
+export type TipoEvento =
+  | 'criado'
+  | 'assumido'
+  | 'liberado'
+  | 'status'
+  | 'editado'
+  | 'transferido'
 
 /** Item do histórico (GET /incidentes/{id}/eventos). `analista` nulo: evento sem autor. */
 export interface EventoIncidente {
@@ -66,6 +80,8 @@ export interface EventoIncidente {
   status_novo: StatusIncidente | null
   campos: string[] | null
   comentario: string | null
+  /** Transferência: o novo responsável. */
+  responsavel_novo?: AnalistaResumo | null
   criado_em: string
 }
 

@@ -1,7 +1,12 @@
 import { useMutation, useMutationState, useQueryClient } from '@tanstack/react-query'
 import { useCallback, useMemo, useRef, useState } from 'react'
 import { ehErroApi } from '@/api/erros'
-import { assumirIncidente, liberarIncidente, mudarStatus } from '@/api/incidentes'
+import {
+  assumirIncidente,
+  liberarIncidente,
+  mudarStatus,
+  transferirIncidente,
+} from '@/api/incidentes'
 import { ROTULO_STATUS } from '@/api/rotulos'
 import type { AnalistaResumo, Incidente } from '@/api/tipos'
 import {
@@ -69,6 +74,9 @@ function chamarApi({ incidente, acao }: Variaveis): Promise<Incidente> {
   if (acao.tipo === 'liberar') {
     return liberarIncidente(incidente.id, incidente.versao, acao.comentario)
   }
+  if (acao.tipo === 'transferir') {
+    return transferirIncidente(incidente.id, incidente.versao, acao.para.id, acao.comentario)
+  }
   return mudarStatus(incidente.id, incidente.versao, acao.status, acao.comentario)
 }
 
@@ -82,12 +90,14 @@ function semChave<T>(registro: Record<number, T>, id: number): Record<number, T>
 function verbo(acao: Acao): string {
   if (acao.tipo === 'assumir') return 'assumir'
   if (acao.tipo === 'liberar') return 'liberar'
+  if (acao.tipo === 'transferir') return 'transferir'
   return 'mudar o status de'
 }
 
 function textoSucesso(acao: Acao, novo: Incidente): string {
   if (acao.tipo === 'assumir') return `Você assumiu #${novo.id}.`
   if (acao.tipo === 'liberar') return `Você liberou #${novo.id}.`
+  if (acao.tipo === 'transferir') return `#${novo.id} transferido para ${acao.para.nome}.`
   return `#${novo.id} agora está ${ROTULO_STATUS[novo.status]}.`
 }
 

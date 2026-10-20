@@ -1,6 +1,7 @@
 import { requisitar } from './cliente'
 import { ehErroApi } from './erros'
 import type {
+  AnalistaComPapel,
   EdicaoIncidente,
   EventoIncidente,
   FiltrosIncidentes,
@@ -34,6 +35,22 @@ export async function obterVeiculo(placa: string, sinal?: AbortSignal): Promise<
     if (ehErroApi(erro) && erro.codigo === 'nao_encontrado') return null
     throw erro
   }
+}
+
+export function listarAnalistas(sinal?: AbortSignal): Promise<AnalistaComPapel[]> {
+  return requisitar('/analistas', { sinal })
+}
+
+export function transferirIncidente(
+  id: number,
+  versao: number,
+  analistaId: number,
+  comentario?: string,
+): Promise<Incidente> {
+  return requisitar(`/incidentes/${id}/transferir`, {
+    metodo: 'POST',
+    corpo: { versao, analista_id: analistaId, ...(comentario ? { comentario } : {}) },
+  })
 }
 
 export function criarIncidente(dados: NovoIncidente): Promise<Incidente> {

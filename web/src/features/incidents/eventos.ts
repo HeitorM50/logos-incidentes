@@ -44,6 +44,11 @@ export function descreverEvento(
       }`
     case 'status':
       return `${autor ?? 'Um analista'} mudou o status de ${de} para ${para}`
+    case 'transferido': {
+      const novo = evento.responsavel_novo
+      const para = novo ? (novo.id === idAnalista ? 'você' : novo.nome) : 'outro analista'
+      return `${autor ?? 'Um supervisor'} transferiu o incidente para ${para}`
+    }
     case 'editado': {
       const campos = (evento.campos ?? []).map((c) => NOME_CAMPO[c] ?? c)
       return `${autor ?? 'Um analista'} editou ${campos.length ? juntar(campos) : 'o incidente'}`

@@ -1,10 +1,11 @@
 import { expect, test as preparar } from '@playwright/test'
-import { SESSAO_ANA, SESSAO_BRUNO } from './apoio'
+import { SESSAO_ANA, SESSAO_BRUNO, SESSAO_CARLA } from './apoio'
 
 // Login de verdade, uma vez por analista; os cenários reaproveitam a sessão guardada.
 for (const [usuario, arquivo] of [
   ['ana', SESSAO_ANA],
   ['bruno', SESSAO_BRUNO],
+  ['carla', SESSAO_CARLA],
 ] as const) {
   preparar(`entra como ${usuario}`, async ({ page }) => {
     await page.goto('/')

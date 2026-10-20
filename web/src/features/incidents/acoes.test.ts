@@ -78,6 +78,25 @@ describe('aplicarAcao', () => {
   })
 })
 
+describe('transferir', () => {
+  it('aplica o novo responsável e leva um Aberto para Em Investigação', () => {
+    const novo = aplicarAcao(incidente(), { tipo: 'transferir', para: BRUNO }, ANA)
+    expect(novo.responsavel).toEqual(BRUNO)
+    expect(novo.status).toBe('em_investigacao')
+    const inconclusivo = incidente({ status: 'inconclusivo', responsavel: ANA })
+    expect(aplicarAcao(inconclusivo, { tipo: 'transferir', para: BRUNO }, ANA).status).toBe(
+      'inconclusivo',
+    )
+  })
+
+  it('bloqueia transferir para quem já é o responsável', () => {
+    const comBruno = incidente({ status: 'em_investigacao', responsavel: BRUNO })
+    expect(motivoBloqueio(comBruno, { tipo: 'transferir', para: BRUNO }, ANA.id)).toBe(
+      'Bruno Lima já é o responsável.',
+    )
+  })
+})
+
 describe('acoesParaDesfazer', () => {
   // Cada caso: estado antes da ação e a ação. Desfazer = aplicar os passos devolvidos, cada um
   // permitido pelas regras no momento em que roda, até voltar ao status e responsável de antes.
@@ -111,6 +130,14 @@ describe('acoesParaDesfazer', () => {
     }
     expect(atual.status).toBe(antes.status)
     expect(atual.responsavel?.id ?? null).toBe(antes.responsavel?.id ?? null)
+  })
+
+  it('transferir volta para o responsável anterior; sem responsável antes, não há desfazer', () => {
+    const comAna = incidente({ status: 'em_investigacao', responsavel: ANA })
+    expect(acoesParaDesfazer(comAna, { tipo: 'transferir', para: BRUNO })).toEqual([
+      { tipo: 'transferir', para: ANA },
+    ])
+    expect(acoesParaDesfazer(incidente(), { tipo: 'transferir', para: BRUNO })).toBeNull()
   })
 
   it('fechar não tem desfazer', () => {

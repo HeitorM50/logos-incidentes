@@ -12,6 +12,8 @@ export type Acao =
   | { tipo: 'assumir' }
   | { tipo: 'liberar'; comentario?: string }
   | { tipo: 'status'; status: StatusIncidente; comentario?: string }
+  // Só o supervisor: passa o incidente para outro analista.
+  | { tipo: 'transferir'; para: AnalistaResumo; comentario?: string }
 
 /** Comentário que o desfazer envia quando volta para um status que exige comentário. */
 export function comentarioDoDesfazer(status: StatusIncidente): string {
@@ -24,6 +26,7 @@ export const TRANSICOES_DO_RESPONSAVEL = REGRAS.transicoesDoResponsavel
 export function nomeDaAcao(acao: Acao): string {
   if (acao.tipo === 'assumir') return 'Assumir'
   if (acao.tipo === 'liberar') return 'Liberar'
+  if (acao.tipo === 'transferir') return `Transferir para ${acao.para.nome}`
   return `Mudar status para ${ROTULO_STATUS[acao.status]}`
 }
 
@@ -31,6 +34,7 @@ export function nomeDaAcao(acao: Acao): string {
 export function anuncioPendente(acao: Acao, id: number): string {
   if (acao.tipo === 'assumir') return `Assumindo #${id}…`
   if (acao.tipo === 'liberar') return `Liberando #${id}…`
+  if (acao.tipo === 'transferir') return `Transferindo #${id} para ${acao.para.nome}…`
   return `Mudando o status de #${id} para ${ROTULO_STATUS[acao.status]}…`
 }
 
@@ -38,6 +42,7 @@ export function anuncioPendente(acao: Acao, id: number): string {
 export function textoPendente(acao: Acao): string {
   if (acao.tipo === 'assumir') return 'Assumindo…'
   if (acao.tipo === 'liberar') return 'Liberando…'
+  if (acao.tipo === 'transferir') return 'Transferindo…'
   return 'Salvando status…'
 }
 
@@ -53,6 +58,12 @@ export function motivoBloqueio(
   if (ehFinal(incidente.status)) return 'Incidente fechado: não aceita mais alterações.'
   const responsavel = incidente.responsavel
   const meu = responsavel?.id === idAnalista
+
+  if (acao.tipo === 'transferir') {
+    // Quem pode transferir (supervisor) a tela já decidiu; aqui só o que a API recusaria.
+    if (responsavel?.id === acao.para.id) return `${acao.para.nome} já é o responsável.`
+    return null
+  }
 
   if (acao.tipo === 'assumir') {
     if (meu) return 'Você já é o responsável.'
@@ -98,6 +109,10 @@ export function aplicarAcao(
     const status = REGRAS.statusAposLiberar[incidente.status]
     return { ...base, responsavel: null, status }
   }
+  if (acao.tipo === 'transferir') {
+    const status = incidente.status === 'aberto' ? 'em_investigacao' : incidente.status
+    return { ...base, responsavel: acao.para, status }
+  }
   return { ...base, status: acao.status }
 }
 
@@ -132,6 +147,11 @@ export function acoesParaDesfazer(antes: Incidente, acao: Acao): Acao[] | null {
     return antes.status === 'inconclusivo'
       ? [{ tipo: 'assumir' }, inconclusivo]
       : [{ tipo: 'assumir' }]
+  }
+  if (acao.tipo === 'transferir') {
+    // Volta para quem era o responsável. Sem responsável antes, não há como desfazer (só o
+    // responsável libera, e quem transferiu foi o supervisor).
+    return antes.responsavel ? [{ tipo: 'transferir', para: antes.responsavel }] : null
   }
   if (ehFinal(acao.status)) return null
   return [

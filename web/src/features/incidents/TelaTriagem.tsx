@@ -322,6 +322,7 @@ export function TelaTriagem({ analista, aoSair }: Props) {
             itens={resultado.itens}
             porPlaca={porPlaca}
             aoVerIncidente={mostrarNaLista}
+            ehSupervisor={analista.papel === 'supervisor'}
             idAnalista={analista.id}
             agora={agora}
             acoes={acoes}

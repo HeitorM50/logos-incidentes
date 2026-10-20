@@ -9,7 +9,9 @@ import {
   Phone,
   Trash2,
   Truck,
+  UserRoundCog,
 } from 'lucide-react'
+import { useState } from 'react'
 import { ROTULO_CATEGORIA, ROTULO_CRITICIDADE, ROTULO_STATUS } from '@/api/rotulos'
 import type { Criticidade, Incidente } from '@/api/tipos'
 import { formatarTelefone, linkLigar, linkWhatsApp } from '@/lib/telefone'
@@ -17,6 +19,7 @@ import { cn } from '@/lib/utils'
 import type { Acao } from './acoes'
 import { AcoesLinha, EM_ANDAMENTO, SEM_CONEXAO } from './AcoesLinha'
 import { AvisoConflito } from './Avisos'
+import { DialogoTransferir } from './DialogoTransferir'
 import { HistoricoIncidente } from './HistoricoIncidente'
 import { BotaoComMotivo } from './BotaoComMotivo'
 import { motivoEdicao } from './formulario'
@@ -64,6 +67,8 @@ interface Props {
   /** Outros incidentes da mesma placa, para "Mesma placa" nos detalhes. */
   mesmaPlaca?: Incidente[]
   aoVerIncidente?: (id: number) => void
+  /** Supervisor vê "Transferir" nos detalhes. */
+  ehSupervisor?: boolean
 }
 
 export function LinhaIncidente({
@@ -83,6 +88,7 @@ export function LinhaIncidente({
   layout = 'linha',
   mesmaPlaca = [],
   aoVerIncidente,
+  ehSupervisor = false,
 }: Props) {
   const fechado = incidente.status === 'fechado'
   const idDetalhes = `detalhes-incidente-${incidente.id}`
@@ -157,6 +163,20 @@ export function LinhaIncidente({
       aoRemover={aoRemover}
       mesmaPlaca={mesmaPlaca}
       aoVerIncidente={aoVerIncidente}
+      transferir={
+        ehSupervisor
+          ? {
+              motivo: pendente
+                ? EM_ANDAMENTO
+                : semConexao
+                  ? SEM_CONEXAO
+                  : fechado
+                    ? 'Incidente fechado: não aceita mais alterações.'
+                    : null,
+              aoExecutar,
+            }
+          : undefined
+      }
     />
   )
 
@@ -454,6 +474,8 @@ interface PropsDetalhes {
   aoRemover: () => void
   mesmaPlaca: Incidente[]
   aoVerIncidente?: (id: number) => void
+  /** Presente só para o supervisor. */
+  transferir?: { motivo: string | null; aoExecutar: (acao: Acao) => void }
 }
 
 function Detalhes({
@@ -466,7 +488,9 @@ function Detalhes({
   aoRemover,
   mesmaPlaca,
   aoVerIncidente,
+  transferir,
 }: PropsDetalhes) {
+  const [transferindo, setTransferindo] = useState(false)
   return (
     <div
       id={idDetalhes}
@@ -573,7 +597,29 @@ function Detalhes({
       <div className="border-t pt-3 sm:col-span-3">
         <HistoricoIncidente incidente={incidente} idAnalista={idAnalista} agora={agora} />
       </div>
-      <div className="flex justify-end gap-2 border-t pt-3 sm:col-span-3">
+      <div className="flex flex-wrap justify-end gap-2 border-t pt-3 sm:col-span-3">
+        {transferir && (
+          <>
+            <BotaoComMotivo
+              motivo={transferir.motivo}
+              rotulo={`Transferir #${incidente.id}`}
+              onClick={() => setTransferindo(true)}
+              className="mr-auto flex items-center gap-1.5 px-3 font-medium"
+            >
+              <UserRoundCog aria-hidden className="size-3.5" />
+              Transferir
+            </BotaoComMotivo>
+            <DialogoTransferir
+              incidente={incidente}
+              aberto={transferindo}
+              aoMudar={setTransferindo}
+              aoConfirmar={(acao) => {
+                setTransferindo(false)
+                transferir.aoExecutar(acao)
+              }}
+            />
+          </>
+        )}
         <BotaoComMotivo
           motivo={motivoAlterar}
           rotulo={`Editar #${incidente.id}`}

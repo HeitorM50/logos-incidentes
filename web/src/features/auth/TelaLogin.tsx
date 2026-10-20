@@ -236,7 +236,8 @@ export function TelaLogin({ aoEntrar }: Props) {
               </dl>
               <p className="text-[13px] leading-snug text-texto-3">
                 Para testar a edição simultânea, entre como <span className="font-mono">bruno</span>{' '}
-                (mesma senha) em outra janela.
+                (mesma senha) em outra janela. Para transferir incidentes entre analistas, entre
+                como a supervisora <span className="font-mono">carla</span> (mesma senha).
               </p>
             </section>
           </div>

@@ -11,7 +11,8 @@ decidir **o que tratar primeiro**. API em Python (FastAPI + Postgres) e interfac
 
 **Acesso de demonstração:** usuário `ana`, senha `logos2026` (as credenciais também aparecem na
 tela de login). Para ver o controle de concorrência, entre como `bruno` (mesma senha) numa janela
-anônima ou em outro navegador e altere o mesmo incidente nas duas.
+anônima ou em outro navegador e altere o mesmo incidente nas duas. A supervisora `carla`
+(mesma senha) também transfere incidentes entre analistas.
 
 > A API roda no plano gratuito do Render. Se ela estiver hibernando, o primeiro acesso pode levar
 > até 1 minuto; a tela mostra "Acordando o servidor…" enquanto isso.
@@ -57,6 +58,9 @@ anônima ou em outro navegador e altere o mesmo incidente nas duas.
   formulário mostra o motorista que será copiado antes de salvar. Telefone é dado pessoal: só sai
   pela API autenticada, e a API não grava o corpo das requisições em log. Na demonstração, os telefones usam o DDD 10, que não
   existe: nenhum número fictício toca o telefone de alguém.
+- **Supervisor:** além do que todo analista faz, transfere um incidente para outro analista
+  (troca de turno, sobrecarga), com motivo opcional. Passa pelo controle de versão e pelo
+  "Desfazer" como as outras ações, e o histórico registra quem transferiu e para quem.
 - **Possível duplicata:** a API aponta o incidente ativo que parece cópia de outro aberto até
   2 h antes (mesma placa, ou mesmo local e categoria). A linha mostra "Dup. #N", e os detalhes
   levam até o original. Só aponta: quem decide é o analista.
@@ -186,7 +190,7 @@ cd api
 cp .env.example .env            # já aponta para o Postgres do passo 1
 uv sync
 uv run alembic upgrade head     # cria as tabelas
-uv run python -m app.seed       # analistas ana e bruno + 100 incidentes
+uv run python -m app.seed       # ana, bruno, a supervisora carla, a frota e 100 incidentes
 uv run uvicorn app.main:app --reload
 
 # 3. Front em http://localhost:5173 (em outro terminal)
