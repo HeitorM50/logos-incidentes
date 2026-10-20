@@ -6,8 +6,8 @@ from datetime import UTC, datetime, timedelta
 from sqlalchemy import func, select, text
 from sqlalchemy.orm import Session
 
-from app.core.dominio import Categoria, Criticidade, StatusIncidente
-from app.models import Analista, Incidente
+from app.core.dominio import Categoria, Criticidade, StatusIncidente, TipoEvento
+from app.models import Analista, EventoIncidente, Incidente
 
 TOTAL_INCIDENTES = 100
 
@@ -130,13 +130,60 @@ def gerar_incidentes(analistas: list[Analista], semente: int = 42) -> list[Incid
     return incidentes
 
 
+def gerar_eventos(incidente: Incidente) -> list[EventoIncidente]:
+    """Histórico coerente com o estado do incidente de demonstração.
+
+    Registro (sem autor: chegou pelo rastreador ou pelo rádio) → assumido pelo responsável →
+    mudança para Inconclusivo ou Fechado, quando for o caso. As datas ficam entre a criação e
+    agora, em ordem.
+    """
+    criado = incidente.criado_em
+    idade = datetime.now(UTC) - criado
+    eventos = [
+        EventoIncidente(
+            tipo=TipoEvento.CRIADO, status_novo=StatusIncidente.ABERTO, criado_em=criado
+        )
+    ]
+    if incidente.responsavel_id is None:
+        return eventos
+    eventos.append(
+        EventoIncidente(
+            tipo=TipoEvento.ASSUMIDO,
+            analista_id=incidente.responsavel_id,
+            status_anterior=StatusIncidente.ABERTO,
+            status_novo=StatusIncidente.EM_INVESTIGACAO,
+            criado_em=criado + idade * 0.3,
+        )
+    )
+    if incidente.status in (StatusIncidente.INCONCLUSIVO, StatusIncidente.FECHADO):
+        eventos.append(
+            EventoIncidente(
+                tipo=TipoEvento.STATUS,
+                analista_id=incidente.responsavel_id,
+                status_anterior=StatusIncidente.EM_INVESTIGACAO,
+                status_novo=incidente.status,
+                criado_em=criado + idade * 0.6,
+            )
+        )
+    return eventos
+
+
 def semear_incidentes(sessao: Session, analistas: list[Analista], recriar: bool = False) -> int:
     """Cria os 100 incidentes se a tabela estiver vazia. `recriar` apaga tudo antes."""
     if recriar:
-        sessao.execute(text("TRUNCATE incidentes RESTART IDENTITY"))
+        sessao.execute(text("TRUNCATE incidentes, eventos_incidente RESTART IDENTITY"))
     elif sessao.scalar(select(func.count()).select_from(Incidente)):
         return 0
     incidentes = gerar_incidentes(analistas)
     sessao.add_all(incidentes)
+    sessao.flush()  # ids para os eventos
+    for incidente in incidentes:
+        eventos = gerar_eventos(incidente)
+        for evento in eventos:
+            evento.incidente_id = incidente.id
+            sessao.add(evento)
+        # Coerente com o histórico: cada alteração depois do registro sobe a versão.
+        incidente.versao = len(eventos)
+        incidente.atualizado_em = eventos[-1].criado_em
     sessao.commit()
     return len(incidentes)

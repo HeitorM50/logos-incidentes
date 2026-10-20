@@ -12,7 +12,7 @@ from pydantic import (
     model_validator,
 )
 
-from app.core.dominio import Categoria, Criticidade, StatusIncidente
+from app.core.dominio import Categoria, Criticidade, StatusIncidente, TipoEvento
 
 # Placa no padrão antigo (ABC1234) ou Mercosul (ABC1D23).
 PADRAO_PLACA = re.compile(r"^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$")
@@ -139,3 +139,17 @@ class ListaIncidentes(BaseModel):
     itens: list[IncidenteResposta]
     total: int
     contagem_por_criticidade: ContagemCriticidade
+
+
+class EventoResposta(BaseModel):
+    """Um item do histórico. `analista` é nulo em eventos sem autor (seed, registros antigos)."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    tipo: TipoEvento
+    analista: AnalistaResumo | None
+    status_anterior: StatusIncidente | None
+    status_novo: StatusIncidente | None
+    campos: list[str] | None
+    criado_em: datetime

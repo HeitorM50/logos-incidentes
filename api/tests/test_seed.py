@@ -45,3 +45,24 @@ def test_dados_gerados_sao_coerentes_com_o_ciclo_de_vida(sessao: Session):
     # Variedade suficiente para a demo: todas as criticidades e status aparecem.
     assert len(Counter(i.criticidade for i in incidentes)) == 3
     assert len(Counter(i.status for i in incidentes)) == 4
+
+
+def test_seed_gera_historico_coerente_com_o_estado(sessao: Session):
+    from sqlalchemy import select
+
+    from app.models import EventoIncidente, Incidente
+
+    analistas = semear_analistas(sessao)
+    semear_incidentes(sessao, analistas)
+
+    for incidente in sessao.scalars(select(Incidente)):
+        historico = sessao.scalars(
+            select(EventoIncidente)
+            .where(EventoIncidente.incidente_id == incidente.id)
+            .order_by(EventoIncidente.criado_em)
+        ).all()
+        assert historico[0].tipo == "criado"
+        # O último evento leva ao status atual, e as datas nunca voltam no tempo.
+        assert (historico[-1].status_novo or "aberto") == incidente.status
+        datas = [e.criado_em for e in historico]
+        assert datas == sorted(datas)

@@ -8,6 +8,7 @@ from app.core.dominio import Categoria, Criticidade, StatusIncidente
 from app.schemas.incidente import (
     MAXIMO_BIGINT,
     MAXIMO_INTEGER,
+    EventoResposta,
     IncidenteCriar,
     IncidenteEditar,
     IncidenteResposta,
@@ -59,6 +60,15 @@ def obter_incidente(incidente_id: IdIncidente, sessao: SessaoDep):
 )
 def criar_incidente(dados: IncidenteCriar, sessao: SessaoDep, analista: AnalistaAtualDep):
     return servico.criar(sessao, dados, analista.id)
+
+
+@router.get(
+    "/{incidente_id}/eventos",
+    response_model=list[EventoResposta],
+    summary="Histórico do incidente, do mais antigo ao mais novo",
+)
+def listar_eventos(incidente_id: IdIncidente, sessao: SessaoDep):
+    return servico.listar_eventos(sessao, incidente_id)
 
 
 @router.patch("/{incidente_id}", response_model=IncidenteResposta, summary="Edita um incidente")

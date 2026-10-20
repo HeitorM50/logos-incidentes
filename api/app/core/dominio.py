@@ -21,3 +21,13 @@ class StatusIncidente(StrEnum):
     EM_INVESTIGACAO = "em_investigacao"
     INCONCLUSIVO = "inconclusivo"
     FECHADO = "fechado"
+
+
+class TipoEvento(StrEnum):
+    """O que aconteceu com o incidente, para o histórico (eventos_incidente)."""
+
+    CRIADO = "criado"
+    ASSUMIDO = "assumido"
+    LIBERADO = "liberado"
+    STATUS = "status"
+    EDITADO = "editado"

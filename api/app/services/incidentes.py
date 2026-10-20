@@ -10,11 +10,12 @@ from typing import Any
 from sqlalchemy import case, delete, func, select, update
 from sqlalchemy.orm import Session, joinedload
 
-from app.core.dominio import Categoria, Criticidade, StatusIncidente
+from app.core.dominio import Categoria, Criticidade, StatusIncidente, TipoEvento
 from app.core.erros import ErroApi
-from app.models import Incidente
+from app.models import EventoIncidente, Incidente
 from app.schemas.incidente import (
     ContagemCriticidade,
+    EventoResposta,
     IncidenteCriar,
     IncidenteEditar,
     IncidenteResposta,
@@ -91,6 +92,15 @@ def criar(sessao: Session, dados: IncidenteCriar, analista_id: int) -> Incidente
         atualizado_por_id=analista_id,
     )
     sessao.add(incidente)
+    sessao.flush()  # gera o id para o evento, na mesma transação
+    sessao.add(
+        EventoIncidente(
+            incidente_id=incidente.id,
+            tipo=TipoEvento.CRIADO,
+            analista_id=analista_id,
+            status_novo=StatusIncidente.ABERTO,
+        )
+    )
     sessao.commit()
     return obter(sessao, incidente.id)
 
@@ -131,7 +141,10 @@ def _gravar_com_versao(
     versao_lida: int,
     analista_id: int,
     valores: dict[str, Any],
+    evento: EventoIncidente,
 ) -> IncidenteResposta:
+    """UPDATE com a versão lida + evento do histórico, na mesma transação: ou os dois ficam
+    gravados, ou nenhum (um 409 não deixa evento de uma alteração que não aconteceu)."""
     resultado = sessao.execute(
         update(Incidente)
         .where(Incidente.id == incidente_id, Incidente.versao == versao_lida)
@@ -147,6 +160,9 @@ def _gravar_com_versao(
         # Outra requisição gravou entre a leitura e o UPDATE.
         sessao.rollback()
         raise _conflito(sessao, incidente_id)
+    evento.incidente_id = incidente_id
+    evento.analista_id = analista_id
+    sessao.add(evento)
     sessao.commit()
     return obter(sessao, incidente_id)
 
@@ -158,7 +174,25 @@ def editar(
     _exigir_versao_atual(sessao, incidente, dados.versao)
     _exigir_aberto_para_alteracao(incidente)
     _exigir_responsavel_ou_livre(incidente, analista_id)
-    return _gravar_com_versao(sessao, incidente_id, dados.versao, analista_id, dados.alteracoes())
+    alteracoes = dados.alteracoes()
+    # Só conta o que mudou de fato ("" e nulo são o mesmo texto vazio).
+    campos = [
+        campo
+        for campo, valor in alteracoes.items()
+        if (getattr(incidente, campo) or None) != (valor or None)
+    ]
+    if not campos:
+        # Mandar os mesmos valores não é edição: sem nova versão (não gera 409 falso nos outros
+        # analistas) e sem evento vazio no histórico.
+        return IncidenteResposta.model_validate(incidente)
+    return _gravar_com_versao(
+        sessao,
+        incidente_id,
+        dados.versao,
+        analista_id,
+        alteracoes,
+        EventoIncidente(tipo=TipoEvento.EDITADO, campos=campos),
+    )
 
 
 def assumir(
@@ -185,6 +219,11 @@ def assumir(
         versao_lida,
         analista_id,
         {"responsavel_id": analista_id, "status": StatusIncidente.EM_INVESTIGACAO},
+        EventoIncidente(
+            tipo=TipoEvento.ASSUMIDO,
+            status_anterior=incidente.status,
+            status_novo=StatusIncidente.EM_INVESTIGACAO,
+        ),
     )
 
 
@@ -202,6 +241,11 @@ def liberar(
         versao_lida,
         analista_id,
         {"responsavel_id": None, "status": status_apos_liberar(incidente.status)},
+        EventoIncidente(
+            tipo=TipoEvento.LIBERADO,
+            status_anterior=incidente.status,
+            status_novo=status_apos_liberar(incidente.status),
+        ),
     )
 
 
@@ -225,7 +269,14 @@ def mudar_status(
             f"Não é possível mudar de {incidente.status.value} para {novo_status.value}.",
         )
     return _gravar_com_versao(
-        sessao, incidente_id, versao_lida, analista_id, {"status": novo_status}
+        sessao,
+        incidente_id,
+        versao_lida,
+        analista_id,
+        {"status": novo_status},
+        EventoIncidente(
+            tipo=TipoEvento.STATUS, status_anterior=incidente.status, status_novo=novo_status
+        ),
     )
 
 
@@ -244,3 +295,15 @@ def remover(sessao: Session, incidente_id: int, versao_lida: int, analista_id: i
         sessao.rollback()
         raise _conflito(sessao, incidente_id)
     sessao.commit()
+
+
+def listar_eventos(sessao: Session, incidente_id: int) -> list[EventoResposta]:
+    """Histórico do incidente, do mais antigo ao mais novo."""
+    _buscar(sessao, incidente_id)  # 404 se não existe
+    consulta = (
+        select(EventoIncidente)
+        .options(joinedload(EventoIncidente.analista))
+        .where(EventoIncidente.incidente_id == incidente_id)
+        .order_by(EventoIncidente.criado_em, EventoIncidente.id)
+    )
+    return [EventoResposta.model_validate(e) for e in sessao.scalars(consulta)]
