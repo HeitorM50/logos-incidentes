@@ -389,9 +389,8 @@ export function TelaTriagem({ analista, aoSair }: Props) {
           </p>
         </div>
 
-        <div
-          className="min-h-[360px] flex-1 overflow-auto rounded-lg border bg-card"
-        >
+        {/* No celular, os cartões (bg-card) ficam sobre a superfície 2 e a página rola inteira. */}
+        <div className="min-h-[360px] flex-1 overflow-auto rounded-lg border bg-card max-lg:bg-superficie-2">
           {conteudoDaTabela()}
         </div>
       </main>

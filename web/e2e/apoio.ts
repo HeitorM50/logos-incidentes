@@ -13,10 +13,14 @@ export function linhaDeEstado(page: Page) {
   return page.locator('p:not([role])', { hasText: /^Mostrando \d+ de \d+ incidentes/ })
 }
 
-/** Abre a triagem (sessão já guardada) e espera a lista chegar. */
+/** Abre a triagem (sessão já guardada) e espera a lista chegar (tabela, ou cartões no celular). */
 export async function abrirTriagem(page: Page, caminho = '/') {
   await page.goto(caminho)
-  await expect(page.getByRole('table', { name: 'Incidentes' })).toBeVisible()
+  await expect(
+    page
+      .getByRole('table', { name: 'Incidentes' })
+      .or(page.getByRole('list', { name: 'Incidentes' })),
+  ).toBeVisible()
   await expect(linhaDeEstado(page)).toBeVisible()
 }
 

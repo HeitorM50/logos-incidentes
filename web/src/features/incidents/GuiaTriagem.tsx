@@ -163,7 +163,7 @@ export function GuiaTriagem({ aberto, aoMudar }: PropsGuia) {
             </ol>
             <p>
               Para ver a descrição, a placa ou editar e remover, abra os detalhes pela seta no
-              início da linha. Um incidente novo entra por{' '}
+              início da linha (no celular, pelo botão Detalhes do cartão). Um incidente novo entra por{' '}
               <strong className="font-semibold text-foreground">Novo incidente</strong>, ao lado do
               título.
             </p>
