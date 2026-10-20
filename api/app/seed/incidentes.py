@@ -85,7 +85,7 @@ DESCRICOES = [
 ]
 
 
-def _placa(gerador: random.Random) -> str:
+def _gerar_placa(gerador: random.Random) -> str:
     letras = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     return (
         "".join(gerador.choices(letras, k=3))
@@ -93,6 +93,17 @@ def _placa(gerador: random.Random) -> str:
         + gerador.choice(letras)
         + f"{gerador.randint(0, 99):02d}"
     )
+
+
+# Frota de demonstração: 70 caminhões com placa Mercosul fictícia. Os incidentes sorteiam a placa
+# daqui, então o mesmo caminhão aparece em mais de um incidente (problema recorrente), como numa
+# frota real. Gerador próprio: a frota não muda quando o sorteio dos incidentes muda.
+_gerador_frota = random.Random(2026)
+PLACAS_DA_FROTA: list[str] = ["RTA4E21"] + [_gerar_placa(_gerador_frota) for _ in range(69)]
+
+
+def _placa(gerador: random.Random) -> str:
+    return gerador.choice(PLACAS_DA_FROTA)
 
 
 def _status(gerador: random.Random) -> StatusIncidente:

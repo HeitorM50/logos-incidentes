@@ -83,3 +83,9 @@ def test_poucos_abertos_passam_do_prazo_para_assumir(sessao: Session):
     ]
 
     assert 1 <= len(atrasados) <= len(abertos) * 0.3
+
+
+def test_a_frota_repete_caminhoes_entre_incidentes(sessao: Session):
+    # "Mesma placa" nos detalhes precisa de caminhões com mais de um incidente.
+    placas = Counter(i.placa for i in gerar_incidentes(semear_analistas(sessao)))
+    assert sum(1 for n in placas.values() if n > 1) >= 5
