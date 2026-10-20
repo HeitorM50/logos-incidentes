@@ -16,7 +16,7 @@ function simularLista(responder: () => Promise<Response>) {
 function renderizar() {
   const cliente = criarClienteDeConsultas()
   cliente.setDefaultOptions({ queries: { retry: false } })
-  render(
+  return render(
     <QueryClientProvider client={cliente}>
       <TelaTriagem analista={ANA} aoSair={() => {}} />
     </QueryClientProvider>,
@@ -376,5 +376,40 @@ describe('TelaTriagem — filtros', () => {
 
     expect(screen.queryByRole('button', { name: 'Limpar filtros' })).not.toBeInTheDocument()
     expect(linhaDeStatus()?.textContent).toBe('Mostrando 5 de 5 incidentes')
+  })
+})
+
+describe('TelaTriagem — guia', () => {
+  afterEach(() => localStorage.clear())
+
+  it('a dica de primeiro acesso abre o guia e não volta depois de vista', async () => {
+    localStorage.clear()
+    simularLista(async () => respostaJson(200, lista([incidente({ id: 1 })])))
+    const { unmount } = renderizar()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Ver guia' }))
+    const guia = await screen.findByRole('dialog', { name: 'Como funciona a triagem' })
+    expect(within(guia).getByText(/Só o responsável muda o status/)).toBeInTheDocument()
+
+    await userEvent.keyboard('{Escape}')
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    // A dica sumiu com a abertura; o foco vai para o botão de ajuda do cabeçalho.
+    expect(screen.getByRole('button', { name: 'Como funciona a triagem' })).toHaveFocus()
+    expect(screen.queryByRole('button', { name: 'Ver guia' })).toBeNull()
+
+    unmount()
+    renderizar()
+    await screen.findByRole('button', { name: 'Como funciona a triagem' })
+    expect(screen.queryByRole('button', { name: 'Ver guia' })).toBeNull()
+  })
+
+  it('o botão de ajuda do cabeçalho abre o guia', async () => {
+    localStorage.setItem('logos.guia-visto', '1')
+    simularLista(async () => respostaJson(200, lista([incidente({ id: 1 })])))
+    renderizar()
+
+    expect(screen.queryByRole('button', { name: 'Ver guia' })).toBeNull()
+    await userEvent.click(screen.getByRole('button', { name: 'Como funciona a triagem' }))
+    expect(await screen.findByRole('dialog', { name: 'Como funciona a triagem' })).toBeVisible()
   })
 })

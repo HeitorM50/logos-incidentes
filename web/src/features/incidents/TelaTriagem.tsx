@@ -14,6 +14,7 @@ import { CampoBusca, ID_CAMPO_BUSCA } from './CampoBusca'
 import { CartoesCriticidade } from './CartoesCriticidade'
 import { ConfirmarRemocao } from './ConfirmarRemocao'
 import { FiltroCategorias } from './FiltroCategorias'
+import { DicaPrimeiroAcesso, GuiaTriagem } from './GuiaTriagem'
 import {
   alternar,
   descreverFiltros,
@@ -28,6 +29,7 @@ import { TabelaCarregando, TabelaIncidentes } from './TabelaIncidentes'
 import { definirFiltros, useFiltros } from './useFiltros'
 import { useAcoesIncidente } from './useAcoesIncidente'
 import { useAltaNova } from './useAltaNova'
+import { useGuia } from './useGuia'
 import { estadoDaConexao, useIncidentes } from './useIncidentes'
 
 // Uma leitura normal leva menos de 1 s. Acima disto, o servidor do Render está acordando.
@@ -83,6 +85,7 @@ export function TelaTriagem({ analista, aoSair }: Props) {
   const { sobrepor } = acoes
   const itens = useMemo(() => confirmados && sobrepor(confirmados), [confirmados, sobrepor])
   const altaNova = useAltaNova(itens, analista.id, TITULO_DA_ABA)
+  const guia = useGuia()
   const resumo = useMemo(() => (itens ? resumirTriagem(itens, agora) : null), [itens, agora])
 
   const filtros = useFiltros()
@@ -227,6 +230,7 @@ export function TelaTriagem({ analista, aoSair }: Props) {
         estado={estado}
         atualizadoEm={consulta.dataUpdatedAt}
         aoSair={aoSair}
+        aoAbrirAjuda={guia.abrir}
         busca={
           <CampoBusca
             valor={filtros.busca}
@@ -243,6 +247,9 @@ export function TelaTriagem({ analista, aoSair }: Props) {
       )}
 
       <main className="flex min-h-0 flex-1 flex-col gap-3.5 px-4 pt-[18px] pb-4 sm:px-6">
+        {guia.mostrarDica && (
+          <DicaPrimeiroAcesso aoAbrir={guia.abrir} aoDispensar={guia.dispensarDica} />
+        )}
         <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
           <div className="flex items-center gap-4">
             {/* Focável por código: depois de remover, o foco vem para cá (a linha sumiu). */}
@@ -316,6 +323,7 @@ export function TelaTriagem({ analista, aoSair }: Props) {
       <p role="status" className="sr-only">
         {altaNova.anuncio}
       </p>
+      <GuiaTriagem aberto={guia.aberto} aoMudar={guia.setAberto} />
       <PainelIncidente
         modo={painel}
         itens={itens}
