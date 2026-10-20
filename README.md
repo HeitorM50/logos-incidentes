@@ -45,10 +45,15 @@ anônima ou em outro navegador e altere o mesmo incidente nas duas.
   igual à da API. A edição envia só os campos alterados; se outro analista mudou o incidente com o
   painel aberto, o painel mostra quais campos mudaram e deixa escolher entre usar a versão atual
   ou manter as próprias mudanças.
+- **Gestão por exceção ao vivo:** "Atribuídos a mim" mostra a fila do analista; quando chega um
+  incidente Alta novo, um aviso leva até ele, a linha fica destacada e, com a aba em segundo
+  plano, o título conta os novos ("(2) Logos").
+- **Ajuda dentro do app:** o botão "?" abre o guia "Como funciona a triagem", oferecido também
+  no primeiro acesso, para usar o sistema sem instrução externa.
 - **Modo claro e escuro** com transição suave, seguindo o sistema até o analista escolher. Os dois
   temas passam no contraste WCAG AA (verificado por teste automático).
-- **Acessibilidade:** navegação por teclado, foco visível, anúncios para leitor de tela e
-  `prefers-reduced-motion` respeitado. Atalhos: `Ctrl+K` ou `/` levam à busca.
+- **Acessibilidade:** navegação por teclado, foco visível, lista com semântica de tabela,
+  anúncios para leitor de tela e `prefers-reduced-motion` respeitado. Atalhos: `Ctrl+K` ou `/` levam à busca.
 
 ## Arquitetura
 
