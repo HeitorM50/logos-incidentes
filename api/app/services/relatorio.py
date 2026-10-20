@@ -184,6 +184,15 @@ def registro(sessao: Session, horas: int, agora: datetime | None = None) -> Regi
         if m.status_novo == StatusIncidente.FECHADO:
             fechamento.setdefault(m.incidente_id, (m.criado_em, m.comentario))
 
+    # Título de cada incidente citado na linha do tempo (alguns chegaram antes do período).
+    titulos = dict(
+        sessao.execute(
+            select(Incidente.id, Incidente.titulo).where(
+                Incidente.id.in_({e.incidente_id for e in eventos} or {0})
+            )
+        ).all()
+    )
+
     return RegistroDoPeriodo(
         horas=horas,
         inicio=inicio,
@@ -207,5 +216,10 @@ def registro(sessao: Session, horas: int, agora: datetime | None = None) -> Regi
             )
             for i in incidentes
         ],
-        eventos=[EventoDoRegistro.model_validate(e) for e in eventos],
+        eventos=[
+            EventoDoRegistro.model_validate(e).model_copy(
+                update={"incidente_titulo": titulos.get(e.incidente_id, "")}
+            )
+            for e in eventos
+        ],
     )

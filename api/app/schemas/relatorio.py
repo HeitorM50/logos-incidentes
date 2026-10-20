@@ -57,6 +57,7 @@ class IncidenteDoRegistro(BaseModel):
 
 class EventoDoRegistro(EventoResposta):
     incidente_id: int
+    incidente_titulo: str = ""
 
 
 class RegistroDoPeriodo(BaseModel):

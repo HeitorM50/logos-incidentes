@@ -92,3 +92,7 @@ def test_registro_traz_recebidos_fechados_e_a_linha_do_tempo(cliente: TestClient
     assert (antigo["id"], "criado") not in tipos
     assert (antigo["id"], "status") in tipos
     assert (novo["id"], "criado") in tipos
+    assert {e["incidente_titulo"] for e in corpo["eventos"]} == {
+        "Pneu estourado antigo",
+        "Neblina na serra",
+    }
