@@ -51,7 +51,7 @@ describe('TelaTriagem', () => {
         '[data-incidente]',
       ),
     ]
-    expect(linhas.map((l) => within(l).getByText(/^#\d+$/).textContent)).toEqual(['#7', '#3', '#9'])
+    expect(linhas.map((l) => within(l).getByText(/^#\d+$/).textContent)).toEqual(['#7', '#3'])
     expect(within(linhas[1]).getByText('Você')).toBeInTheDocument()
     expect(within(linhas[0]).getByText('há 30 min')).toBeInTheDocument()
 
@@ -264,12 +264,32 @@ describe('TelaTriagem — filtros', () => {
     await userEvent.click(alta)
 
     expect(alta).toHaveAttribute('aria-pressed', 'true')
-    expect(await idsVisiveis()).toEqual(['#1', '#12', '#20'])
-    // O cartão conta 2 ativos; o aviso explica a terceira linha.
+    expect(await idsVisiveis()).toEqual(['#1', '#12'])
+    // O Alta fechado não aparece em "Ativos"; a linha de estado diz onde ele está.
     expect(linhaDeStatus()?.textContent).toBe(
-      'Mostrando 3 de 5 incidentes (filtrado) · 1 fechado no fim da lista',
+      'Mostrando 2 de 4 incidentes ativos (filtrado) · 1 fechado em "Fechados"',
     )
     await waitFor(() => expect(window.location.search).toBe('?criticidade=alta'))
+  })
+
+  it('"Fechados" e "Todos" trazem os fechados; a escolha vai para a URL', async () => {
+    abrirCom()
+    const situacao = await screen.findByRole('group', { name: 'Situação' })
+    await userEvent.click(await within(situacao).findByRole('button', { name: 'Fechados, 1 fechado' }))
+
+    expect(await idsVisiveis()).toEqual(['#20'])
+    expect(linhaDeStatus()?.textContent).toBe('Mostrando 1 de 1 incidente fechado (filtrado)')
+    await waitFor(() => expect(window.location.search).toBe('?situacao=fechados'))
+
+    await userEvent.click(within(situacao).getByRole('button', { name: 'Todos, 5 incidentes' }))
+    expect(await idsVisiveis()).toEqual(['#1', '#2', '#3', '#12', '#20'])
+    expect(linhaDeStatus()?.textContent).toBe(
+      'Mostrando 5 de 5 incidentes (filtrado) · 1 fechado no fim da lista',
+    )
+
+    // "Limpar filtros" volta para "Ativos".
+    await userEvent.click(screen.getByRole('button', { name: 'Limpar filtros' }))
+    expect(await idsVisiveis()).toEqual(['#1', '#2', '#3', '#12'])
   })
 
   it('"Atribuídos a mim" mostra só os incidentes assumidos pelo analista', async () => {
@@ -291,7 +311,7 @@ describe('TelaTriagem — filtros', () => {
     await userEvent.click(fila)
 
     expect(fila).toHaveAttribute('aria-pressed', 'true')
-    expect(await idsVisiveis()).toEqual(['#1', '#4'])
+    expect(await idsVisiveis()).toEqual(['#1'])
     await waitFor(() => expect(window.location.search).toBe('?responsavel=eu'))
   })
 
@@ -367,20 +387,20 @@ describe('TelaTriagem — filtros', () => {
 
     await userEvent.keyboard('{Escape}')
     expect(busca).toHaveValue('')
-    expect(await idsVisiveis()).toEqual(['#1', '#2', '#3', '#12', '#20'])
+    expect(await idsVisiveis()).toEqual(['#1', '#2', '#3', '#12'])
   })
 
   it('anuncia a contagem ao leitor de tela só quando a digitação para', async () => {
     abrirCom()
     const busca = await screen.findByRole('searchbox', { name: 'Buscar incidente' })
-    await waitFor(() => expect(anuncio()).toHaveTextContent('Mostrando 5 de 5'))
+    await waitFor(() => expect(anuncio()).toHaveTextContent('Mostrando 4 de 4'))
 
     await userEvent.type(busca, 'pane')
 
-    expect(linhaDeStatus()).toHaveTextContent('Mostrando 2 de 5 incidentes (filtrado)')
-    expect(anuncio()).toHaveTextContent('Mostrando 5 de 5')
+    expect(linhaDeStatus()).toHaveTextContent('Mostrando 2 de 4 incidentes ativos (filtrado)')
+    expect(anuncio()).toHaveTextContent('Mostrando 4 de 4')
     await waitFor(() =>
-      expect(anuncio()).toHaveTextContent('Mostrando 2 de 5 incidentes (filtrado)'),
+      expect(anuncio()).toHaveTextContent('Mostrando 2 de 4 incidentes ativos (filtrado)'),
     )
   })
 
@@ -418,7 +438,7 @@ describe('TelaTriagem — filtros', () => {
 
     await userEvent.click(within(painel).getByRole('button', { name: 'Limpar filtros' }))
 
-    expect(await idsVisiveis()).toEqual(['#1', '#2', '#3', '#12', '#20'])
+    expect(await idsVisiveis()).toEqual(['#1', '#2', '#3', '#12'])
     expect(screen.queryByRole('button', { name: 'Limpar filtros' })).not.toBeInTheDocument()
     expect(screen.getByRole('searchbox', { name: 'Buscar incidente' })).toHaveFocus()
     await waitFor(() => expect(window.location.search).toBe(''))
@@ -432,7 +452,7 @@ describe('TelaTriagem — filtros', () => {
     })
 
     expect(screen.queryByRole('button', { name: 'Limpar filtros' })).not.toBeInTheDocument()
-    expect(linhaDeStatus()?.textContent).toBe('Mostrando 5 de 5 incidentes')
+    expect(linhaDeStatus()?.textContent).toBe('Mostrando 4 de 4 incidentes ativos')
   })
 })
 

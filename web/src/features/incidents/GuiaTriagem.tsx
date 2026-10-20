@@ -103,7 +103,9 @@ export function GuiaTriagem({ aberto, aoMudar }: PropsGuia) {
           <Secao titulo="1. O que atender primeiro">
             <p>
               A lista já vem ordenada: criticidade Alta primeiro e, dentro dela, o incidente aberto
-              há mais tempo. Os fechados ficam no fim.
+              há mais tempo. A triagem mostra só os ativos; os fechados ficam em{' '}
+              <strong className="font-semibold text-foreground">Fechados</strong>, acima da lista,
+              com o fechado mais recente primeiro.
             </p>
             <p className="flex flex-wrap gap-2" aria-hidden>
               {CRITICIDADES.map((c) => (

@@ -20,11 +20,14 @@ import {
   descreverFiltros,
   filtrarIncidentes,
   SEM_FILTROS,
+  type ResultadoFiltro,
+  type Situacao,
   temFiltro,
 } from './filtros'
 import { PainelIncidente, type Concluido, type ModoPainel } from './PainelIncidente'
 import { PainelAcordando, PainelErro, PainelVazio, PainelVazioFiltro } from './PainelEstado'
 import { resumirTriagem } from './resumo'
+import { SeletorSituacao } from './SeletorSituacao'
 import { TabelaCarregando, TabelaIncidentes } from './TabelaIncidentes'
 import { definirFiltros, useFiltros } from './useFiltros'
 import { useAcoesIncidente } from './useAcoesIncidente'
@@ -58,16 +61,35 @@ function Entrada({ children }: { children: ReactNode }) {
   return <div className="h-full animate-in duration-200 fade-in-0">{children}</div>
 }
 
-function textoMostrando(visiveis: Incidente[], total: number, filtrando: boolean): string {
-  const palavra = total === 1 ? 'incidente' : 'incidentes'
-  const texto = `Mostrando ${visiveis.length} de ${total} ${palavra}`
-  if (!filtrando) return texto
-  // Os cartões contam só ativos; a lista filtrada traz também os fechados, no fim. O aviso
-  // explica a diferença entre "ALTA 26" e "Mostrando 31".
-  const fechados = visiveis.filter((i) => i.status === 'fechado').length
-  if (!fechados) return `${texto} (filtrado)`
-  const rotulo = fechados === 1 ? 'fechado' : 'fechados'
-  return `${texto} (filtrado) · ${fechados} ${rotulo} no fim da lista`
+const PALAVRA_SITUACAO: Record<Situacao, [string, string]> = {
+  ativos: ['incidente ativo', 'incidentes ativos'],
+  fechados: ['incidente fechado', 'incidentes fechados'],
+  todos: ['incidente', 'incidentes'],
+}
+
+/**
+ * "Mostrando 31 de 94 incidentes ativos (filtrado)". Em "Todos", os cartões contam só ativos e
+ * a lista traz também os fechados, no fim: o aviso explica a diferença. Em "Ativos", uma busca
+ * que só acha fechados diz que eles existem (estão em "Fechados").
+ */
+function textoMostrando(
+  resultado: ResultadoFiltro,
+  situacao: Situacao,
+  total: number,
+  filtrando: boolean,
+): string {
+  const [singular, plural] = PALAVRA_SITUACAO[situacao]
+  const texto = `Mostrando ${resultado.itens.length} de ${total} ${total === 1 ? singular : plural}`
+  const extras: string[] = []
+  if (situacao === 'todos') {
+    const fechados = resultado.itens.filter((i) => i.status === 'fechado').length
+    if (fechados) extras.push(`${fechados} ${fechados === 1 ? 'fechado' : 'fechados'} no fim da lista`)
+  }
+  if (situacao === 'ativos' && filtrando && resultado.fechadosOcultos) {
+    const n = resultado.fechadosOcultos
+    extras.push(`${n} ${n === 1 ? 'fechado' : 'fechados'} em "Fechados"`)
+  }
+  return [filtrando ? `${texto} (filtrado)` : texto, ...extras].join(' · ')
 }
 
 interface Props {
@@ -226,7 +248,13 @@ export function TelaTriagem({ analista, aoSair }: Props) {
   }
 
   function mostrarNaLista(id: number) {
-    definirFiltros(() => ({ ...SEM_FILTROS, busca: `#${id}` }))
+    // Um fechado só aparece em "Fechados": a busca precisa olhar a situação certa.
+    const fechado = itens?.find((i) => i.id === id)?.status === 'fechado'
+    definirFiltros(() => ({
+      ...SEM_FILTROS,
+      situacao: fechado ? 'fechados' : 'ativos',
+      busca: `#${id}`,
+    }))
     setSucesso(null)
     document.getElementById(ID_CAMPO_BUSCA)?.focus()
   }
@@ -240,7 +268,16 @@ export function TelaTriagem({ analista, aoSair }: Props) {
   const acordando = segundosAguardando >= ESPERA_NORMAL_S
 
   const linhaEstado = resultado
-    ? textoMostrando(resultado.itens, itens?.length ?? 0, filtrando)
+    ? textoMostrando(
+        resultado,
+        filtros.situacao,
+        filtros.situacao === 'ativos'
+          ? (resumo?.ativos ?? 0)
+          : filtros.situacao === 'fechados'
+            ? (resumo?.fechados ?? 0)
+            : (itens?.length ?? 0),
+        filtrando,
+      )
     : estado === 'sem_conexao'
       ? 'Falha ao carregar a lista'
       : acordando
@@ -363,29 +400,41 @@ export function TelaTriagem({ analista, aoSair }: Props) {
           }
         />
         <FiltroCategorias
-          contagem={resultado?.ativosPorCategoria ?? null}
+          contagem={resultado?.porCategoria ?? null}
+          situacao={filtros.situacao}
           selecionadas={filtros.categorias}
           aoAlternar={(c) =>
             definirFiltros((atuais) => ({ ...atuais, categorias: alternar(atuais.categorias, c) }))
           }
           minhaFila={{
             marcada: filtros.minhaFila,
-            contagem: resultado?.ativosNaMinhaFila ?? null,
+            contagem: resultado?.naMinhaFila ?? null,
             aoAlternar: () =>
               definirFiltros((atuais) => ({ ...atuais, minhaFila: !atuais.minhaFila })),
           }}
           aoLimpar={filtrando ? limparFiltros : undefined}
         />
 
-        <div className="flex flex-wrap justify-between gap-x-4 gap-y-1 text-[13px]">
-          <p className="text-texto-2">{linhaEstado}</p>
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-[13px]">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <SeletorSituacao
+              situacao={filtros.situacao}
+              contagem={resultado?.porSituacao ?? null}
+              aoEscolher={(situacao) => definirFiltros((atuais) => ({ ...atuais, situacao }))}
+            />
+            <p className="text-texto-2">{linhaEstado}</p>
+          </div>
           {/* O leitor de tela ouve a contagem só quando a digitação para: sem isto, cada
               letra da busca geraria um anúncio. */}
           <p role="status" className="sr-only">
             {linhaAnunciada}
           </p>
           <p className="text-texto-3">
-            Ordem: criticidade alta primeiro e, dentro dela, o mais antigo · fechados ao fim
+            {filtros.situacao === 'fechados'
+              ? 'Ordem: fechado mais recente primeiro'
+              : filtros.situacao === 'todos'
+                ? 'Ordem: criticidade alta primeiro e, dentro dela, o mais antigo · fechados ao fim'
+                : 'Ordem: criticidade alta primeiro e, dentro dela, o mais antigo'}
           </p>
         </div>
 

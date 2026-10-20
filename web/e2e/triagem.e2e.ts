@@ -6,7 +6,7 @@ test.use({ storageState: SESSAO_ANA })
 test('triagem: contadores, filtro pelo cartão, URL e busca', async ({ page }) => {
   await abrirTriagem(page)
   const estado = linhaDeEstado(page)
-  await expect(estado).toHaveText(/^Mostrando (\d+) de \1 incidentes$/)
+  await expect(estado).toHaveText(/^Mostrando (\d+) de \1 incidentes ativos$/)
 
   // O cartão de criticidade é filtro e vai para a URL.
   await page.getByRole('button', { name: /^Alta: \d+ ativos/ }).click()

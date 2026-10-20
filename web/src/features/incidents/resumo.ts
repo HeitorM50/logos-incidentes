@@ -52,3 +52,10 @@ export function resumirTriagem(itens: Incidente[], agora: number): ResumoTriagem
 export function quantosAtivos(n: number): string {
   return `${n} ${n === 1 ? 'ativo' : 'ativos'}`
 }
+
+/** "3 ativos", "1 fechado" ou "5 incidentes", conforme a situação escolhida no seletor. */
+export function quantosNaSituacao(n: number, situacao: 'ativos' | 'fechados' | 'todos'): string {
+  if (situacao === 'ativos') return quantosAtivos(n)
+  if (situacao === 'fechados') return `${n} ${n === 1 ? 'fechado' : 'fechados'}`
+  return `${n} ${n === 1 ? 'incidente' : 'incidentes'}`
+}

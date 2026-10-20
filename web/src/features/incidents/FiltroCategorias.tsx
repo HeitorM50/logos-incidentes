@@ -2,14 +2,17 @@ import { Check, UserRound } from 'lucide-react'
 import { ROTULO_CATEGORIA } from '@/api/rotulos'
 import { CATEGORIAS, type Categoria } from '@/api/tipos'
 import { cn } from '@/lib/utils'
-import { quantosAtivos } from './resumo'
+import type { Situacao } from './filtros'
+import { quantosNaSituacao } from './resumo'
 
 interface Props {
-  /** Ativos que cada categoria mostraria; null enquanto a primeira leitura não chegou. */
+  /** Quantos cada categoria mostraria; null enquanto a primeira leitura não chegou. */
   contagem: Record<Categoria, number> | null
+  /** A situação escolhida (ativos, fechados, todos): define a palavra do número. */
+  situacao: Situacao
   selecionadas: Categoria[]
   aoAlternar: (categoria: Categoria) => void
-  /** "Minha fila": ativos atribuídos ao analista (null antes da primeira leitura). */
+  /** "Minha fila": incidentes atribuídos ao analista (null antes da primeira leitura). */
   minhaFila: { marcada: boolean; contagem: number | null; aoAlternar: () => void }
   /** Aparece só com algum filtro ativo (criticidade, categoria, minha fila ou busca). */
   aoLimpar?: () => void
@@ -22,6 +25,7 @@ const CHIP_LIVRE = 'border-borda-forte bg-card text-foreground hover:bg-superfic
 
 export function FiltroCategorias({
   contagem,
+  situacao,
   selecionadas,
   aoAlternar,
   minhaFila,
@@ -42,7 +46,7 @@ export function FiltroCategorias({
               type="button"
               aria-pressed={marcada}
               // Nome explícito: sem ele o leitor de tela junta rótulo e número ("Vítimas1").
-              aria-label={contagem ? `${rotulo}, ${quantosAtivos(contagem[categoria])}` : rotulo}
+              aria-label={contagem ? `${rotulo}, ${quantosNaSituacao(contagem[categoria], situacao)}` : rotulo}
               onClick={() => aoAlternar(categoria)}
               className={cn(CHIP, marcada ? CHIP_MARCADO : CHIP_LIVRE)}
             >
@@ -72,7 +76,7 @@ export function FiltroCategorias({
         aria-label={
           minhaFila.contagem === null
             ? 'Atribuídos a mim'
-            : `Atribuídos a mim, ${quantosAtivos(minhaFila.contagem)}`
+            : `Atribuídos a mim, ${quantosNaSituacao(minhaFila.contagem, situacao)}`
         }
         onClick={minhaFila.aoAlternar}
         className={cn(CHIP, minhaFila.marcada ? CHIP_MARCADO : CHIP_LIVRE)}

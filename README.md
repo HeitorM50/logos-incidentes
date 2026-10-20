@@ -129,6 +129,9 @@ mudar status, liberar e remover.
   cada contador pode mostrar quantos itens o filtro traria sem nova chamada à API.
 - O estado fica na **URL** (`?criticidade=alta&categoria=acidente_vitimas&busca=br-116`): recarregar
   ou compartilhar o link mantém a visão.
+- A triagem mostra só os **ativos**. O seletor **Ativos / Fechados / Todos** traz o que já foi
+  resolvido: em "Fechados", o fechado mais recente vem primeiro e a coluna "Tempo aberto" mostra
+  quanto o incidente ficou aberto até fechar.
 - A API também aceita os mesmos filtros (`GET /incidentes?criticidade=alta&status=aberto`), para
   quando o volume não couber mais em uma lista.
 

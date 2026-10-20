@@ -9,7 +9,7 @@ import { HistoricoIncidente } from './HistoricoIncidente'
 import { BotaoComMotivo } from './BotaoComMotivo'
 import { motivoEdicao } from './formulario'
 import { IconeCriticidade, IconeStatus } from './Icones'
-import { formatarTempoAberto, minutosDesde } from './tempo'
+import { tempoDoIncidente } from './tempo'
 import type { Conflito } from './useAcoesIncidente'
 
 // Mínimos somam 1.280 px com espaços: a tabela cabe sem rolagem lateral num notebook de 1366
@@ -152,7 +152,8 @@ export function LinhaIncidente({
             <span className="font-mono text-xs text-texto-3">#{incidente.id}</span>
             <Marcadores incidente={incidente} novo={novo} />
             <span className="ml-auto font-mono text-xs whitespace-nowrap text-texto-2">
-              {formatarTempoAberto(minutosDesde(incidente.criado_em, agora))}
+              {fechado && 'aberto por '}
+              {tempoDoIncidente(incidente, agora)}
             </span>
           </div>
           <p
@@ -221,8 +222,12 @@ export function LinhaIncidente({
           {incidente.local}
         </span>
 
-        <span role="cell" className="font-mono text-[13px] whitespace-nowrap">
-          {formatarTempoAberto(minutosDesde(incidente.criado_em, agora))}
+        <span
+          role="cell"
+          title={fechado ? 'Quanto ficou aberto até fechar' : undefined}
+          className="font-mono text-[13px] whitespace-nowrap"
+        >
+          {tempoDoIncidente(incidente, agora)}
         </span>
 
         <span role="cell">

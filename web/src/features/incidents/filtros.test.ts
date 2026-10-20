@@ -14,6 +14,7 @@ import {
 describe('filtros na URL', () => {
   it('ida e volta mantém a seleção', () => {
     const filtros = {
+      situacao: 'fechados' as const,
       criticidades: ['alta' as const, 'baixa' as const],
       categorias: ['bloqueio_pista' as const],
       busca: 'BR-116',
@@ -23,7 +24,7 @@ describe('filtros na URL', () => {
     const query = filtrosParaUrl(filtros)
 
     expect(query).toBe(
-      'criticidade=alta,baixa&categoria=bloqueio_pista&responsavel=eu&busca=BR-116',
+      'situacao=fechados&criticidade=alta,baixa&categoria=bloqueio_pista&responsavel=eu&busca=BR-116',
     )
     expect(filtrosDaUrl(`?${query}`)).toEqual(filtros)
   })
@@ -35,7 +36,10 @@ describe('filtros na URL', () => {
   })
 
   it('descarta valores desconhecidos de um link editado à mão', () => {
-    expect(filtrosDaUrl('?criticidade=alta,urgente&categoria=xyz&responsavel=bruno')).toEqual({
+    expect(
+      filtrosDaUrl('?situacao=arquivados&criticidade=alta,urgente&categoria=xyz&responsavel=bruno'),
+    ).toEqual({
+      situacao: 'ativos',
       criticidades: ['alta'],
       categorias: [],
       busca: '',
@@ -46,6 +50,12 @@ describe('filtros na URL', () => {
   it('não escreve parâmetro quando não há filtro', () => {
     expect(filtrosParaUrl({ ...SEM_FILTROS, busca: '   ' })).toBe('')
     expect(temFiltro({ ...SEM_FILTROS, busca: '   ' })).toBe(false)
+  })
+
+  it('"Ativos" é o padrão e fica fora da URL; as outras situações contam como filtro', () => {
+    expect(filtrosParaUrl(SEM_FILTROS)).toBe('')
+    expect(filtrosParaUrl({ ...SEM_FILTROS, situacao: 'todos' })).toBe('situacao=todos')
+    expect(temFiltro({ ...SEM_FILTROS, situacao: 'fechados' })).toBe(true)
   })
 })
 
@@ -88,23 +98,43 @@ describe('filtrarIncidentes', () => {
   ]
 
   it('combina criticidade e categoria e mantém a ordem da API', () => {
-    const { itens: visiveis } = filtrarIncidentes(itens, {
-      ...SEM_FILTROS,
-      criticidades: ['alta'],
-      categorias: ['bloqueio_pista'],
-    }, ANA.id)
+    const filtros = { ...SEM_FILTROS, criticidades: ['alta' as const], categorias: ['bloqueio_pista' as const] }
+    const ativos = filtrarIncidentes(itens, filtros, ANA.id)
+    expect(ativos.itens.map((i) => i.id)).toEqual([1])
+    // O fechado que passa nos outros filtros é contado como oculto.
+    expect(ativos.fechadosOcultos).toBe(1)
 
-    expect(visiveis.map((i) => i.id)).toEqual([1, 4])
+    const todos = filtrarIncidentes(itens, { ...filtros, situacao: 'todos' }, ANA.id)
+    expect(todos.itens.map((i) => i.id)).toEqual([1, 4])
+    expect(todos.porSituacao).toEqual({ ativos: 1, fechados: 1, todos: 2 })
   })
 
-  it('conta cada categoria com a criticidade escolhida, só os ativos', () => {
-    const { ativosPorCategoria } = filtrarIncidentes(itens, {
-      ...SEM_FILTROS,
-      criticidades: ['alta'],
-    }, ANA.id)
+  it('conta cada categoria com a criticidade e a situação escolhidas', () => {
+    const ativos = filtrarIncidentes(itens, { ...SEM_FILTROS, criticidades: ['alta'] }, ANA.id)
+    expect(ativos.porCategoria.bloqueio_pista).toBe(1)
+    expect(ativos.porCategoria.problema_mecanico).toBe(1)
 
-    expect(ativosPorCategoria.bloqueio_pista).toBe(1)
-    expect(ativosPorCategoria.problema_mecanico).toBe(1)
+    const fechados = filtrarIncidentes(
+      itens,
+      { ...SEM_FILTROS, situacao: 'fechados', criticidades: ['alta'] },
+      ANA.id,
+    )
+    expect(fechados.porCategoria.bloqueio_pista).toBe(1)
+    expect(fechados.porCategoria.problema_mecanico).toBe(0)
+  })
+
+  it('"Fechados" mostra só os fechados, o fechado mais recente primeiro', () => {
+    const fechados = [
+      incidente({ id: 7, status: 'fechado', atualizado_em: '2026-10-20T10:00:00Z' }),
+      incidente({ id: 8 }),
+      incidente({ id: 9, status: 'fechado', atualizado_em: '2026-10-20T12:00:00Z' }),
+    ]
+    const { itens: visiveis } = filtrarIncidentes(
+      fechados,
+      { ...SEM_FILTROS, situacao: 'fechados' },
+      ANA.id,
+    )
+    expect(visiveis.map((i) => i.id)).toEqual([9, 7])
   })
 
   it('base dos cartões ignora o filtro de criticidade', () => {
@@ -128,11 +158,11 @@ describe('filtrarIncidentes', () => {
 
     const desligado = filtrarIncidentes(fila, { ...SEM_FILTROS, criticidades: ['alta'] }, ANA.id)
     // A contagem do botão vale com a fila desligada: é o que ele mostraria ao ser ligado.
-    expect(desligado.ativosNaMinhaFila).toBe(1)
+    expect(desligado.naMinhaFila).toBe(1)
 
     const ligado = filtrarIncidentes(fila, { ...SEM_FILTROS, minhaFila: true }, ANA.id)
-    expect(ligado.itens.map((i) => i.id)).toEqual([1, 3, 4])
-    expect(ligado.ativosNaMinhaFila).toBe(2)
+    expect(ligado.itens.map((i) => i.id)).toEqual([1, 3])
+    expect(ligado.naMinhaFila).toBe(2)
     // Os cartões de criticidade também respeitam a fila.
     expect(ligado.semFiltroDeCriticidade.map((i) => i.id)).toEqual([1, 3, 4])
   })
@@ -147,6 +177,7 @@ describe('auxiliares', () => {
   it('descreve o filtro atual', () => {
     expect(
       descreverFiltros({
+        situacao: 'ativos',
         criticidades: ['alta', 'media'],
         categorias: ['bloqueio_pista'],
         busca: ' br ',

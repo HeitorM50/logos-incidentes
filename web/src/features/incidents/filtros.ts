@@ -11,7 +11,12 @@ import {
 // o filtro roda no front: troca instantânea, sem nova requisição, e as contagens de cada
 // opção saem da mesma lista.
 
+/** Ativos (padrão: o que pede ação), só os fechados (consulta do que já foi resolvido) ou todos. */
+export const SITUACOES = ['ativos', 'fechados', 'todos'] as const
+export type Situacao = (typeof SITUACOES)[number]
+
 export interface Filtros {
+  situacao: Situacao
   criticidades: Criticidade[]
   categorias: Categoria[]
   busca: string
@@ -20,6 +25,7 @@ export interface Filtros {
 }
 
 export const SEM_FILTROS: Filtros = {
+  situacao: 'ativos',
   criticidades: [],
   categorias: [],
   busca: '',
@@ -28,6 +34,7 @@ export const SEM_FILTROS: Filtros = {
 
 // Nomes curtos na URL: `?criticidade=alta,media&categoria=bloqueio_pista&busca=br-116`.
 // `responsavel=eu` é o mesmo parâmetro que a API aceita em GET /incidentes.
+const PARAM_SITUACAO = 'situacao'
 const PARAM_CRITICIDADE = 'criticidade'
 const PARAM_CATEGORIA = 'categoria'
 const PARAM_BUSCA = 'busca'
@@ -43,7 +50,9 @@ function lerLista<T extends string>(valor: string | null, validos: readonly T[])
 
 export function filtrosDaUrl(consulta: string): Filtros {
   const params = new URLSearchParams(consulta)
+  const situacao = SITUACOES.find((s) => s === params.get(PARAM_SITUACAO)) ?? 'ativos'
   return {
+    situacao,
     criticidades: lerLista(params.get(PARAM_CRITICIDADE), CRITICIDADES),
     categorias: lerLista(params.get(PARAM_CATEGORIA), CATEGORIAS),
     busca: params.get(PARAM_BUSCA) ?? '',
@@ -54,6 +63,8 @@ export function filtrosDaUrl(consulta: string): Filtros {
 /** Devolve a query string ("" quando não há filtro), sem o "?". */
 export function filtrosParaUrl(filtros: Filtros): string {
   const params = new URLSearchParams()
+  // "ativos" é o padrão e fica fora da URL: a triagem sem parâmetros continua limpa.
+  if (filtros.situacao !== 'ativos') params.set(PARAM_SITUACAO, filtros.situacao)
   if (filtros.criticidades.length) {
     const criticidades = CRITICIDADES.filter((c) => filtros.criticidades.includes(c))
     params.set(PARAM_CRITICIDADE, criticidades.join(','))
@@ -69,6 +80,7 @@ export function filtrosParaUrl(filtros: Filtros): string {
 
 export function temFiltro(filtros: Filtros): boolean {
   return (
+    filtros.situacao !== 'ativos' ||
     filtros.criticidades.length > 0 ||
     filtros.categorias.length > 0 ||
     filtros.minhaFila ||
@@ -79,6 +91,7 @@ export function temFiltro(filtros: Filtros): boolean {
 /** Texto do filtro atual, para o estado vazio: "Criticidade Alta · Bloqueio de Pista". */
 export function descreverFiltros(filtros: Filtros): string {
   const partes: string[] = []
+  if (filtros.situacao === 'fechados') partes.push('fechados')
   if (filtros.criticidades.length) {
     partes.push(`Criticidade ${filtros.criticidades.map((c) => ROTULO_CRITICIDADE[c]).join(', ')}`)
   }
@@ -142,16 +155,28 @@ export interface ResultadoFiltro {
   itens: Incidente[]
   /** Incidentes que passam nos outros filtros: base dos cartões de criticidade. */
   semFiltroDeCriticidade: Incidente[]
-  /** Ativos que cada categoria mostraria se fosse escolhida. */
-  ativosPorCategoria: Record<Categoria, number>
-  /** Ativos atribuídos ao analista que "Minha fila" mostraria. */
-  ativosNaMinhaFila: number
+  /** Quantos incidentes (da situação escolhida) cada categoria mostraria. */
+  porCategoria: Record<Categoria, number>
+  /** Quantos incidentes (da situação escolhida) do analista "Minha fila" mostraria. */
+  naMinhaFila: number
+  /** Quantos incidentes de cada situação os outros filtros deixam passar (rótulos do seletor). */
+  porSituacao: Record<Situacao, number>
+  /** Fechados que passariam nos outros filtros mas a situação "Ativos" esconde. */
+  fechadosOcultos: number
+}
+
+function naSituacao(incidente: Incidente, situacao: Situacao): boolean {
+  if (situacao === 'todos') return true
+  return (incidente.status === 'fechado') === (situacao === 'fechados')
 }
 
 /**
- * Aplica os filtros mantendo a ordem da API. A contagem de cada opção usa os outros filtros
- * já escolhidos: o número no botão é quantos incidentes ATIVOS a lista mostra ao clicar nele.
- * A lista também traz os fechados (no fim), que não pedem ação e não entram na contagem.
+ * Aplica os filtros. A contagem de cada opção usa os outros filtros já escolhidos: o número
+ * no botão é quantos incidentes a lista mostra ao clicar nele.
+ *
+ * Ordem: a da API (criticidade, depois o mais antigo; fechados no fim). Em "Fechados", o
+ * fechado mais recente vem primeiro: é o que o analista procura ao consultar o que já foi
+ * resolvido. Fechado é final, então `atualizado_em` é a hora do fechamento.
  */
 export function filtrarIncidentes(
   itens: Incidente[],
@@ -166,24 +191,43 @@ export function filtrarIncidentes(
     !filtros.categorias.length || filtros.categorias.includes(i.categoria)
 
   const semFiltroDeCriticidade: Incidente[] = []
-  const ativosPorCategoria = Object.fromEntries(CATEGORIAS.map((c) => [c, 0])) as Record<
+  const porCategoria = Object.fromEntries(CATEGORIAS.map((c) => [c, 0])) as Record<
     Categoria,
     number
   >
+  const porSituacao: Record<Situacao, number> = { ativos: 0, fechados: 0, todos: 0 }
   const visiveis: Incidente[] = []
-  let ativosNaMinhaFila = 0
+  let naMinhaFila = 0
+  let fechadosOcultos = 0
 
   for (const incidente of itens) {
     if (!busca(incidente)) continue
     const critOk = criticidadeOk(incidente)
     const catOk = categoriaOk(incidente)
-    const ativo = incidente.status !== 'fechado'
-    if (critOk && catOk && ativo && meu(incidente)) ativosNaMinhaFila++
+    const sitOk = naSituacao(incidente, filtros.situacao)
+    if (critOk && catOk && sitOk && meu(incidente)) naMinhaFila++
     if (filtros.minhaFila && !meu(incidente)) continue
-    if (critOk && catOk) visiveis.push(incidente)
+    if (critOk && catOk) {
+      porSituacao.todos++
+      porSituacao[incidente.status === 'fechado' ? 'fechados' : 'ativos']++
+      if (sitOk) visiveis.push(incidente)
+      else if (filtros.situacao === 'ativos') fechadosOcultos++
+    }
+    // Os cartões de criticidade contam ativos (resumo.ts), qualquer que seja a situação.
     if (catOk) semFiltroDeCriticidade.push(incidente)
-    if (critOk && ativo) ativosPorCategoria[incidente.categoria]++
+    if (critOk && sitOk) porCategoria[incidente.categoria]++
   }
 
-  return { itens: visiveis, semFiltroDeCriticidade, ativosPorCategoria, ativosNaMinhaFila }
+  if (filtros.situacao === 'fechados') {
+    visiveis.sort((a, b) => b.atualizado_em.localeCompare(a.atualizado_em))
+  }
+
+  return {
+    itens: visiveis,
+    semFiltroDeCriticidade,
+    porCategoria,
+    naMinhaFila,
+    porSituacao,
+    fechadosOcultos,
+  }
 }
