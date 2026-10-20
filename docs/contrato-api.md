@@ -60,6 +60,14 @@ Os valores trafegam como códigos estáveis; o front traduz para os rótulos do 
 Gravado **na mesma transação** da alteração: um 409 ou uma falha não deixam evento de algo que
 não aconteceu. Índice `ix_eventos_incidente_linha_do_tempo (incidente_id, criado_em)`.
 
+**dispositivos** e **ingestoes** (ingestão pelos caminhões, ADR 0008)
+
+| Tabela | Colunas | Regra |
+|---|---|---|
+| dispositivos | id, nome, placa, chave_hash, ativo, criado_em | `chave_hash` = SHA-256 da chave, único |
+| ingestoes | id, dispositivo_id, chave, corpo_hash, incidente_id, criado_em | `UNIQUE (dispositivo_id, chave)`; `corpo_hash` detecta a chave reutilizada; `incidente_id` vira nulo se o incidente for removido |
+| incidentes | + dispositivo_id | origem do incidente; nulo quando um analista registrou |
+
 **Índice** `ix_incidentes_triagem (status, criticidade, criado_em)` — atende a listagem padrão filtrada
 por status e ordenada por criticidade e tempo aberto.
 
@@ -98,6 +106,7 @@ por status e ordenada por criticidade e tempo aberto.
 | `POST /incidentes/{id}/status` | `{versao, status}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
 | `DELETE /incidentes/{id}?versao=N` | — | 204 | 401, 403, 404, 409, 422 |
 | `GET /incidentes/{id}/eventos` | — | 200 `[Evento]`, do mais antigo ao mais novo | 401, 404 |
+| `POST /ingestao/incidentes` | cabeçalhos `X-Chave-Dispositivo` e `Idempotency-Key`; corpo igual ao `POST /incidentes` | 201 `Incidente` (novo) · 200 (reenvio, `Idempotent-Replayed: true`) | 401, 409 `ja_recebido`, 422 (inclui `chave_reutilizada`), 429 (por IP ou `cota_do_dispositivo`) |
 
 **`ListaIncidentes`**
 

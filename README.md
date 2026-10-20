@@ -41,6 +41,8 @@ anônima ou em outro navegador e altere o mesmo incidente nas duas.
 - **Desfazer e histórico:** depois de assumir, liberar ou mudar status, "Desfazer" fica 6 s na
   tela (é uma ação nova, com as mesmas regras e a versão atual). Os detalhes de cada incidente
   mostram a linha do tempo: quem registrou, assumiu, mudou o status ou editou, e quando.
+- **Ingestão pelos caminhões:** os rastreadores enviam incidentes direto para a API, com chave
+  de dispositivo e idempotência (um reenvio não duplica). Ver [Ingestão](#ingestão-pelos-caminhões).
 - **Ciclo de vida:** assumir, liberar e mudar status com as transições permitidas. "Fechado" é
   final e pede confirmação. Ações que o analista não pode fazer aparecem desativadas **com o
   motivo** ("Só Bruno Lima pode mudar o status").
@@ -77,7 +79,8 @@ api/                FastAPI
   app/core/         configuração, banco, segurança, erros, resiliência, limite de login
   app/seed/         analistas e 100 incidentes de demonstração
   alembic/          migrations
-  tests/            pytest (97 testes)
+  tests/            pytest (120 testes)
+  scripts/          simulador de caminhão para a ingestão
 web/                React + Vite + TypeScript
   src/api/          cliente tipado da API, erros e sessão
   src/features/     auth (login) e incidents (triagem, filtros, ações, formulário)
@@ -165,8 +168,8 @@ Postgres (o projeto usa a versão 17 localmente e o Postgres do Supabase em prod
 ### Testes e qualidade
 
 ```bash
-cd api && uv run pytest && uv run ruff check .        # 97 testes
-cd web && npm test && npm run lint && npm run build   # 252 testes
+cd api && uv run pytest && uv run ruff check .        # 120 testes
+cd web && npm test && npm run lint && npm run build   # 267 testes
 ```
 
 Os testes da API rodam num schema temporário, criado e apagado a cada execução. O CI (GitHub
@@ -183,6 +186,30 @@ SIMULAR_LATENCIA_MS=1500 SIMULAR_FALHA_PCT=30 uv run uvicorn app.main:app --relo
 A latência vale para as rotas de incidentes; a falha faz 30% das escritas responderem 503 antes de
 gravar. As duas ficam desligadas por padrão.
 
+## Ingestão pelos caminhões
+
+Os incidentes também chegam direto dos rastreadores, sem analista
+([ADR 0008](docs/decisoes/0008-ingestao-pelos-caminhoes.md)). Cada caminhão usa uma chave de
+dispositivo, e todo envio leva um `Idempotency-Key`: se a rede oscilar e o rastreador reenviar,
+a API devolve o mesmo incidente (200) em vez de criar outro.
+
+```bash
+cd api
+uv run python scripts/simular_caminhao.py --criticidade alta          # API local
+uv run python scripts/simular_caminhao.py --api https://logos-api-uy7z.onrender.com
+```
+
+```
+1º envio → 201 Created: incidente #102 (alta) Tombamento de carreta na serra
+Reenvio com a mesma Idempotency-Key → 200: incidente #102
+Sem duplicata: o reenvio devolveu o mesmo incidente.
+```
+
+Com a triagem aberta, o incidente aparece em até 5 s, com o aviso de Alta novo, o ícone de
+caminhão na linha e "Recebido de …" no histórico. O dispositivo de demonstração (chave
+`demo-caminhao-logos-2026`) é criado pelo seed; dispositivos reais recebem uma chave aleatória
+por `uv run python -m app.dispositivos criar "Caminhão 042" --placa ABC1D23`.
+
 ## API
 
 | Método | Rota | O que faz |
@@ -194,6 +221,7 @@ gravar. As duas ficam desligadas por padrão.
 | `GET` · `PATCH` · `DELETE` | `/incidentes/{id}` | Detalha, edita, remove (`versao` obrigatória para alterar) |
 | `POST` | `/incidentes/{id}/assumir` · `/liberar` · `/status` | Ciclo de vida, com `versao` |
 | `GET` | `/incidentes/{id}/eventos` | Histórico, gravado na mesma transação de cada alteração |
+| `POST` | `/ingestao/incidentes` | Envio direto pelo caminhão (chave de dispositivo + `Idempotency-Key`) |
 | `GET` | `/health` | API e banco respondendo |
 
 Erros sempre no formato `{"erro": {"codigo", "mensagem", ...}}`. Contrato completo, códigos de
@@ -216,5 +244,5 @@ erro e transições permitidas: [`docs/contrato-api.md`](docs/contrato-api.md).
 ## Próximos passos
 
 Ideias que ficaram fora do MVP estão na issue
-[#25](https://github.com/HeitorM50/logos-incidentes/issues/25), como a ingestão direta pelos
-caminhões (com chave por dispositivo e idempotência) e testes ponta a ponta no CI.
+[#25](https://github.com/HeitorM50/logos-incidentes/issues/25), como testes ponta a ponta no CI
+e cartões no celular.
