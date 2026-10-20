@@ -4,6 +4,7 @@ Os testes usam o mesmo Postgres da aplicação, mas dentro de um schema temporá
 da sessão de testes e removido no fim (ADR 0006). Os dados da aplicação nunca são tocados.
 """
 
+import os
 import uuid
 from collections.abc import Iterator
 from datetime import timedelta
@@ -12,7 +13,7 @@ import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, make_url, text
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.banco import criar_engine, obter_sessao, obter_sessao_sem_retry
@@ -23,13 +24,26 @@ from app.main import criar_app
 from app.models import Analista, Base
 from app.seed.analistas import SENHA_DEMO
 
+HOSTS_LOCAIS = {"localhost", "127.0.0.1", "::1"}
+
 
 @pytest.fixture(scope="session")
 def configuracao() -> Configuracao:
     try:
-        return obter_configuracao()
+        configuracao = obter_configuracao()
     except ValidationError:
         pytest.skip("DATABASE_URL e JWT_SEGREDO não configurados; testes com banco ignorados.")
+    # Trava: o api/.env pode apontar para produção. Banco remoto só com permissão explícita
+    # (o CI passa TESTES_BANCO_REMOTO=1); localmente, use o Postgres do docker compose.
+    host = make_url(configuracao.database_url).host
+    if host not in HOSTS_LOCAIS and os.environ.get("TESTES_BANCO_REMOTO") != "1":
+        pytest.exit(
+            f"DATABASE_URL aponta para {host}, que não é local. Rode com "
+            "DATABASE_URL=postgresql+psycopg://logos:logos@localhost:55432/logos "
+            "(ou TESTES_BANCO_REMOTO=1 se for de propósito).",
+            returncode=2,
+        )
+    return configuracao
 
 
 @pytest.fixture(scope="session")
@@ -59,7 +73,10 @@ def sessao(fabrica_sessoes: sessionmaker[Session]) -> Iterator[Session]:
     # Cada teste começa com as tabelas vazias.
     with fabrica_sessoes.begin() as limpeza:
         limpeza.execute(
-            text("TRUNCATE incidentes, analistas, dispositivos RESTART IDENTITY CASCADE")
+            text(
+                "TRUNCATE incidentes, analistas, dispositivos, veiculos, motoristas"
+                " RESTART IDENTITY CASCADE"
+            )
         )
 
 

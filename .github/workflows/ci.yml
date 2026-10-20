@@ -23,6 +23,8 @@ jobs:
     env:
       # Os testes criam e removem um schema temporário; os dados da aplicação não são tocados.
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # De propósito: sem isto, o conftest recusa banco remoto (proteção contra o api/.env local).
+      TESTES_BANCO_REMOTO: "1"
       JWT_SEGREDO: segredo-usado-apenas-nos-testes-do-ci
     steps:
       - uses: actions/checkout@v5
