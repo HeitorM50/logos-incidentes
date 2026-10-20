@@ -7,14 +7,22 @@ Só usa a biblioteca padrão do Python.
     uv run python scripts/simular_caminhao.py                      # API local
     uv run python scripts/simular_caminhao.py --api https://logos-api-uy7z.onrender.com
     uv run python scripts/simular_caminhao.py --criticidade alta   # dispara o aviso de Alta novo
+    uv run python scripts/simular_caminhao.py --frota              # caminhão e trecho sorteados
+
+O modo --frota é o que o job agendado usa (.github/workflows/demo-viva.yml): cada envio vem de
+um caminhão da frota de demonstração, num km sorteado, para não parecer sempre o mesmo caminhão
+(o que marcaria todos como possível duplicata).
 """
 
 import argparse
 import json
 import random
+import re
+import sys
 import urllib.error
 import urllib.request
 import uuid
+from pathlib import Path
 
 CHAVE_DEMO = "demo-caminhao-logos-2026"
 
@@ -55,6 +63,9 @@ def main() -> None:
     parser.add_argument("--api", default="http://localhost:8000")
     parser.add_argument("--chave", default=CHAVE_DEMO, help="chave do dispositivo")
     parser.add_argument("--criticidade", choices=["alta", "media", "baixa"])
+    parser.add_argument(
+        "--frota", action="store_true", help="sorteia o caminhão da frota e o km do trecho"
+    )
     argumentos = parser.parse_args()
 
     opcoes = [o for o in OCORRENCIAS if o[2] == argumentos.criticidade] or OCORRENCIAS
@@ -66,6 +77,15 @@ def main() -> None:
         "criticidade": criticidade,
         "local": random.choice(TRECHOS),
     }
+    if argumentos.frota:
+        # Fora do modo padrão: este import precisa do projeto (uv run), não só da stdlib.
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        from app.seed.frota import PLACAS_DA_FROTA
+        from app.seed.incidentes import TRECHOS as TRECHOS_DA_FROTA
+
+        corpo["placa"] = random.choice(PLACAS_DA_FROTA)
+        trecho = random.choice(TRECHOS_DA_FROTA)
+        corpo["local"] = re.sub(r"km \d+", f"km {random.randint(1, 700)}", trecho)
     idempotencia = str(uuid.uuid4())
 
     status, dados = enviar(argumentos.api, argumentos.chave, idempotencia, corpo)

@@ -267,6 +267,14 @@ caminhão na linha e "Recebido de …" no histórico. O dispositivo de demonstra
 `demo-caminhao-logos-2026`) é criado pelo seed; dispositivos reais recebem uma chave aleatória
 por `uv run python -m app.dispositivos criar "Caminhão 042" --placa ABC1D23`.
 
+### Demonstração viva
+
+Os incidentes são **dados de demonstração** gerados pelo seed. Para a central não parecer parada
+quando aberta dias depois, o workflow [`demo-viva.yml`](.github/workflows/demo-viva.yml) recria os
+dados todo dia às 06:00 (Brasília) e, a cada 30 min, faz um caminhão da frota enviar um incidente
+pela ingestão (`simular_caminhao.py --frota`: placa e trecho sorteados). Em produção, os
+incidentes chegariam pela mesma rota, vindos da central de rastreamento e de um robô de WhatsApp.
+
 ## API
 
 | Método | Rota | O que faz |

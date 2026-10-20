@@ -1,0 +1,68 @@
+name: Demonstração viva
+
+# O avaliador pode abrir o Logos dias depois da entrega. Sem isto, os incidentes de demonstração
+# envelhecem: quase todos aparecem como atrasados e o relatório das últimas 6 h fica vazio.
+#
+# - Todo dia às 06:00 (Brasília), os dados de demonstração são recriados (seed --recriar).
+# - A cada 30 min, um caminhão da frota envia um incidente pela ingestão, o mesmo caminho que um
+#   rastreador real usaria (scripts/simular_caminhao.py --frota).
+on:
+  schedule:
+    - cron: "0 9 * * *"
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      acao:
+        description: O que fazer agora
+        type: choice
+        options: [caminhao, recriar]
+        default: caminhao
+
+# O token do GitHub só lê o código: nenhum job publica nada no repositório.
+permissions:
+  contents: read
+
+# Recriar e enviar não rodam juntos: o envio das 06:00 espera a recriação terminar.
+concurrency:
+  group: demo-viva
+  cancel-in-progress: false
+
+jobs:
+  recriar:
+    name: Recriar os dados de demonstração
+    if: github.event.schedule == '0 9 * * *' || inputs.acao == 'recriar'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      # O seed não assina tokens, mas a configuração da API exige o campo.
+      JWT_SEGREDO: segredo-que-o-seed-nao-usa-0123456789abcdef
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - run: uv run python -m app.seed --recriar
+
+  caminhao:
+    name: Caminhão envia um incidente
+    if: github.event.schedule == '*/30 * * * *' || inputs.acao == 'caminhao'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      # Um em cada três envios é Alta: o aviso de "Alta novo" aparece de vez em quando, não sempre.
+      - name: Enviar pela ingestão
+        run: |
+          extra=""
+          if [ $((RANDOM % 3)) -eq 0 ]; then extra="--criticidade alta"; fi
+          uv run python scripts/simular_caminhao.py --api "${{ vars.API_URL }}" --frota $extra
