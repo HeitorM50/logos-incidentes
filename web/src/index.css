@@ -46,6 +46,7 @@
     --color-cabecalho: var(--cabecalho);
     /* Visual de 20/10: controles em pílula, trilho das barras e a sombra dos cartões. */
     --color-pilula: var(--pilula);
+    --color-painel-login: var(--painel-login);
     --color-trilho: var(--trilho);
     --shadow-cartao: var(--sombra-cartao);
     --color-linha-pendente: var(--linha-pendente);
@@ -221,6 +222,7 @@
     --radius: 0.75rem;
 
     --pilula: #eef1f5;
+    --painel-login: #12161c;
     --trilho: #e9edf2;
     --sombra-cartao: 0 1px 2px rgb(16 24 40 / 0.04), 0 8px 24px rgb(16 24 40 / 0.06);
 
@@ -292,6 +294,7 @@
     color-scheme: dark;
 
     --pilula: #1f252e;
+    --painel-login: #1a2028;
     --trilho: #232a33;
     --sombra-cartao: 0 1px 2px rgb(0 0 0 / 0.35), 0 8px 24px rgb(0 0 0 / 0.28);
 

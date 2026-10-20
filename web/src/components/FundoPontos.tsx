@@ -21,7 +21,12 @@ function aleatorio(x: number, y: number, semente: number): number {
   return v - Math.floor(v)
 }
 
-export function FundoPontos() {
+interface Props {
+  /** Cor da vinheta que acalma o centro (padrão: o fundo da página). */
+  vinheta?: string
+}
+
+export function FundoPontos({ vinheta = 'var(--background)' }: Props) {
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
   useEffect(() => {
@@ -118,7 +123,10 @@ export function FundoPontos() {
     <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
       <canvas ref={canvasRef} className="size-full" />
       {/* Vinheta: o centro fica calmo para o formulário continuar legível. */}
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,var(--background)_15%,transparent_75%)]" />
+      <div
+        className="absolute inset-0"
+        style={{ background: `radial-gradient(ellipse at center, ${vinheta} 15%, transparent 75%)` }}
+      />
     </div>
   )
 }
