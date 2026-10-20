@@ -379,29 +379,37 @@ export function TelaTriagem({ analista, aoSair }: Props) {
       )}
 
       {/* Primeira pintura em camadas: título → barra → cartões → filtros → tabela (50 ms). */}
-      <main className="flex min-h-0 flex-1 cascata flex-col gap-3.5 px-4 pt-[18px] pb-4 [--cascata-passo:50ms] sm:px-6">
+      <main className="flex min-h-0 flex-1 cascata flex-col gap-3.5 px-3 pt-5 pb-4 [--cascata-passo:50ms] sm:px-4">
         {guia.mostrarDica && (
           <DicaPrimeiroAcesso aoAbrir={guia.abrir} aoDispensar={guia.dispensarDica} />
         )}
-        <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-          <div className="flex items-center gap-4">
+        {/* Título e ações à esquerda; a barra de status à direita (protótipo de 20/10). */}
+        <div className="flex flex-wrap items-end justify-between gap-x-8 gap-y-3 px-1">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
             {/* Focável por código: depois de remover, o foco vem para cá (a linha sumiu). */}
-            <h1 id={ID_TITULO} tabIndex={-1} className="text-xl font-semibold tracking-[-0.01em] outline-none">
+            <h1
+              id={ID_TITULO}
+              tabIndex={-1}
+              className="text-2xl font-semibold tracking-[-0.01em] outline-none"
+            >
               Triagem
             </h1>
-            <Button type="button" size="sm" onClick={() => setPainel({ tipo: 'criar' })}>
-              <Plus aria-hidden />
-              Novo incidente
-            </Button>
-          </div>
-          {resumo && (
-            <span className="text-[13px] text-texto-3">
-              {resumo.ativos} incidentes ativos · {resumo.fechados} fechados
+            {resumo && (
+              <span className="text-[13px] text-texto-2">
+                {resumo.ativos} incidentes ativos · {resumo.fechados} fechados
+              </span>
+            )}
+            <span className="flex gap-2">
+              <Button type="button" size="sm" onClick={() => setPainel({ tipo: 'criar' })}>
+                <Plus aria-hidden />
+                Novo incidente
+              </Button>
             </span>
-          )}
+          </div>
+          <div className="w-full lg:w-[min(560px,45%)]">
+            <BarraStatus porStatus={resumo?.porStatus ?? null} />
+          </div>
         </div>
-
-        <BarraStatus porStatus={resumo?.porStatus ?? null} />
         <CartoesCriticidade
           porCriticidade={porCriticidade}
           selecionadas={filtros.criticidades}
@@ -457,8 +465,8 @@ export function TelaTriagem({ analista, aoSair }: Props) {
           </p>
         </div>
 
-        {/* No celular, os cartões (bg-card) ficam sobre a superfície 2 e a página rola inteira. */}
-        <div className="min-h-[360px] flex-1 overflow-auto rounded-lg border bg-card max-lg:bg-superficie-2">
+        {/* No celular, os cartões (bg-card) ficam sobre o fundo da página e ela rola inteira. */}
+        <div className="min-h-[360px] flex-1 overflow-auto rounded-[22px] bg-card p-1.5 shadow-cartao max-lg:bg-transparent max-lg:p-0 max-lg:shadow-none">
           {conteudoDaTabela()}
         </div>
       </main>

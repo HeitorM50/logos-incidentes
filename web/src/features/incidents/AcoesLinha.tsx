@@ -69,7 +69,11 @@ export function AcoesLinha({ incidente, idAnalista, pendente, semConexao, aoExec
         motivo={motivoBotao}
         rotulo={`${nomeBotao} #${incidente.id}`}
         onClick={() => (meu ? setPedido({ tipo: 'liberar' }) : aoExecutar(acaoBotao))}
-        className="w-[84px] font-medium"
+        // Liberar (o incidente é seu) fica contornado; Assumir, preenchido (protótipo de 20/10).
+        className={cn(
+          'w-[88px] font-semibold',
+          meu && 'bg-transparent shadow-[inset_0_0_0_1.5px_var(--borda-forte)]',
+        )}
       >
         {nomeBotao}
       </BotaoComMotivo>
@@ -77,7 +81,7 @@ export function AcoesLinha({ incidente, idAnalista, pendente, semConexao, aoExec
       {pendente ? (
         <span
           aria-hidden
-          className="inline-flex h-8 w-[140px] items-center gap-2 rounded-[5px] border border-dashed border-borda-forte px-2 text-[13px] font-medium whitespace-nowrap"
+          className="inline-flex h-[34px] w-[140px] items-center gap-2 rounded-full border border-dashed border-borda-forte px-3 text-[13px] font-medium whitespace-nowrap"
         >
           <LogosLoader tamanho={14} decorativo fundo="var(--linha-pendente)" />
           {textoPendente(pendente)}
@@ -86,7 +90,7 @@ export function AcoesLinha({ incidente, idAnalista, pendente, semConexao, aoExec
         <BotaoComMotivo
           motivo={motivoMenu}
           rotulo={rotuloStatus}
-          className="flex w-[140px] items-center justify-between px-2 text-left"
+          className="flex w-[140px] items-center justify-between px-3 text-left"
         >
           Mudar status
           <ChevronDown aria-hidden className="size-3.5" />
@@ -100,7 +104,7 @@ export function AcoesLinha({ incidente, idAnalista, pendente, semConexao, aoExec
               aria-label={rotuloStatus}
               className={cn(
                 CONTROLE,
-                'flex w-[140px] cursor-pointer items-center justify-between px-2 text-left hover:bg-superficie-2',
+                'apertar flex w-[140px] cursor-pointer items-center justify-between px-3 text-left',
               )}
             >
               Mudar status

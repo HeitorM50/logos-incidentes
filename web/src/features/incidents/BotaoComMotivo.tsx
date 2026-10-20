@@ -2,7 +2,7 @@ import { useId, useState, type ReactNode, type Ref } from 'react'
 import { cn } from '@/lib/utils'
 
 export const CONTROLE =
-  'h-8 rounded-[5px] border border-borda-forte bg-card text-[13px] outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
+  'h-[34px] rounded-full bg-pilula text-[13px] outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
 
 interface PropsBotao {
   ref?: Ref<HTMLButtonElement>
@@ -46,7 +46,7 @@ export function BotaoComMotivo({ ref, motivo, rotulo, className, onClick, childr
         }}
         className={cn(
           CONTROLE,
-          motivo ? 'cursor-not-allowed opacity-50' : 'cursor-pointer hover:bg-superficie-2',
+          motivo ? 'cursor-not-allowed opacity-50' : 'apertar cursor-pointer',
           className,
         )}
       >

@@ -28,11 +28,14 @@ const LARGURAS_ESQUELETO = [
 /** Cabeçalho fixo no topo ao rolar. O grupo (e não a linha) é sticky: o pai dele é a tabela. */
 function CabecalhoTabela() {
   return (
-    <div role="rowgroup" className="sticky top-0 z-[1] border-b bg-cabecalho">
+    <div
+      role="rowgroup"
+      className="sticky top-0 z-[1] mb-0.5 rounded-[14px] bg-card/90 backdrop-blur-[10px]"
+    >
       <div
         role="row"
         className={cn(
-          'grid h-9 items-center gap-x-3 px-3 text-xs font-semibold tracking-[0.04em] text-texto-2 uppercase',
+          'grid h-9 items-center gap-x-3 px-3 text-[11.5px] font-semibold tracking-[0.05em] text-texto-3 uppercase',
           COLUNAS_TABELA,
         )}
       >

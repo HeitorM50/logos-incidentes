@@ -24,7 +24,7 @@ export function SeletorSituacao({ situacao, contagem, aoEscolher }: Props) {
     <div
       role="group"
       aria-label="Situação"
-      className="inline-flex h-9 items-center rounded-md border border-borda-forte bg-card p-0.5"
+      className="inline-flex h-[38px] items-center rounded-full bg-card p-1 shadow-cartao"
     >
       {SITUACOES.map((opcao) => {
         const marcada = opcao === situacao
@@ -38,7 +38,7 @@ export function SeletorSituacao({ situacao, contagem, aoEscolher }: Props) {
             }
             onClick={() => aoEscolher(opcao)}
             className={cn(
-              'flex h-full cursor-pointer items-center gap-1.5 rounded-[5px] px-3 text-[13px] font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+              'flex h-full cursor-pointer items-center gap-1.5 rounded-full px-3 text-[13px] font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
               marcada ? 'bg-primary text-primary-foreground' : 'text-texto-2 hover:bg-superficie-2',
             )}
           >

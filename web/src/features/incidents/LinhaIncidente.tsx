@@ -101,7 +101,14 @@ export function LinhaIncidente({
   const atrasado = estaAtrasado(incidente, agora)
 
   const fundo = cn(
-    conflito ? 'bg-info-fundo' : pendente ? 'bg-linha-pendente' : 'bg-card',
+    conflito
+      ? 'bg-info-fundo'
+      : pendente
+        ? 'bg-linha-pendente'
+        : // Cartão (celular) em fundo próprio; na tabela, linhas em zebra suave.
+          layout === 'cartao'
+          ? 'bg-card'
+          : 'even:bg-superficie-2/70',
     fechado && 'text-texto-3',
     // Alta novo: entra deslizando.
     novo && 'animate-in duration-500 fade-in-0 slide-in-from-left-2',
@@ -184,7 +191,7 @@ export function LinhaIncidente({
     return (
       <li
         data-incidente={incidente.id}
-        className={cn('relative scroll-mt-2 rounded-lg border p-3', fundo)}
+        className={cn('relative scroll-mt-2 rounded-[18px] p-3.5 shadow-cartao', fundo)}
       >
         {camadas}
         {/* relative: o conteúdo fica por cima das camadas de realce e de brilho. */}
@@ -232,7 +239,7 @@ export function LinhaIncidente({
       role="none"
       data-incidente={incidente.id}
       // scroll-mt-9: ao rolar até a linha (setas ↑↓), ela não fica sob o cabeçalho fixo.
-      className={cn('relative scroll-mt-9 border-b px-3 py-1.5 last:border-b-0', fundo)}
+      className={cn('realce-linha relative scroll-mt-11 rounded-[14px] px-3 py-1.5', fundo)}
     >
       {camadas}
       {/* relative: o conteúdo fica por cima das camadas de realce e de brilho. */}
@@ -304,7 +311,7 @@ function Selo({ incidente }: { incidente: Incidente }) {
   return (
     <span
       className={cn(
-        'inline-flex h-6 items-center gap-1.5 rounded-sm border px-2 text-xs tracking-[0.05em] whitespace-nowrap uppercase',
+        'inline-flex h-[26px] items-center gap-1.5 rounded-full border pr-2.5 pl-2 text-xs tracking-[0.05em] whitespace-nowrap uppercase',
         SELO[incidente.criticidade],
         incidente.status === 'fechado' && 'opacity-60',
       )}
@@ -364,7 +371,7 @@ function Marcadores({ incidente, novo, atrasado }: PropsMarcadores) {
 
 function Status({ incidente }: { incidente: Incidente }) {
   return (
-    <span className="flex items-center gap-1.5 text-[13px] whitespace-nowrap text-texto-2">
+    <span className="inline-flex h-[26px] items-center gap-1.5 rounded-full bg-pilula px-2.5 text-[13px] whitespace-nowrap text-texto-2">
       <IconeStatus status={incidente.status} />
       {ROTULO_STATUS[incidente.status]}
     </span>

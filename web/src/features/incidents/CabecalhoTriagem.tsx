@@ -32,7 +32,8 @@ export function CabecalhoTriagem({
   aoAbrirAjuda,
 }: Props) {
   return (
-    <header className="flex flex-wrap items-center gap-x-6 gap-y-2.5 border-b bg-card px-4 py-2.5 sm:px-6">
+    // Cabeçalho flutuante (protótipo de 20/10): cartão arredondado acima da página.
+    <header className="mx-3 mt-3 flex flex-wrap items-center gap-x-5 gap-y-2.5 rounded-[20px] bg-card px-4 py-2.5 shadow-cartao sm:mx-4 sm:pl-[18px]">
       <MarcaLogos />
       <IndicadorConexao estado={estado} atualizadoEm={atualizadoEm} />
       {busca}
@@ -44,7 +45,7 @@ export function CabecalhoTriagem({
           onClick={aoAbrirAjuda}
           aria-label="Como funciona a triagem"
           title="Como funciona a triagem"
-          className="size-9 rounded-md bg-card px-0 dark:bg-card"
+          className="apertar size-[38px] rounded-full border-0 bg-pilula px-0 hover:bg-pilula dark:bg-pilula dark:hover:bg-pilula"
         >
           <CircleHelp aria-hidden />
         </Button>
@@ -52,7 +53,7 @@ export function CabecalhoTriagem({
         <div className="flex items-center gap-2.5">
           <span
             aria-hidden
-            className="flex size-8 items-center justify-center rounded-full border bg-superficie-2 text-xs font-semibold"
+            className="flex size-9 items-center justify-center rounded-full bg-foreground text-xs font-semibold text-background"
           >
             {iniciais(analista.nome)}
           </span>

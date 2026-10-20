@@ -74,7 +74,8 @@ describe('TelaTriagem', () => {
     const cartoes = within(screen.getByRole('list', { name: /por criticidade/ })).getAllByRole(
       'listitem',
     )
-    expect(cartoes[0]).toHaveTextContent(/Alta.*1$/)
+    // Número e, abaixo, a parte dos ativos (1 de 2 = 50%).
+    expect(cartoes[0]).toHaveTextContent('AltaMais antigo há 30 min150% ativos')
     expect(cartoes[1]).toHaveTextContent('Nenhum ativo')
   })
 

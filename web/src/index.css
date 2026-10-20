@@ -1,13 +1,9 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
-@import "@fontsource/ibm-plex-sans/400.css";
-@import "@fontsource/ibm-plex-sans/500.css";
-@import "@fontsource/ibm-plex-sans/600.css";
-@import "@fontsource/ibm-plex-sans/700.css";
-@import "@fontsource/ibm-plex-mono/400.css";
-@import "@fontsource/ibm-plex-mono/600.css";
-@import "@fontsource/ibm-plex-mono/700.css";
+/* Geist (protótipo de 20/10): fontes variáveis servidas pelo próprio site (CSP font-src 'self'). */
+@import "@fontsource-variable/geist";
+@import "@fontsource-variable/geist-mono";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -16,8 +12,8 @@
  * nenhum componente usa hex direto. Trocar o visual = editar só :root e .dark.
  */
 @theme inline {
-    --font-sans: 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
-    --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+    --font-sans: 'Geist Variable', 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'Geist Mono Variable', ui-monospace, monospace;
     --font-heading: var(--font-sans);
 
     --color-background: var(--background);
@@ -48,6 +44,10 @@
     --color-ao-vivo: var(--ao-vivo);
     --color-pontos: var(--pontos);
     --color-cabecalho: var(--cabecalho);
+    /* Visual de 20/10: controles em pílula, trilho das barras e a sombra dos cartões. */
+    --color-pilula: var(--pilula);
+    --color-trilho: var(--trilho);
+    --shadow-cartao: var(--sombra-cartao);
     --color-linha-pendente: var(--linha-pendente);
     --color-faixa: var(--faixa);
     --color-seg-aberto: var(--seg-aberto);
@@ -160,6 +160,39 @@
 }
 
 /* Esqueleto: um brilho da esquerda para a direita no ritmo do loader (2 s). */
+/* Cartão que sobe 2 px no hover (cartões de criticidade, chips). */
+@utility elevar {
+  transition:
+    transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    box-shadow 220ms ease,
+    background-color 200ms ease;
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* Linha da lista: realce suave no hover, sem mudar a cor de fundo (que carrega o estado). */
+@utility realce-linha {
+  transition: box-shadow 150ms ease;
+  &:hover {
+    box-shadow: inset 0 0 0 100vmax rgb(128 138 152 / 0.11);
+  }
+}
+
+/* Botão: escurece um pouco no hover e "afunda" no clique. */
+@utility apertar {
+  transition:
+    filter 150ms ease,
+    transform 120ms ease,
+    background-color 200ms ease;
+  &:hover:not(:disabled):not([aria-disabled='true']) {
+    filter: brightness(0.94);
+  }
+  &:active:not(:disabled):not([aria-disabled='true']) {
+    transform: scale(0.96);
+  }
+}
+
 @utility brilho-esqueleto {
     background-image: linear-gradient(
         90deg,
@@ -185,9 +218,13 @@
 
 :root {
     color-scheme: light;
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
-    --background: #eef0f3;
+    --pilula: #eef1f5;
+    --trilho: #e9edf2;
+    --sombra-cartao: 0 1px 2px rgb(16 24 40 / 0.04), 0 8px 24px rgb(16 24 40 / 0.06);
+
+    --background: #f2f4f7;
     --foreground: #12161c;
     --card: #ffffff;
     --card-foreground: #12161c;
@@ -254,11 +291,15 @@
 .dark {
     color-scheme: dark;
 
-    --background: #0d1014;
+    --pilula: #1f252e;
+    --trilho: #232a33;
+    --sombra-cartao: 0 1px 2px rgb(0 0 0 / 0.35), 0 8px 24px rgb(0 0 0 / 0.28);
+
+    --background: #0b0e12;
     --foreground: #e7eaee;
-    --card: #151a20;
+    --card: #141920;
     --card-foreground: #e7eaee;
-    --popover: #151a20;
+    --popover: #141920;
     --popover-foreground: #e7eaee;
     --primary: #e7eaee;
     --primary-foreground: #0d1014;

@@ -43,7 +43,7 @@ export function CampoBusca({ valor, aoMudar }: Props) {
       <label htmlFor={ID_CAMPO_BUSCA} className="sr-only">
         Buscar incidente
       </label>
-      <Search aria-hidden className="pointer-events-none absolute left-2.5 size-4 text-texto-3" />
+      <Search aria-hidden className="pointer-events-none absolute left-3.5 size-4 text-texto-3" />
       <input
         ref={campo}
         id={ID_CAMPO_BUSCA}
@@ -59,7 +59,7 @@ export function CampoBusca({ valor, aoMudar }: Props) {
           }
         }}
         placeholder="Título, local, placa ou #número"
-        className="h-9 w-full rounded-md border border-borda-forte bg-card pr-16 pl-8.5 text-sm outline-none placeholder:text-texto-3 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-search-cancel-button]:hidden"
+        className="h-[38px] w-full rounded-full border border-transparent bg-pilula pr-16 pl-9.5 text-sm outline-none placeholder:text-texto-3 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 [&::-webkit-search-cancel-button]:hidden"
       />
       {valor ? (
         <button
@@ -74,11 +74,12 @@ export function CampoBusca({ valor, aoMudar }: Props) {
           <X aria-hidden className="size-3.5" />
         </button>
       ) : (
-        <span aria-hidden className="pointer-events-none absolute right-2 flex gap-1">
-          <kbd className="rounded border bg-superficie-2 px-1 font-mono text-[11px] text-texto-3">
+        // Atalho de teclado: não serve para quem usa toque, então some no celular.
+        <span aria-hidden className="pointer-events-none absolute right-2.5 flex gap-1 max-lg:hidden">
+          <kbd className="rounded-md border bg-card px-1.5 font-mono text-[11px] text-texto-3">
             Ctrl
           </kbd>
-          <kbd className="rounded border bg-superficie-2 px-1 font-mono text-[11px] text-texto-3">
+          <kbd className="rounded-md border bg-card px-1.5 font-mono text-[11px] text-texto-3">
             K
           </kbd>
         </span>

@@ -20,10 +20,11 @@ interface Props {
   aoLimpar?: () => void
 }
 
+// Chips em pílula com a sombra dos cartões (protótipo de 20/10).
 const CHIP =
-  'flex h-9 cursor-pointer items-center gap-2 rounded-md border px-3 text-[13px] font-medium transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
+  'elevar flex h-[38px] cursor-pointer items-center gap-2 rounded-full border px-3.5 text-[13px] font-medium shadow-cartao outline-none focus-visible:ring-3 focus-visible:ring-ring/50'
 const CHIP_MARCADO = 'border-primary bg-primary text-primary-foreground'
-const CHIP_LIVRE = 'border-borda-forte bg-card text-foreground hover:bg-superficie-2'
+const CHIP_LIVRE = 'border-transparent bg-card text-foreground'
 
 export function FiltroCategorias({
   contagem,
@@ -37,7 +38,10 @@ export function FiltroCategorias({
   const haAtrasados = !!atrasados.contagem
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <span id="titulo-categoria" className="mr-1 text-[13px] font-semibold text-texto-2">
+      <span
+        id="titulo-categoria"
+        className="mr-1 text-xs font-semibold tracking-[0.05em] text-texto-2 uppercase"
+      >
         Categoria
       </span>
       <div role="group" aria-labelledby="titulo-categoria" className="flex flex-wrap gap-2">
@@ -121,7 +125,7 @@ export function FiltroCategorias({
             : haAtrasados
               ? // Com atrasados, o botão chama atenção (borda e texto de erro), não só pela cor:
                 // o ícone e o número em negrito dizem o mesmo.
-                'border-erro-borda bg-card text-erro-texto hover:bg-superficie-2'
+                'border-erro-borda bg-card text-erro-texto'
               : CHIP_LIVRE,
         )}
       >

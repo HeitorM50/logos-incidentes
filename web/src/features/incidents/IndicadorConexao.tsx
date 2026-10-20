@@ -17,7 +17,7 @@ export function IndicadorConexao({ estado, atualizadoEm }: Props) {
   return (
     <div
       role="status"
-      className="flex h-7 items-center gap-2 rounded-full border px-2.5 text-[13px] whitespace-nowrap text-texto-2"
+      className="flex h-[30px] items-center gap-2 rounded-full bg-pilula px-3 text-[13px] whitespace-nowrap text-texto-2"
     >
       {estado === 'ao_vivo' && (
         <>

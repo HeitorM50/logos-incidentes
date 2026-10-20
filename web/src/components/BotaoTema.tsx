@@ -20,8 +20,8 @@ export function BotaoTema({ compacto = false }: { compacto?: boolean }) {
       aria-label={claro ? 'Ativar modo escuro' : 'Ativar modo claro'}
       title={compacto ? (claro ? 'Modo escuro' : 'Modo claro') : undefined}
       className={cn(
-        'gap-2 rounded-md bg-card text-sm dark:bg-card',
-        compacto ? 'size-9 px-0' : 'h-10 px-3.5',
+        'apertar gap-2 rounded-full border-0 bg-pilula text-sm hover:bg-pilula dark:bg-pilula dark:hover:bg-pilula',
+        compacto ? 'size-[38px] px-0' : 'h-10 px-4',
       )}
     >
       {/* O ícone novo entra girando (a lua vira sol e o sol vira lua). */}

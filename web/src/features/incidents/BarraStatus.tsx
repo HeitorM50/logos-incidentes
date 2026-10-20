@@ -41,7 +41,7 @@ export function BarraStatus({ porStatus }: Props) {
 
   return (
     <section aria-labelledby="titulo-ativos-status" className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
+      <div className="flex flex-col gap-1">
         <h2
           id="titulo-ativos-status"
           className="text-xs font-semibold tracking-[0.04em] text-texto-2 uppercase"
@@ -54,7 +54,7 @@ export function BarraStatus({ porStatus }: Props) {
               <span
                 aria-hidden
                 className={cn(
-                  'size-2.5 rounded-[2px]',
+                  'size-2.5 rounded-full',
                   COR_SEGMENTO[status],
                   status === 'inconclusivo' && 'border border-borda-forte',
                 )}
@@ -73,7 +73,7 @@ export function BarraStatus({ porStatus }: Props) {
       <div
         role="img"
         aria-label={descricao}
-        className="group flex h-2.5 gap-0.5 overflow-hidden rounded-[3px] bg-esqueleto"
+        className="group flex h-2 gap-1 overflow-hidden rounded-full bg-trilho"
       >
         {porStatus &&
           STATUS_ATIVOS.map((status, i) =>
@@ -83,7 +83,7 @@ export function BarraStatus({ porStatus }: Props) {
                 // Mouse sobre um segmento: os outros recuam e o título mostra a contagem.
                 title={`${ROTULO_STATUS[status]}: ${porStatus[status]} (${pct(porStatus[status])}%)`}
                 className={cn(
-                  'min-w-1 transition-[flex-grow,opacity] duration-500 group-hover:opacity-40 hover:opacity-100!',
+                  'min-w-1 rounded-full transition-[flex-grow,opacity] duration-500 group-hover:opacity-40 hover:opacity-100!',
                   COR_SEGMENTO[status],
                 )}
                 style={{

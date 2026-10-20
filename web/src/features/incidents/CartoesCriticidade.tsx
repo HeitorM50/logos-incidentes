@@ -9,21 +9,27 @@ import { formatarTempoAberto } from './tempo'
 
 // Cor, forma e peso tipográfico juntos (ADR 0004): quem não distingue o vermelho ainda lê
 // o triângulo e o negrito.
-const ESTILO: Record<Criticidade, { icone: string; numero: string; rotulo: string }> = {
+const ESTILO: Record<
+  Criticidade,
+  { icone: string; numero: string; rotulo: string; barra: string }
+> = {
   alta: {
     icone: 'bg-alta-fundo text-alta-texto border-alta-borda',
     numero: 'text-alta-numero font-bold',
     rotulo: 'font-bold',
+    barra: 'bg-alta-borda',
   },
   media: {
     icone: 'bg-media-fundo text-media-texto border-media-borda',
     numero: 'text-media-numero font-semibold',
     rotulo: 'font-semibold',
+    barra: 'bg-media-borda',
   },
   baixa: {
     icone: 'bg-baixa-fundo text-baixa-texto border-baixa-borda',
     numero: 'text-baixa-numero font-medium',
     rotulo: 'font-normal',
+    barra: 'bg-baixa-borda',
   },
 }
 
@@ -98,10 +104,15 @@ function PulsoAoSubir({
 }
 
 export function CartoesCriticidade({ porCriticidade, selecionadas, aoAlternar }: Props) {
+  // Parte de cada criticidade nos ativos (barra do cartão). O número continua sendo o que o
+  // analista lê; a barra só dá a proporção de relance.
+  const totalAtivos = porCriticidade
+    ? CRITICIDADES.reduce((soma, c) => soma + porCriticidade[c].quantidade, 0)
+    : 0
   return (
     <ul
       aria-label="Filtrar por criticidade"
-      className="grid grid-cols-[repeat(auto-fit,minmax(min(240px,100%),1fr))] gap-3"
+      className="grid grid-cols-[repeat(auto-fit,minmax(min(260px,100%),1fr))] gap-3"
     >
       {CRITICIDADES.map((criticidade) => {
         const resumo = porCriticidade?.[criticidade]
@@ -113,6 +124,8 @@ export function CartoesCriticidade({ porCriticidade, selecionadas, aoAlternar }:
             : `Mais antigo ${formatarTempoAberto(resumo.maisAntigoMin)}`
 
         const marcado = selecionadas.includes(criticidade)
+        const parte =
+          resumo && totalAtivos ? Math.round((resumo.quantidade / totalAtivos) * 100) : 0
 
         return (
           <li key={criticidade} className="flex">
@@ -126,16 +139,15 @@ export function CartoesCriticidade({ porCriticidade, selecionadas, aoAlternar }:
               }
               onClick={() => aoAlternar(criticidade)}
               className={cn(
-                'flex min-h-[76px] flex-1 cursor-pointer items-center gap-3.5 rounded-lg border px-4 py-3 text-left transition-colors outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
-                marcado
-                  ? 'border-foreground bg-superficie-2 shadow-[inset_0_0_0_1px_var(--foreground)]'
-                  : 'bg-card hover:border-borda-forte',
+                'elevar flex flex-1 cursor-pointer flex-col gap-3.5 rounded-[22px] bg-card px-[18px] pt-4 pb-3.5 text-left shadow-cartao outline-none focus-visible:ring-3 focus-visible:ring-ring/50',
+                marcado && 'shadow-[inset_0_0_0_2px_var(--foreground),var(--sombra-cartao)]',
               )}
             >
+              <span className="flex w-full items-center gap-3">
               <PulsoAoSubir valor={resumo?.quantidade ?? null} ativo={criticidade === 'alta'}>
                 <span
                   className={cn(
-                    'flex size-9 flex-none items-center justify-center rounded-md border',
+                    'flex size-[42px] flex-none items-center justify-center rounded-[14px] border',
                     estilo.icone,
                   )}
                 >
@@ -176,11 +188,26 @@ export function CartoesCriticidade({ porCriticidade, selecionadas, aoAlternar }:
               </span>
               <span
                 className={cn(
-                  'ml-auto min-w-[2ch] text-right font-mono text-[30px] leading-none tabular-nums',
+                  'ml-auto min-w-[2ch] text-right font-mono text-[32px] leading-none tracking-[-0.02em] tabular-nums',
                   estilo.numero,
                 )}
               >
                 {resumo ? <NumeroDeslizante valor={resumo.quantidade} /> : '–'}
+              </span>
+              </span>
+              <span aria-hidden className="flex w-full items-center gap-2.5">
+                <span className="h-2 flex-1 overflow-hidden rounded-full bg-trilho">
+                  <span
+                    className={cn(
+                      'block h-full rounded-full transition-[width] duration-700 ease-[cubic-bezier(0.2,0.8,0.2,1)]',
+                      estilo.barra,
+                    )}
+                    style={{ width: `${parte}%` }}
+                  />
+                </span>
+                <span className="font-mono text-[11.5px] text-texto-2 tabular-nums">
+                  {parte}% ativos
+                </span>
               </span>
             </button>
           </li>
