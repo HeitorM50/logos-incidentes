@@ -45,6 +45,7 @@
     "media": 60,
     "baixa": 240
   },
+  "janela_duplicata_min": 120,
   "comentario": {
     "max": 500,
     "min": 3,

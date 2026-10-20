@@ -1,6 +1,7 @@
 """100 incidentes realistas para demonstrar a triagem (issue #11)."""
 
 import random
+import re
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select, text
@@ -10,6 +11,7 @@ from app.core.dominio import Categoria, Criticidade, StatusIncidente, TipoEvento
 from app.models import Analista, EventoIncidente, Incidente, Veiculo
 from app.seed.frota import PLACAS_DA_FROTA
 from app.services.ciclo_vida import PRAZO_PARA_ASSUMIR_MIN
+from app.services.duplicatas import parece_duplicata
 
 TOTAL_INCIDENTES = 100
 
@@ -90,6 +92,12 @@ def _placa(gerador: random.Random) -> str:
     return gerador.choice(PLACAS_DA_FROTA)
 
 
+def _local(gerador: random.Random) -> str:
+    # Mesmo trecho, km sorteado: o mesmo local exato fica raro, como numa rodovia de verdade.
+    trecho = gerador.choice(TRECHOS)
+    return re.sub(r"km \d+", f"km {gerador.randint(1, 700)}", trecho)
+
+
 def _status(gerador: random.Random) -> StatusIncidente:
     # Maioria aberta: o cenário é uma central sob pressão.
     return gerador.choices(list(StatusIncidente), weights=(60, 20, 8, 12))[0]
@@ -127,7 +135,7 @@ def gerar_incidentes(analistas: list[Analista], semente: int = 42) -> list[Incid
                 categoria=categoria,
                 criticidade=criticidade,
                 status=status,
-                local=gerador.choice(TRECHOS),
+                local=_local(gerador),
                 placa=_placa(gerador),
                 responsavel_id=responsavel.id if responsavel else None,
                 atualizado_por_id=responsavel.id if responsavel else None,
@@ -136,7 +144,85 @@ def gerar_incidentes(analistas: list[Analista], semente: int = 42) -> list[Incid
                 atualizado_em=criado_em,
             )
         )
+    plantadas = _plantar_duplicatas(incidentes)
+    _evitar_duplicatas_por_acaso(gerador, incidentes, plantadas)
     return incidentes
+
+
+def _ativos_em_ordem(incidentes: list[Incidente]) -> list[Incidente]:
+    ativos = [i for i in incidentes if i.status != StatusIncidente.FECHADO]
+    return sorted(ativos, key=lambda i: i.criado_em)
+
+
+def _plantar_duplicatas(incidentes: list[Incidente]) -> dict[int, int]:
+    """Duas duplicatas de propósito, para a demo mostrar o marcador "Duplicata de #N".
+
+    Devolve {posição da cópia na lista: posição do original}.
+    """
+    abertos = [i for i in _ativos_em_ordem(incidentes) if i.status == StatusIncidente.ABERTO]
+    if len(abertos) < 4:
+        return {}
+    # O mesmo caminhão relatado duas vezes (o rastreador e o motorista pelo WhatsApp).
+    abertos[-1].placa = abertos[-2].placa
+    abertos[-1].categoria = abertos[-2].categoria
+    abertos[-1].titulo = abertos[-2].titulo
+    # Dois motoristas relatando o mesmo trecho com o mesmo tipo de problema.
+    abertos[-3].categoria = abertos[-4].categoria
+    abertos[-3].local = abertos[-4].local
+    abertos[-3].titulo = abertos[-4].titulo
+    posicao = {id(i): n for n, i in enumerate(incidentes)}
+    return {
+        posicao[id(abertos[-1])]: posicao[id(abertos[-2])],
+        posicao[id(abertos[-3])]: posicao[id(abertos[-4])],
+    }
+
+
+# O que cada duplicata plantada pode mudar sem desfazer a duplicata: a primeira (por placa) pode
+# trocar o local; a segunda (por local e categoria) pode trocar a placa.
+def _papel_plantado(plantadas: dict[int, int]) -> dict[int, str]:
+    pares = list(plantadas.items())
+    papel: dict[int, str] = {}
+    if pares:
+        papel |= dict.fromkeys(pares[0], "local")
+    if len(pares) > 1:
+        papel |= dict.fromkeys(pares[1], "placa")
+    return papel
+
+
+def _evitar_duplicatas_por_acaso(
+    gerador: random.Random, incidentes: list[Incidente], plantadas: dict[int, int]
+) -> None:
+    # Com a frota de 70 caminhões e 14 trechos, o sorteio criaria dezenas de "duplicatas" que
+    # uma central real não teria. Enquanto houver um par que não foi plantado, troca a placa e
+    # o local de quem não faz parte das duplicatas plantadas.
+    posicao = {id(i): n for n, i in enumerate(incidentes)}
+    papel = _papel_plantado(plantadas)
+    for _ in range(2000):
+        ativos = _ativos_em_ordem(incidentes)
+        extra = next(
+            (
+                (atual, anterior)
+                for n, atual in enumerate(ativos)
+                for anterior in ativos[:n]
+                if parece_duplicata(atual, anterior)
+                and plantadas.get(posicao[id(atual)]) != posicao[id(anterior)]
+            ),
+            None,
+        )
+        if extra is None:
+            return
+        livre = [i for i in extra if posicao[id(i)] not in papel]
+        if livre:
+            alvo = livre[0]
+        else:
+            # Dois plantados se parecem por acaso: muda quem pode mudar o campo que colidiu.
+            motivo = "placa" if extra[0].placa == extra[1].placa else "local"
+            alvo = next((i for i in extra if papel[posicao[id(i)]] == motivo), extra[0])
+        mudar = papel.get(posicao[id(alvo)], "tudo")
+        if mudar in ("placa", "tudo"):
+            alvo.placa = _placa(gerador)
+        if mudar in ("local", "tudo"):
+            alvo.local = _local(gerador)
 
 
 def gerar_eventos(incidente: Incidente) -> list[EventoIncidente]:

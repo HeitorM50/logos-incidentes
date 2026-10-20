@@ -195,6 +195,8 @@ class IncidenteResposta(BaseModel):
     atualizado_por: AnalistaResumo | None
     # Caminhão que enviou o incidente pela ingestão; nulo quando um analista o registrou.
     dispositivo: DispositivoResumo | None = None
+    # Incidente ativo mais antigo de que este parece cópia (services/duplicatas.py).
+    possivel_duplicata_de: int | None = None
     versao: int
     criado_em: datetime
     atualizado_em: datetime

@@ -22,6 +22,7 @@ from app.schemas.incidente import (
     ListaIncidentes,
 )
 from app.services.ciclo_vida import PODE_ASSUMIR, status_apos_liberar, transicao_permitida
+from app.services.duplicatas import possiveis_duplicatas
 from app.services.frota import completar_motorista
 
 
@@ -60,7 +61,13 @@ def listar(sessao: Session, filtros: FiltrosIncidentes) -> ListaIncidentes:
     consulta = _aplicar_filtros(_consulta_com_relacoes(), filtros).order_by(
         fechados_por_ultimo, Incidente.criticidade, Incidente.criado_em, Incidente.id
     )
-    itens = [IncidenteResposta.model_validate(i) for i in sessao.scalars(consulta).unique()]
+    duplicatas = possiveis_duplicatas(sessao)
+    itens = [
+        IncidenteResposta.model_validate(i).model_copy(
+            update={"possivel_duplicata_de": duplicatas.get(i.id)}
+        )
+        for i in sessao.scalars(consulta).unique()
+    ]
 
     # Os contadores do topo ignoram o filtro de criticidade: mostram o total de cada nível.
     contagem = _aplicar_filtros(
@@ -84,7 +91,9 @@ def _buscar(sessao: Session, incidente_id: int) -> Incidente:
 
 
 def obter(sessao: Session, incidente_id: int) -> IncidenteResposta:
-    return IncidenteResposta.model_validate(_buscar(sessao, incidente_id))
+    resposta = IncidenteResposta.model_validate(_buscar(sessao, incidente_id))
+    duplicata_de = possiveis_duplicatas(sessao).get(incidente_id)
+    return resposta.model_copy(update={"possivel_duplicata_de": duplicata_de})
 
 
 def criar(sessao: Session, dados: IncidenteCriar, analista_id: int) -> IncidenteResposta:

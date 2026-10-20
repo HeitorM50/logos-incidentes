@@ -22,6 +22,10 @@ EXIGE_COMENTARIO: frozenset[S] = frozenset({S.INCONCLUSIVO, S.FECHADO})
 # do prazo está ATRASADO: é a exceção que a triagem destaca (o que está sendo esquecido).
 PRAZO_PARA_ASSUMIR_MIN: dict[C, int] = {C.ALTA: 15, C.MEDIA: 60, C.BAIXA: 240}
 
+# Janela para apontar possível duplicata (services/duplicatas.py): mesma placa, ou mesmo local e
+# categoria, aberto até este tempo depois de outro incidente ativo.
+JANELA_DUPLICATA_MIN = 120
+
 # Status a partir dos quais um analista pode assumir o incidente.
 PODE_ASSUMIR: frozenset[S] = frozenset({S.ABERTO, S.INCONCLUSIVO})
 

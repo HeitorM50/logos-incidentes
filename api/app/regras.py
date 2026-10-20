@@ -15,6 +15,7 @@ from app.core.dominio import StatusIncidente
 from app.schemas.incidente import MINIMO_COMENTARIO, PADRAO_PLACA, IncidenteCriar, MudarStatus
 from app.services.ciclo_vida import (
     EXIGE_COMENTARIO,
+    JANELA_DUPLICATA_MIN,
     PODE_ASSUMIR,
     PRAZO_PARA_ASSUMIR_MIN,
     TRANSICOES_DO_RESPONSAVEL,
@@ -57,6 +58,7 @@ def regras() -> dict[str, Any]:
         },
         "padrao_placa": PADRAO_PLACA.pattern,
         "prazo_para_assumir_min": {c.value: m for c, m in PRAZO_PARA_ASSUMIR_MIN.items()},
+        "janela_duplicata_min": JANELA_DUPLICATA_MIN,
         "comentario": {
             **_limites("comentario", MudarStatus),
             "min": MINIMO_COMENTARIO,

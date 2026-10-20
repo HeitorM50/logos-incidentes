@@ -7,8 +7,14 @@ from sqlalchemy.orm import Session
 from app.core.dominio import StatusIncidente
 from app.models import Incidente
 from app.seed.analistas import semear_analistas
-from app.seed.incidentes import TOTAL_INCIDENTES, gerar_incidentes, semear_incidentes
+from app.seed.incidentes import (
+    TOTAL_INCIDENTES,
+    _ativos_em_ordem,
+    gerar_incidentes,
+    semear_incidentes,
+)
 from app.services.ciclo_vida import PRAZO_PARA_ASSUMIR_MIN
+from app.services.duplicatas import parece_duplicata
 
 
 def _total(sessao: Session) -> int:
@@ -89,3 +95,14 @@ def test_a_frota_repete_caminhoes_entre_incidentes(sessao: Session):
     # "Mesma placa" nos detalhes precisa de caminhões com mais de um incidente.
     placas = Counter(i.placa for i in gerar_incidentes(semear_analistas(sessao)))
     assert sum(1 for n in placas.values() if n > 1) >= 5
+
+
+def test_seed_planta_duas_duplicatas_e_nenhuma_por_acaso(sessao: Session):
+    ativos = _ativos_em_ordem(gerar_incidentes(semear_analistas(sessao)))
+    pares = [
+        (atual, anterior)
+        for n, atual in enumerate(ativos)
+        for anterior in ativos[:n]
+        if parece_duplicata(atual, anterior)
+    ]
+    assert len(pares) == 2
