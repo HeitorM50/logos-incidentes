@@ -92,6 +92,40 @@ describe('TelaTriagem', () => {
     expect(detalhes).toHaveTextContent('OrigemRegistrado na central')
   })
 
+  it('"Mesma placa" lista os outros incidentes do caminhão e leva até cada um', async () => {
+    simularLista(async () =>
+      respostaJson(
+        200,
+        lista([
+          incidente({ id: 1, placa: 'RTA4E21', categoria: 'problema_mecanico' }),
+          incidente({ id: 2, placa: 'XYZ1A23' }),
+          incidente({ id: 3, placa: 'RTA4E21', status: 'fechado', categoria: 'bloqueio_pista' }),
+        ]),
+      ),
+    )
+    renderizar()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Ver detalhes de #1' }))
+    const outros = screen.getByRole('list', { name: 'Outros incidentes da placa RTA4E21' })
+    expect(within(outros).getAllByRole('button').map((b) => b.textContent)).toEqual([
+      '#3 Bloqueio de Pista · Fechado',
+    ])
+    // Placa sem outro incidente: a seção não aparece.
+    await userEvent.click(screen.getByRole('button', { name: 'Ver detalhes de #2' }))
+    expect(
+      within(screen.getByRole('group', { name: 'Detalhes de #2' })).queryByText('Mesma placa'),
+    ).not.toBeInTheDocument()
+
+    // O #3 está fechado: a lista vai para "Fechados" e acha ele.
+    await userEvent.click(within(outros).getByRole('button'))
+    expect(screen.getByRole('searchbox', { name: 'Buscar incidente' })).toHaveValue('#3')
+    await waitFor(() =>
+      expect(
+        screen.getByRole('table', { name: 'Incidentes' }).querySelectorAll('[data-incidente]'),
+      ).toHaveLength(1),
+    )
+  })
+
   it('os detalhes trazem o mapa do local e o protocolo da categoria', async () => {
     simularLista(async () =>
       respostaJson(

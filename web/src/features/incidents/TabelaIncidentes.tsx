@@ -130,6 +130,10 @@ interface Props {
   aoRemover: (incidente: Incidente) => void
   /** Ids dos Alta recém-chegados, em destaque. */
   destaques: ReadonlySet<number>
+  /** Todos os incidentes de cada placa (ativos e fechados). */
+  porPlaca: ReadonlyMap<string, Incidente[]>
+  /** Leva a lista até um incidente (busca por #número). */
+  aoVerIncidente: (id: number) => void
 }
 
 export function TabelaIncidentes({
@@ -141,6 +145,8 @@ export function TabelaIncidentes({
   aoEditar,
   aoRemover,
   destaques,
+  porPlaca,
+  aoVerIncidente,
 }: Props) {
   const [abertas, setAbertas] = useState<ReadonlySet<number>>(() => new Set())
   // As primeiras linhas entram em cascata só quando a tabela aparece; linhas que chegam depois
@@ -199,6 +205,12 @@ export function TabelaIncidentes({
       aoRemover={() => aoRemover(incidente)}
       novo={destaques.has(incidente.id)}
       layout={celular ? 'cartao' : 'linha'}
+      mesmaPlaca={
+        incidente.placa
+          ? (porPlaca.get(incidente.placa) ?? []).filter((i) => i.id !== incidente.id)
+          : []
+      }
+      aoVerIncidente={aoVerIncidente}
     />
   ))
   const cascata = cn(primeiraPintura && 'cascata [--cascata-passo:20ms]')

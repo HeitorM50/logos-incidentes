@@ -57,6 +57,9 @@ interface Props {
   novo?: boolean
   /** "linha" na tabela (telas largas); "cartao" no celular e no tablet em pé. */
   layout?: 'linha' | 'cartao'
+  /** Outros incidentes da mesma placa, para "Mesma placa" nos detalhes. */
+  mesmaPlaca?: Incidente[]
+  aoVerIncidente?: (id: number) => void
 }
 
 export function LinhaIncidente({
@@ -74,6 +77,8 @@ export function LinhaIncidente({
   aoRemover,
   novo = false,
   layout = 'linha',
+  mesmaPlaca = [],
+  aoVerIncidente,
 }: Props) {
   const fechado = incidente.status === 'fechado'
   const idDetalhes = `detalhes-incidente-${incidente.id}`
@@ -146,6 +151,8 @@ export function LinhaIncidente({
       motivoAlterar={motivoAlterar}
       aoEditar={aoEditar}
       aoRemover={aoRemover}
+      mesmaPlaca={mesmaPlaca}
+      aoVerIncidente={aoVerIncidente}
     />
   )
 
@@ -394,6 +401,8 @@ interface PropsDetalhes {
   motivoAlterar: string | null
   aoEditar: () => void
   aoRemover: () => void
+  mesmaPlaca: Incidente[]
+  aoVerIncidente?: (id: number) => void
 }
 
 function Detalhes({
@@ -404,6 +413,8 @@ function Detalhes({
   motivoAlterar,
   aoEditar,
   aoRemover,
+  mesmaPlaca,
+  aoVerIncidente,
 }: PropsDetalhes) {
   return (
     <div
@@ -456,6 +467,28 @@ function Detalhes({
         </dd>
         <dt className="text-texto-3">Origem</dt>
         <dd>{incidente.dispositivo ? incidente.dispositivo.nome : 'Registrado na central'}</dd>
+        {mesmaPlaca.length > 0 && (
+          <>
+            <dt className="text-texto-3">Mesma placa</dt>
+            <dd>
+              <ul aria-label={`Outros incidentes da placa ${incidente.placa}`} className="flex flex-col gap-0.5">
+                {mesmaPlaca.map((outro) => (
+                  <li key={outro.id}>
+                    <button
+                      type="button"
+                      onClick={() => aoVerIncidente?.(outro.id)}
+                      className="cursor-pointer rounded-sm text-left underline-offset-3 outline-none hover:underline focus-visible:ring-3 focus-visible:ring-ring/50"
+                    >
+                      <span className="font-mono text-texto-3">#{outro.id}</span>{' '}
+                      {ROTULO_CATEGORIA[outro.categoria]}
+                      <span className="text-texto-3"> · {ROTULO_STATUS[outro.status]}</span>
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </dd>
+          </>
+        )}
       </dl>
       <dl className="grid grid-cols-[auto_1fr] content-start gap-x-3 gap-y-1">
         <dt className="text-texto-3">Aberto em</dt>

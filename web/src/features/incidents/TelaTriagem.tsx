@@ -125,6 +125,15 @@ export function TelaTriagem({ analista, aoSair }: Props) {
 
   const filtros = useFiltros()
   const filtrando = temFiltro(filtros)
+  // Incidentes por placa (ativos e fechados), para "Mesma placa" nos detalhes: problema
+  // recorrente no mesmo caminhão indica manutenção a fazer.
+  const porPlaca = useMemo(() => {
+    const mapa = new Map<string, Incidente[]>()
+    for (const i of itens ?? []) {
+      if (i.placa) mapa.set(i.placa, [...(mapa.get(i.placa) ?? []), i])
+    }
+    return mapa
+  }, [itens])
   const resultado = useMemo(
     () => (itens ? filtrarIncidentes(itens, filtros, analista.id, agora) : null),
     // agora: um incidente passa a atrasado com o tempo, sem nova leitura.
@@ -311,6 +320,8 @@ export function TelaTriagem({ analista, aoSair }: Props) {
         <Entrada key="lista">
           <TabelaIncidentes
             itens={resultado.itens}
+            porPlaca={porPlaca}
+            aoVerIncidente={mostrarNaLista}
             idAnalista={analista.id}
             agora={agora}
             acoes={acoes}
