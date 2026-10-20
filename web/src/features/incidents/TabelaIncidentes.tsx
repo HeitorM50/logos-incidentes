@@ -91,6 +91,8 @@ interface Props {
   semConexao: boolean
   aoEditar: (incidente: Incidente) => void
   aoRemover: (incidente: Incidente) => void
+  /** Ids dos Alta recém-chegados, em destaque. */
+  destaques: ReadonlySet<number>
 }
 
 export function TabelaIncidentes({
@@ -101,6 +103,7 @@ export function TabelaIncidentes({
   semConexao,
   aoEditar,
   aoRemover,
+  destaques,
 }: Props) {
   const [abertas, setAbertas] = useState<ReadonlySet<number>>(() => new Set())
 
@@ -133,6 +136,7 @@ export function TabelaIncidentes({
             aoDispensarConflito={() => acoes.dispensarConflito(incidente.id)}
             aoEditar={() => aoEditar(incidente)}
             aoRemover={() => aoRemover(incidente)}
+            novo={destaques.has(incidente.id)}
           />
         ))}
       </ol>

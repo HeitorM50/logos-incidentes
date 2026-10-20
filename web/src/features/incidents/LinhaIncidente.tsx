@@ -42,6 +42,8 @@ interface Props {
   aoDispensarConflito: () => void
   aoEditar: () => void
   aoRemover: () => void
+  /** Alta que acabou de chegar: destaque por alguns segundos (useAltaNova). */
+  novo?: boolean
 }
 
 export function LinhaIncidente({
@@ -57,6 +59,7 @@ export function LinhaIncidente({
   aoDispensarConflito,
   aoEditar,
   aoRemover,
+  novo = false,
 }: Props) {
   const fechado = incidente.status === 'fechado'
   const meu = incidente.responsavel?.id === idAnalista
@@ -69,10 +72,17 @@ export function LinhaIncidente({
 
   return (
     <li
+      data-incidente={incidente.id}
       className={cn(
         'grid min-h-11 items-center gap-x-3 border-b px-3 py-1.5 last:border-b-0',
         COLUNAS_TABELA,
-        conflito ? 'bg-info-fundo' : pendente ? 'bg-linha-pendente' : 'bg-card',
+        conflito
+          ? 'bg-info-fundo'
+          : pendente
+            ? 'bg-linha-pendente'
+            : novo
+              ? 'bg-alta-fundo/10'
+              : 'bg-card',
         fechado && 'text-texto-3',
       )}
     >
@@ -105,6 +115,12 @@ export function LinhaIncidente({
           />
         </button>
         <span className="flex-none font-mono text-xs text-texto-3">#{incidente.id}</span>
+        {/* Texto, e não só a cor do fundo: o destaque precisa ser legível sem cor. */}
+        {novo && (
+          <span className="flex-none rounded-sm bg-alta-fundo px-1.5 py-px text-[10px] font-bold tracking-[0.06em] text-alta-texto uppercase">
+            Novo
+          </span>
+        )}
         <span
           title={incidente.titulo}
           className={cn(

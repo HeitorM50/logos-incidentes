@@ -112,7 +112,9 @@ function Conteudo({
         }
         if (ehErroApi(falha) && falha.ehConflito) {
           if (falha.atual) setVista(falha.atual)
-          setErro('Não foi removido: o incidente mudou antes. Confira o estado atual e confirme de novo.')
+          setErro(
+            'Não foi removido: o incidente mudou antes. Confira o estado atual e confirme de novo.',
+          )
           return
         }
         setErro(errosDaApi(falha).geral)
@@ -134,7 +136,9 @@ function Conteudo({
             : motivo
               ? `Não é possível remover: ${motivo}`
               : mudou && atual
-                ? `Este incidente mudou desde que você abriu esta confirmação. Agora está ${descreverEstado(atual, analista.id)}. Remover agora vai pedir outra confirmação.`
+                ? 'Este incidente mudou desde que você abriu esta confirmação. Agora está ' +
+                  `${descreverEstado(atual, analista.id)}. ` +
+                  'Remover agora vai pedir outra confirmação.'
                 : null}
         </div>
       </AlertDialogHeader>

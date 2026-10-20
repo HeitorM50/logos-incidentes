@@ -1,5 +1,7 @@
 import { CircleCheck, Undo2, UserRoundCog, X } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { IconeCriticidade } from './Icones'
+import type { AvisoAltaNova as DadosAltaNova } from './useAltaNova'
 import type { Incidente } from '@/api/tipos'
 import { descreverEstado, motivoBloqueio, nomeDaAcao } from './acoes'
 import type { AvisoFalha, Conflito } from './useAcoesIncidente'
@@ -114,17 +116,68 @@ export function AvisoSucesso({ texto, acao, aoFechar }: PropsSucesso) {
   )
 }
 
+interface PropsAltaNova {
+  aviso: DadosAltaNova
+  aoVer: (id: number) => void
+  aoFechar: () => void
+}
+
+/**
+ * Incidente Alta que chegou pela leitura de 5 s. Ele entra no fim do grupo Alta, talvez fora
+ * da tela: "Ver" leva até a linha. O anúncio sai de uma região fixa (ver TelaTriagem).
+ */
+export function AvisoAltaNova({ aviso, aoVer, aoFechar }: PropsAltaNova) {
+  const quantos = aviso.ids.length
+  return (
+    <div
+      onKeyDown={(evento) => {
+        if (evento.key === 'Escape') aoFechar()
+      }}
+      className="flex items-center gap-3 rounded-lg border-2 border-alta-borda bg-card py-2.5 pr-2 pl-3.5 text-sm shadow-[0_10px_30px_rgba(0,0,0,0.18)]"
+    >
+      <span className="flex size-7 flex-none items-center justify-center rounded-md bg-alta-fundo text-alta-texto">
+        <IconeCriticidade criticidade="alta" />
+      </span>
+      <span className="flex min-w-0 flex-1 flex-col leading-tight">
+        <strong className="font-semibold">
+          {quantos === 1 ? 'Novo incidente Alta' : `${quantos} novos incidentes Alta`}
+        </strong>
+        <span className="truncate text-[13px] text-texto-2">
+          {quantos === 1
+            ? `#${aviso.ids[0]} · ${aviso.titulo}`
+            : aviso.ids.map((id) => `#${id}`).join(', ')}
+        </span>
+      </span>
+      <button
+        type="button"
+        onClick={() => aoVer(aviso.ids[0])}
+        className="h-8 flex-none cursor-pointer rounded-[5px] border border-borda-forte px-3 text-[13px] font-semibold outline-none hover:bg-superficie-2 focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        {quantos === 1 ? 'Ver' : `Ver #${aviso.ids[0]}`}
+      </button>
+      <button
+        type="button"
+        aria-label="Fechar aviso de incidente Alta novo"
+        onClick={aoFechar}
+        className="flex size-8 flex-none cursor-pointer items-center justify-center rounded-[5px] outline-none hover:bg-superficie-2 focus-visible:ring-3 focus-visible:ring-ring/50"
+      >
+        <X aria-hidden className="size-3.5" />
+      </button>
+    </div>
+  )
+}
+
 interface PropsFalha {
   avisos: AvisoFalha[]
-  /** Confirmação de sucesso, empilhada abaixo das falhas. */
-  sucesso?: ReactNode
+  /** Outros avisos (Alta novo, sucesso), empilhados abaixo das falhas. */
+  outros?: ReactNode
   aoTentar: (aviso: AvisoFalha) => void
   aoFechar: (id: number) => void
 }
 
 /** Avisos flutuantes das ações que falharam (a linha já voltou ao estado anterior). */
-export function PilhaAvisos({ avisos, sucesso, aoTentar, aoFechar }: PropsFalha) {
-  if (avisos.length === 0 && !sucesso) return null
+export function PilhaAvisos({ avisos, outros, aoTentar, aoFechar }: PropsFalha) {
+  if (avisos.length === 0 && !outros) return null
   return (
     <div className="fixed right-6 bottom-6 z-20 flex w-[min(480px,calc(100%-48px))] flex-col gap-2">
       {avisos.map((aviso) => (
@@ -162,7 +215,7 @@ export function PilhaAvisos({ avisos, sucesso, aoTentar, aoFechar }: PropsFalha)
           </button>
         </div>
       ))}
-      {sucesso}
+      {outros}
     </div>
   )
 }

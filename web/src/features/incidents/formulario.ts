@@ -164,7 +164,9 @@ export function errosDaApi(erro: unknown): { campos: ErrosFormulario; geral: str
   if (erro.ehTransitorio) {
     return {
       campos: {},
-      geral: 'Não foi possível salvar. Verifique a conexão e tente de novo. Seus dados continuam no formulário.',
+      geral:
+        'Não foi possível salvar. Verifique a conexão e tente de novo. ' +
+        'Seus dados continuam no formulário.',
     }
   }
   if (erro.codigo === 'erro_interno' || erro.codigo === 'resposta_invalida') {

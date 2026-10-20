@@ -104,4 +104,10 @@ describe.each(Object.entries(TEMAS))('contraste WCAG AA — tema %s', (nome, t) 
     expect(contraste(t.foreground, fundoCampo)).toBeGreaterThanOrEqual(TEXTO)
     expect(contraste(t['muted-foreground'], fundoCampo)).toBeGreaterThanOrEqual(TEXTO)
   })
+
+  it('linha de Alta novo (bg-alta-fundo/10): texto terciário legível', () => {
+    const fundoLinha = misturar(t['alta-fundo'], t.card, 0.1)
+    expect(contraste(t['texto-3'], fundoLinha)).toBeGreaterThanOrEqual(TEXTO)
+    expect(contraste(t['texto-2'], fundoLinha)).toBeGreaterThanOrEqual(TEXTO)
+  })
 })

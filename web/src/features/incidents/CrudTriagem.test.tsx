@@ -388,3 +388,30 @@ describe('TelaTriagem — remover', () => {
     expect(within(dialogo).queryByRole('button', { name: 'Remover incidente' })).toBeNull()
   })
 })
+
+describe('TelaTriagem — incidente Alta novo', () => {
+  it('avisa, destaca a linha com "Novo" e "Ver" leva o foco até ela', async () => {
+    const servidor = simularServidor([incidente({ id: 1, criticidade: 'alta' })])
+    const cliente = renderizar()
+    await screen.findByRole('button', { name: 'Ver detalhes de #1' })
+    expect(screen.queryByText('Novo incidente Alta')).toBeNull()
+
+    servidor.itens = [
+      ...servidor.itens,
+      incidente({ id: 9, criticidade: 'alta', titulo: 'Tombamento', atualizado_por: BRUNO }),
+    ]
+    await cliente.refetchQueries()
+
+    expect(await screen.findByText('Novo incidente Alta')).toBeInTheDocument()
+    expect(screen.getByText('#9 · Tombamento')).toBeInTheDocument()
+    const linha = document.querySelector('[data-incidente="9"]') as HTMLElement
+    expect(within(linha).getByText('Novo')).toBeInTheDocument()
+    expect(document.querySelectorAll('p[role="status"].sr-only')[3]).toHaveTextContent(
+      'Novo incidente Alta: #9, Tombamento.',
+    )
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ver' }))
+    expect(within(linha).getByRole('button', { name: 'Ver detalhes de #9' })).toHaveFocus()
+    expect(screen.queryByText('Novo incidente Alta')).toBeNull()
+  })
+})

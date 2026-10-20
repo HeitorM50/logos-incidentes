@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { useAgora } from '@/lib/useAgora'
 import { useSegundosAguardando } from '@/lib/useSegundosAguardando'
 import { useValorAtrasado } from '@/lib/useValorAtrasado'
-import { AvisoSucesso, PilhaAvisos } from './Avisos'
+import { AvisoAltaNova, AvisoSucesso, PilhaAvisos } from './Avisos'
 import { BannerReconexao } from './BannerReconexao'
 import { BarraStatus } from './BarraStatus'
 import { CabecalhoTriagem } from './CabecalhoTriagem'
@@ -27,6 +27,7 @@ import { resumirTriagem } from './resumo'
 import { TabelaCarregando, TabelaIncidentes } from './TabelaIncidentes'
 import { definirFiltros, useFiltros } from './useFiltros'
 import { useAcoesIncidente } from './useAcoesIncidente'
+import { useAltaNova } from './useAltaNova'
 import { estadoDaConexao, useIncidentes } from './useIncidentes'
 
 // Uma leitura normal leva menos de 1 s. Acima disto, o servidor do Render está acordando.
@@ -34,6 +35,7 @@ const ESPERA_NORMAL_S = 3
 const ATRASO_ANUNCIO_MS = 700
 const DURACAO_SUCESSO_MS = 8000
 const ID_TITULO = 'titulo-triagem'
+const TITULO_DA_ABA = 'Logos — Central de Incidentes'
 
 function mensagemFalhaLista(erro: unknown): string {
   if (!erro) return 'Sem conexão com o servidor. Confira a internet e tente de novo.'
@@ -80,6 +82,7 @@ export function TelaTriagem({ analista, aoSair }: Props) {
   // Ações em andamento aparecem por cima da lista confirmada (contadores incluídos).
   const { sobrepor } = acoes
   const itens = useMemo(() => confirmados && sobrepor(confirmados), [confirmados, sobrepor])
+  const altaNova = useAltaNova(itens, analista.id, TITULO_DA_ABA)
   const resumo = useMemo(() => (itens ? resumirTriagem(itens, agora) : null), [itens, agora])
 
   const filtros = useFiltros()
@@ -124,6 +127,19 @@ export function TelaTriagem({ analista, aoSair }: Props) {
   // O botão que abriu o painel ou o diálogo pode ter saído da tela (linha removida ou lista
   // reordenada): o foco vem para o título, e não para o topo da página.
   const focarTitulo = () => document.getElementById(ID_TITULO)?.focus()
+
+  /** "Ver" do aviso de Alta novo: rola até a linha; se um filtro a esconde, busca por ela. */
+  function irPara(id: number) {
+    altaNova.dispensar()
+    const linha = document.querySelector<HTMLElement>(`[data-incidente="${id}"]`)
+    if (!linha) {
+      mostrarNaLista(id)
+      return
+    }
+    const semMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    linha.scrollIntoView?.({ block: 'center', behavior: semMovimento ? 'auto' : 'smooth' })
+    linha.querySelector<HTMLElement>('button[aria-expanded]')?.focus({ preventScroll: true })
+  }
 
   function mostrarNaLista(id: number) {
     definirFiltros(() => ({ ...SEM_FILTROS, busca: `#${id}` }))
@@ -179,6 +195,7 @@ export function TelaTriagem({ analista, aoSair }: Props) {
             semConexao={estado !== 'ao_vivo'}
             aoEditar={(incidente) => setPainel({ tipo: 'editar', id: incidente.id })}
             aoRemover={setRemovendo}
+            destaques={altaNova.destaques}
           />
         </Entrada>
       )
@@ -296,6 +313,9 @@ export function TelaTriagem({ analista, aoSair }: Props) {
       <p role="status" className="sr-only">
         {sucesso?.texto}
       </p>
+      <p role="status" className="sr-only">
+        {altaNova.anuncio}
+      </p>
       <PainelIncidente
         modo={painel}
         itens={itens}
@@ -313,26 +333,34 @@ export function TelaTriagem({ analista, aoSair }: Props) {
         aoFocarDepois={focarTitulo}
       />
       <PilhaAvisos
-        sucesso={
-          sucesso && (
-            <div
-              key={sucesso.chave}
-              onMouseEnter={() => setSucessoParado(true)}
-              onMouseLeave={() => setSucessoParado(false)}
-              onFocus={() => setSucessoParado(true)}
-              onBlur={() => setSucessoParado(false)}
-            >
-              <AvisoSucesso
-                texto={sucesso.texto}
-                acao={
-                  sucesso.criado
-                    ? { rotulo: 'Mostrar na lista', aoClicar: () => mostrarNaLista(sucesso.id) }
-                    : undefined
-                }
-                aoFechar={() => setSucesso(null)}
-              />
-            </div>
-          )
+        outros={
+          <>
+            {altaNova.aviso && (
+              <AvisoAltaNova aviso={altaNova.aviso} aoVer={irPara} aoFechar={altaNova.dispensar} />
+            )}
+            {sucesso && (
+              <div
+                key={sucesso.chave}
+                onMouseEnter={() => setSucessoParado(true)}
+                onMouseLeave={() => setSucessoParado(false)}
+                onFocus={() => setSucessoParado(true)}
+                onBlur={() => setSucessoParado(false)}
+              >
+                <AvisoSucesso
+                  texto={sucesso.texto}
+                  acao={
+                    sucesso.criado
+                      ? {
+                          rotulo: 'Mostrar na lista',
+                          aoClicar: () => mostrarNaLista(sucesso.id),
+                        }
+                      : undefined
+                  }
+                  aoFechar={() => setSucesso(null)}
+                />
+              </div>
+            )}
+          </>
         }
         // Aviso de uma versão que já mudou (outro analista agiu, ou a linha sumiu) não vale mais.
         avisos={acoes.avisos.filter(

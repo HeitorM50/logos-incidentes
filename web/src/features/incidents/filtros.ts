@@ -19,7 +19,12 @@ export interface Filtros {
   minhaFila: boolean
 }
 
-export const SEM_FILTROS: Filtros = { criticidades: [], categorias: [], busca: '', minhaFila: false }
+export const SEM_FILTROS: Filtros = {
+  criticidades: [],
+  categorias: [],
+  busca: '',
+  minhaFila: false,
+}
 
 // Nomes curtos na URL: `?criticidade=alta,media&categoria=bloqueio_pista&busca=br-116`.
 // `responsavel=eu` é o mesmo parâmetro que a API aceita em GET /incidentes.
