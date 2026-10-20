@@ -10,6 +10,7 @@ import {
   aplicarAcao,
   descreverEstado,
   motivoBloqueio,
+  nomeDaAcao,
   type Acao,
 } from './acoes'
 import { gravarVersao, relerLista, removerDaLista } from './cacheIncidentes'
@@ -26,8 +27,8 @@ interface Variaveis {
   /** O incidente como o analista o via no clique (inclui a versão lida). */
   incidente: Incidente
   acao: Acao
-  /** Passo de um "Desfazer": não oferece desfazer de novo. */
-  desfazendo?: boolean
+  /** Passo de um "Desfazer" (não oferece desfazer de novo). */
+  desfazendo?: { passo: number; total: number }
 }
 
 /** 409: outro analista alterou o incidente antes. A linha já mostra a versão atual. */
@@ -129,6 +130,38 @@ function montarAviso(
   return { ...base, titulo, detalhe: `${erro.message} A lista foi relida.`, podeRepetir: false }
 }
 
+/**
+ * Falha num passo do "Desfazer". No primeiro passo nada mudou; depois dele, o incidente ficou
+ * num estado intermediário, e o aviso diz qual é e o que falta (o "Tentar de novo" refaz só
+ * o passo que faltou, porque é o último).
+ */
+function avisoDoDesfazer(erro: unknown, variaveis: Variaveis, idAnalista: number): AvisoFalha {
+  const { incidente, acao, desfazendo } = variaveis
+  const { passo, total } = desfazendo!
+  const transitorio = ehErroApi(erro) && erro.ehTransitorio
+  const base = { id: incidente.id, versao: incidente.versao, acao }
+  const motivoApi = ehErroApi(erro) && !transitorio ? ` ${erro.message}` : ''
+  if (passo === 0) {
+    return {
+      ...base,
+      titulo: `Não foi possível desfazer em #${incidente.id}.`,
+      detalhe:
+        `Nada mudou: o incidente continua ${descreverEstado(incidente, idAnalista)}.` +
+        (transitorio ? ' Verifique a conexão.' : motivoApi),
+      podeRepetir: transitorio && total === 1,
+    }
+  }
+  return {
+    ...base,
+    titulo: `Desfazer incompleto em #${incidente.id}.`,
+    detalhe:
+      `Ficou ${descreverEstado(incidente, idAnalista)}; ` +
+      `falta ${nomeDaAcao(acao).toLowerCase()}.` +
+      (transitorio ? ' Verifique a conexão e tente de novo.' : motivoApi),
+    podeRepetir: transitorio && passo === total - 1,
+  }
+}
+
 export type AcoesIncidente = ReturnType<typeof useAcoesIncidente>
 
 /**
@@ -145,6 +178,9 @@ export function useAcoesIncidente(analista: AnalistaResumo) {
   // Guarda contra clique duplo: o estado do React só atualiza no próximo render, o ref na hora.
   const emAndamento = useRef(new Set<number>())
   const [ultima, setUltima] = useState<UltimaAcao | null>(null)
+  // Incidentes no meio de um "Desfazer" de vários passos: entre um passo e outro a guarda
+  // emAndamento fica vazia, e um clique ali intercalaria uma ação no meio da sequência.
+  const desfazendoIds = useRef(new Set<number>())
 
   const { mutate, mutateAsync } = useMutation({
     mutationKey: CHAVE_ACAO_INCIDENTE,
@@ -152,12 +188,15 @@ export function useAcoesIncidente(analista: AnalistaResumo) {
     onSuccess: (novo, { incidente, acao, desfazendo }) => {
       gravarVersao(cliente, novo)
       if (desfazendo) {
-        setAnuncio(`Ação desfeita: #${novo.id} está ${descreverEstado(novo, analista.id)}.`)
+        // Só o último passo anuncia: no meio, o incidente ainda não voltou ao estado de antes.
+        if (desfazendo.passo === desfazendo.total - 1) {
+          setAnuncio(`Ação desfeita: #${novo.id} está ${descreverEstado(novo, analista.id)}.`)
+        }
         return
       }
       const texto = textoSucesso(acao, novo)
-      setAnuncio(texto)
       const passos = acoesParaDesfazer(incidente, acao)
+      setAnuncio(passos ? `${texto} Para desfazer, Ctrl+Z.` : texto)
       setUltima(
         passos ? { id: novo.id, versao: novo.versao, texto, passos, chave: Date.now() } : null,
       )
@@ -182,7 +221,9 @@ export function useAcoesIncidente(analista: AnalistaResumo) {
       if (ehErroApi(erro) && erro.codigo === 'nao_encontrado') {
         removerDaLista(cliente, incidente.id)
       }
-      const aviso = montarAviso(erro, variaveis, analista.id)
+      const aviso = variaveis.desfazendo
+        ? avisoDoDesfazer(erro, variaveis, analista.id)
+        : montarAviso(erro, variaveis, analista.id)
       setAvisos((todos) => [...todos.filter((a) => a.id !== aviso.id), aviso])
     },
     onSettled: (_dados, _erro, { incidente }) => {
@@ -197,7 +238,7 @@ export function useAcoesIncidente(analista: AnalistaResumo) {
 
   const executar = useCallback(
     (incidente: Incidente, acao: Acao) => {
-      if (emAndamento.current.has(incidente.id)) return
+      if (emAndamento.current.has(incidente.id) || desfazendoIds.current.has(incidente.id)) return
       setConflitos((todos) => semChave(todos, incidente.id))
       fecharAviso(incidente.id)
       // A regra pode ter mudado desde o aviso (ex.: "Tentar de novo" depois que outro
@@ -218,33 +259,49 @@ export function useAcoesIncidente(analista: AnalistaResumo) {
     async (incidente: Incidente) => {
       const alvo = ultima
       if (!alvo || alvo.id !== incidente.id || alvo.versao !== incidente.versao) return
+      // Com outra ação do mesmo incidente em voo, o clique não some em silêncio: o aviso
+      // continua (a tela o esconde enquanto houver pendência).
+      if (emAndamento.current.has(incidente.id)) return
       setUltima(null)
+      setConflitos((todos) => semChave(todos, incidente.id))
+      fecharAviso(incidente.id)
+      desfazendoIds.current.add(incidente.id)
+      setAnuncio(`Desfazendo a ação em #${incidente.id}…`)
       let atual = incidente
-      for (const passo of alvo.passos) {
-        if (emAndamento.current.has(atual.id)) return
-        const motivo = motivoBloqueio(atual, passo, analista.id)
-        if (motivo) {
-          const aviso: AvisoFalha = {
-            id: atual.id,
-            versao: atual.versao,
-            acao: passo,
-            titulo: `Não foi possível desfazer em #${atual.id}.`,
-            detalhe: motivo,
-            podeRepetir: false,
+      try {
+        for (const [i, passo] of alvo.passos.entries()) {
+          const motivo = motivoBloqueio(atual, passo, analista.id)
+          if (motivo) {
+            const aviso: AvisoFalha = {
+              id: atual.id,
+              versao: atual.versao,
+              acao: passo,
+              titulo:
+                i === 0
+                  ? `Não foi possível desfazer em #${atual.id}.`
+                  : `Desfazer incompleto em #${atual.id}.`,
+              detalhe: motivo,
+              podeRepetir: false,
+            }
+            setAvisos((todos) => [...todos.filter((a) => a.id !== aviso.id), aviso])
+            return
           }
-          setAvisos((todos) => [...todos.filter((a) => a.id !== aviso.id), aviso])
-          return
+          emAndamento.current.add(atual.id)
+          try {
+            atual = await mutateAsync({
+              incidente: atual,
+              acao: passo,
+              desfazendo: { passo: i, total: alvo.passos.length },
+            })
+          } catch {
+            return // onError já mostrou o conflito ou a falha (avisoDoDesfazer)
+          }
         }
-        emAndamento.current.add(atual.id)
-        setAnuncio(`Desfazendo a ação em #${atual.id}…`)
-        try {
-          atual = await mutateAsync({ incidente: atual, acao: passo, desfazendo: true })
-        } catch {
-          return // onError já mostrou o conflito ou a falha
-        }
+      } finally {
+        desfazendoIds.current.delete(incidente.id)
       }
     },
-    [ultima, mutateAsync, analista.id],
+    [ultima, mutateAsync, analista.id, fecharAviso],
   )
 
   const dispensarUltima = useCallback(() => setUltima(null), [])

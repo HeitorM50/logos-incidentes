@@ -444,5 +444,77 @@ describe('TelaTriagem — ações', () => {
 
     await waitFor(() => expect(screen.queryByRole('button', { name: 'Desfazer' })).toBeNull())
   })
+
+  it('com outra ação do incidente em voo, o "Desfazer" fica escondido', async () => {
+    const livre = incidente({ id: 7, versao: 3 })
+    const servidor = simularServidor([livre])
+    const assumido = { ...livre, versao: 4, status: 'em_investigacao' as const, responsavel: ANA }
+    servidor.responder = async () => {
+      servidor.itens = [assumido]
+      return respostaJson(200, assumido)
+    }
+    renderizar()
+    await userEvent.click(await screen.findByRole('button', { name: 'Assumir #7' }))
+    await screen.findByRole('button', { name: 'Desfazer' })
+
+    servidor.responder = naoResponde
+    await userEvent.click(screen.getByRole('button', { name: 'Mudar status de #7' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Inconclusivo' }))
+
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Desfazer' })).toBeNull())
+  })
+
+  it('falha no segundo passo do desfazer diz o estado intermediário e o que falta', async () => {
+    const antes = incidente({ id: 7, versao: 3, status: 'inconclusivo' })
+    const servidor = simularServidor([antes])
+    let versao = 3
+    let falharLiberar = false
+    servidor.responder = async ({ url, corpo }) => {
+      const tipo = url.split('/').at(-1)
+      if (tipo === 'liberar' && falharLiberar) return erroDaApi(503, 'servico_indisponivel')
+      const acao =
+        tipo === 'status'
+          ? { tipo: 'status' as const, status: (corpo as { status: 'inconclusivo' }).status }
+          : { tipo: tipo as 'assumir' | 'liberar' }
+      const novo = { ...aplicarAcao(servidor.itens[0], acao, ANA), versao: ++versao }
+      servidor.itens = [novo]
+      return respostaJson(200, novo)
+    }
+    renderizar()
+    await userEvent.click(await screen.findByRole('button', { name: 'Assumir #7' }))
+    await screen.findByRole('button', { name: 'Desfazer' })
+
+    falharLiberar = true
+    await userEvent.click(screen.getByRole('button', { name: 'Desfazer' }))
+
+    const aviso = await screen.findByText('Desfazer incompleto em #7.')
+    expect(aviso.closest('[role="alert"]')).toHaveTextContent(
+      'Ficou Inconclusivo, com você; falta liberar. Verifique a conexão e tente de novo.',
+    )
+    expect(anuncio()).not.toHaveTextContent('Ação desfeita')
+  })
+
+  it('Ctrl+Z desfaz de qualquer lugar da tela, mas não dentro da busca', async () => {
+    const livre = incidente({ id: 7, versao: 3 })
+    const servidor = simularServidor([livre])
+    const assumido = { ...livre, versao: 4, status: 'em_investigacao' as const, responsavel: ANA }
+    servidor.responder = async () => {
+      servidor.itens = [assumido]
+      return respostaJson(200, assumido)
+    }
+    renderizar()
+    await userEvent.click(await screen.findByRole('button', { name: 'Assumir #7' }))
+    await screen.findByRole('button', { name: 'Desfazer' })
+
+    // Dentro de um campo de texto, Ctrl+Z é do campo.
+    await userEvent.click(screen.getByRole('searchbox', { name: 'Buscar incidente' }))
+    await userEvent.keyboard('{Control>}z{/Control}')
+    expect(servidor.chamadas).toHaveLength(1)
+
+    servidor.responder = naoResponde
+    ;(document.activeElement as HTMLElement).blur()
+    await userEvent.keyboard('{Control>}z{/Control}')
+    expect(servidor.chamadas.at(-1)?.url).toMatch(/\/incidentes\/7\/liberar$/)
+  })
 })
 

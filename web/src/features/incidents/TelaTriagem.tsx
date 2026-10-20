@@ -1,5 +1,5 @@
 import { Plus } from 'lucide-react'
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ehErroApi } from '@/api/erros'
 import type { AnalistaLogado, Incidente } from '@/api/tipos'
 import { Button } from '@/components/ui/button'
@@ -129,11 +129,68 @@ export function TelaTriagem({ analista, aoSair }: Props) {
 
   // "Desfazer" só vale enquanto o incidente está na versão que a ação gerou: se alguém mudou
   // depois (outro analista, outra janela), desfazer apagaria essa mudança sem ninguém ver.
+  // Também fica escondido enquanto outra ação do mesmo incidente está em voo.
   const desfazivel = (() => {
     const ultima = acoes.ultima
     const incidente = ultima && confirmados?.find((i) => i.id === ultima.id)
-    return ultima && incidente && incidente.versao === ultima.versao ? { ultima, incidente } : null
+    if (!ultima || !incidente || acoes.pendentes.has(ultima.id)) return null
+    return incidente.versao === ultima.versao ? { ultima, incidente } : null
   })()
+
+  // Versão mudou ou o incidente sumiu: o desfazer não volta a valer, então sai da memória.
+  const ultimaVelha =
+    !!acoes.ultima &&
+    !!confirmados &&
+    confirmados.find((i) => i.id === acoes.ultima!.id)?.versao !== acoes.ultima.versao
+  const { dispensarUltima } = acoes
+  useEffect(() => {
+    if (ultimaVelha) dispensarUltima()
+  }, [ultimaVelha, dispensarUltima])
+
+  /** Foco depois do aviso de desfazer sumir: a linha do incidente, ou o título. */
+  function focarLinhaOuTitulo(id: number) {
+    const botao = document.querySelector<HTMLElement>(
+      `[data-incidente="${id}"] button[aria-expanded]`,
+    )
+    if (botao) botao.focus()
+    else focarTitulo()
+  }
+
+  function desfazerAgora() {
+    if (!desfazivel) return
+    focarLinhaOuTitulo(desfazivel.incidente.id)
+    void acoes.desfazer(desfazivel.incidente)
+  }
+
+  // Ctrl+Z (⌘Z) desfaz de qualquer lugar e Esc fecha o aviso, enquanto ele estiver na tela:
+  // sem isso, quem usa teclado teria de atravessar a lista com Tab em 6 s (WCAG 2.2.1).
+  const desfazerRef = useRef(desfazerAgora)
+  desfazerRef.current = desfazerAgora
+  const idDesfazivel = desfazivel?.incidente.id
+  useEffect(() => {
+    if (idDesfazivel === undefined) return
+    function aoTeclar(evento: KeyboardEvent) {
+      if (evento.defaultPrevented || evento.isComposing) return
+      if (document.querySelector('[aria-modal="true"]')) return
+      const alvo = evento.target as HTMLElement | null
+      const digitando =
+        alvo?.isContentEditable || ['INPUT', 'TEXTAREA', 'SELECT'].includes(alvo?.tagName ?? '')
+      if (digitando) return
+      const ctrlZ =
+        (evento.ctrlKey || evento.metaKey) &&
+        !evento.shiftKey &&
+        !evento.altKey &&
+        evento.key.toLowerCase() === 'z'
+      if (ctrlZ) {
+        evento.preventDefault()
+        desfazerRef.current()
+      } else if (evento.key === 'Escape') {
+        dispensarUltima()
+      }
+    }
+    window.addEventListener('keydown', aoTeclar)
+    return () => window.removeEventListener('keydown', aoTeclar)
+  }, [idDesfazivel, dispensarUltima])
 
   // O botão que abriu o painel ou o diálogo pode ter saído da tela (linha removida ou lista
   // reordenada): o foco vem para o título, e não para o topo da página.
@@ -366,18 +423,10 @@ export function TelaTriagem({ analista, aoSair }: Props) {
               <AvisoDesfazer
                 key={desfazivel.ultima.chave}
                 texto={desfazivel.ultima.texto}
-                aoDesfazer={() => {
-                  // O aviso some com o clique: o foco vai antes para a linha do incidente.
-                  document
-                    .querySelector<HTMLElement>(
-                      `[data-incidente="${desfazivel.incidente.id}"] button[aria-expanded]`,
-                    )
-                    ?.focus()
-                  void acoes.desfazer(desfazivel.incidente)
-                }}
+                aoDesfazer={desfazerAgora}
                 aoFechar={() => {
                   acoes.dispensarUltima()
-                  focarTitulo()
+                  focarLinhaOuTitulo(desfazivel.incidente.id)
                 }}
                 aoExpirar={acoes.dispensarUltima}
               />

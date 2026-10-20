@@ -1,5 +1,5 @@
 import { CircleCheck, RotateCcw, Undo2, UserRoundCog, X } from 'lucide-react'
-import { useEffect, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { IconeCriticidade } from './Icones'
 import type { AvisoAltaNova as DadosAltaNova } from './useAltaNova'
 import type { Incidente } from '@/api/tipos'
@@ -133,25 +133,41 @@ interface PropsDesfazer {
  * foco estão no aviso: quem está lendo ou chegando pelo Tab não perde o botão (WCAG 2.2.1).
  */
 export function AvisoDesfazer({ texto, aoDesfazer, aoFechar, aoExpirar }: PropsDesfazer) {
+  const caixa = useRef<HTMLDivElement>(null)
   const [restante, setRestante] = useState(DURACAO_DESFAZER_MS)
   const [mouse, setMouse] = useState(false)
   const [foco, setFoco] = useState(false)
   const parado = mouse || foco
 
+  // Aviso novo que surge debaixo do cursor (troca por outro incidente) já nasce parado: o
+  // mouse não se mexeu, então não há mouseenter.
+  useEffect(() => {
+    if (caixa.current?.matches(':hover')) setMouse(true)
+  }, [])
+
+  // Relógio real (e não contagem de ticks): aba em segundo plano não estica os 6 s.
+  const restanteRef = useRef(DURACAO_DESFAZER_MS)
   useEffect(() => {
     if (parado) return
-    const id = setInterval(() => setRestante((r) => r - PASSO_CONTAGEM_MS), PASSO_CONTAGEM_MS)
+    const fim = performance.now() + restanteRef.current
+    const id = setInterval(() => {
+      const falta = Math.max(0, fim - performance.now())
+      restanteRef.current = falta
+      setRestante(falta)
+      if (falta === 0) {
+        clearInterval(id)
+        aoExpirar()
+      }
+    }, PASSO_CONTAGEM_MS)
     return () => clearInterval(id)
-  }, [parado])
-
-  useEffect(() => {
-    if (restante <= 0) aoExpirar()
-  }, [restante, aoExpirar])
+  }, [parado, aoExpirar])
 
   return (
     <div
-      onMouseEnter={() => setMouse(true)}
-      onMouseLeave={() => setMouse(false)}
+      ref={caixa}
+      // Só o mouse pausa: no toque, "entrar" sem "sair" pararia a contagem para sempre.
+      onPointerEnter={(e) => e.pointerType === 'mouse' && setMouse(true)}
+      onPointerLeave={(e) => e.pointerType === 'mouse' && setMouse(false)}
       onFocus={() => setFoco(true)}
       onBlur={() => setFoco(false)}
       onKeyDown={(evento) => {
@@ -166,10 +182,14 @@ export function AvisoDesfazer({ texto, aoDesfazer, aoFechar, aoExpirar }: PropsD
         <button
           type="button"
           onClick={aoDesfazer}
+          aria-keyshortcuts="Control+Z Meta+Z"
           className="flex h-8 flex-none cursor-pointer items-center gap-1.5 rounded-[5px] border border-aviso-borda-botao px-3 text-[13px] font-semibold outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
         >
           <RotateCcw aria-hidden className="size-3.5" />
           Desfazer
+          <kbd aria-hidden className="ml-0.5 font-mono text-[11px] font-normal text-aviso-detalhe">
+            Ctrl+Z
+          </kbd>
         </button>
         <button
           type="button"
@@ -184,7 +204,7 @@ export function AvisoDesfazer({ texto, aoDesfazer, aoFechar, aoExpirar }: PropsD
       <div aria-hidden className="h-0.5 bg-aviso-borda-botao/30">
         <div
           className="h-full bg-aviso-texto/70"
-          style={{ width: `${Math.max(0, (restante / DURACAO_DESFAZER_MS) * 100)}%` }}
+          style={{ width: `${(restante / DURACAO_DESFAZER_MS) * 100}%` }}
         />
       </div>
     </div>
