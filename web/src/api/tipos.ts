@@ -26,6 +26,12 @@ export interface AnalistaLogado extends AnalistaResumo {
   usuario: string
 }
 
+export interface DispositivoResumo {
+  id: number
+  nome: string
+  placa: string | null
+}
+
 export interface Incidente {
   id: number
   titulo: string
@@ -37,6 +43,8 @@ export interface Incidente {
   placa: string | null
   responsavel: AnalistaResumo | null
   atualizado_por: AnalistaResumo | null
+  /** Caminhão que enviou pela ingestão (ADR 0008); nulo quando um analista registrou. */
+  dispositivo: DispositivoResumo | null
   versao: number
   criado_em: string
   atualizado_em: string

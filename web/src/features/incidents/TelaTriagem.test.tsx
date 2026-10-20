@@ -89,6 +89,20 @@ describe('TelaTriagem', () => {
     const detalhes = screen.getByRole('group', { name: 'Detalhes de #4' })
     expect(detalhes).toHaveTextContent('Carreta parada')
     expect(detalhes).toHaveTextContent('RTA4E21')
+    expect(detalhes).toHaveTextContent('OrigemRegistrado na central')
+  })
+
+  it('incidente enviado por caminhão mostra a origem na linha e nos detalhes', async () => {
+    const dispositivo = { id: 1, nome: 'Simulador do caminhão RTA4E21', placa: 'RTA4E21' }
+    simularLista(async () => respostaJson(200, lista([incidente({ id: 4, dispositivo })])))
+    renderizar()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Ver detalhes de #4' }))
+
+    expect(screen.getByText('Enviado por Simulador do caminhão RTA4E21')).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: 'Detalhes de #4' })).toHaveTextContent(
+      'OrigemSimulador do caminhão RTA4E21',
+    )
   })
 
   it('mostra o esqueleto com o loader enquanto a primeira leitura não chega', () => {

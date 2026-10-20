@@ -18,7 +18,12 @@ function juntar(partes: string[]): string {
 }
 
 /** "Bruno Lima mudou o status de Em Investigação para Inconclusivo". */
-export function descreverEvento(evento: EventoIncidente, idAnalista: number): string {
+export function descreverEvento(
+  evento: EventoIncidente,
+  idAnalista: number,
+  /** Nome do caminhão que enviou o incidente pela ingestão, se for o caso. */
+  origem?: string,
+): string {
   const autor = evento.analista
     ? evento.analista.id === idAnalista
       ? 'Você'
@@ -29,7 +34,8 @@ export function descreverEvento(evento: EventoIncidente, idAnalista: number): st
 
   switch (evento.tipo) {
     case 'criado':
-      return autor ? `${autor} registrou o incidente` : 'Incidente registrado'
+      if (autor) return `${autor} registrou o incidente`
+      return origem ? `Recebido de ${origem}` : 'Incidente registrado'
     case 'assumido':
       return `${autor ?? 'Um analista'} assumiu o incidente`
     case 'liberado':

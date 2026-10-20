@@ -16,6 +16,7 @@ function incidente(dados: Partial<Incidente>): Incidente {
     placa: null,
     responsavel: null,
     atualizado_por: null,
+    dispositivo: null,
     versao: 1,
     criado_em: '2026-10-19T11:00:00Z',
     atualizado_em: '2026-10-19T11:00:00Z',

@@ -64,3 +64,11 @@ describe('descreverEvento', () => {
     )
   })
 })
+
+describe('descreverEvento — ingestão', () => {
+  it('registro sem autor com origem vira "Recebido de …"', () => {
+    expect(descreverEvento(evento({}), ANA.id, 'Simulador do caminhão RTA4E21')).toBe(
+      'Recebido de Simulador do caminhão RTA4E21',
+    )
+  })
+})

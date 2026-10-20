@@ -66,7 +66,7 @@ export function HistoricoIncidente({ incidente, idAnalista, agora }: Props) {
                 </span>
                 <span className="flex min-w-0 flex-col">
                   <span className={cn('leading-snug', ultimo && 'font-medium text-foreground')}>
-                    {descreverEvento(evento, idAnalista)}
+                    {descreverEvento(evento, idAnalista, incidente.dispositivo?.nome)}
                   </span>
                   <time dateTime={evento.criado_em} className="font-mono text-xs text-texto-3">
                     {formatarTempoAberto(minutosDesde(evento.criado_em, agora))}

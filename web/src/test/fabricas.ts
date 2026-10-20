@@ -34,6 +34,7 @@ export function incidente(dados: Partial<Incidente> = {}): Incidente {
     placa: null,
     responsavel: null,
     atualizado_por: null,
+    dispositivo: null,
     versao: 1,
     // 30 min e 30 s: a tela lê o relógio um pouco antes da resposta chegar e ainda mostra 30 min.
     criado_em: new Date(Date.now() - 30.5 * 60_000).toISOString(),

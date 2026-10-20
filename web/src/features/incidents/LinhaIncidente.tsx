@@ -1,4 +1,4 @@
-import { ChevronRight, Pencil, Trash2 } from 'lucide-react'
+import { ChevronRight, Pencil, Trash2, Truck } from 'lucide-react'
 import { ROTULO_CATEGORIA, ROTULO_CRITICIDADE, ROTULO_STATUS } from '@/api/rotulos'
 import type { Criticidade, Incidente } from '@/api/tipos'
 import { cn } from '@/lib/utils'
@@ -133,6 +133,13 @@ export function LinhaIncidente({
             />
           </button>
           <span className="flex-none font-mono text-xs text-texto-3">#{incidente.id}</span>
+          {/* Chegou sozinho, pelo rastreador: o analista distingue do que a central registrou. */}
+          {incidente.dispositivo && (
+            <span className="flex-none">
+              <Truck aria-hidden className="size-3.5 text-texto-3" />
+              <span className="sr-only">Enviado por {incidente.dispositivo.nome}</span>
+            </span>
+          )}
           {/* Texto, e não só a cor do fundo: o destaque precisa ser legível sem cor. */}
           {novo && (
             <span className="flex-none rounded-sm bg-alta-fundo px-1.5 py-px text-[10px] font-bold tracking-[0.06em] text-alta-texto uppercase">
@@ -227,6 +234,10 @@ export function LinhaIncidente({
                 <dd className="font-mono">{incidente.placa ?? '—'}</dd>
                 <dt className="text-texto-3">Local</dt>
                 <dd>{incidente.local}</dd>
+                <dt className="text-texto-3">Origem</dt>
+                <dd>
+                  {incidente.dispositivo ? incidente.dispositivo.nome : 'Registrado na central'}
+                </dd>
               </dl>
               <dl className="grid grid-cols-[auto_1fr] content-start gap-x-3 gap-y-1">
                 <dt className="text-texto-3">Aberto em</dt>
