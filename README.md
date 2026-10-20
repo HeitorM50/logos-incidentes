@@ -89,7 +89,7 @@ docs/
 | Estado no front | **TanStack Query** | Cache, leitura periódica, retry com backoff e estado das mutações; a atualização otimista é aplicada **por cima** da lista confirmada, então a leitura de 5 s nunca apaga uma ação em andamento e uma falha nunca desfaz outra linha. |
 | UI | **Tailwind + shadcn/ui (Radix)** | Tokens de cor em variáveis CSS (tema claro/escuro num lugar só) e menus, diálogos e painel acessíveis por teclado. |
 | Testes | **pytest e Vitest + Testing Library** | Testes de regra (versão, transições, validação) e de tela (otimista, rollback, 409, filtros, formulário). |
-| Deploy | **Vercel + Render + Supabase** | Planos gratuitos que continuam no ar durante a avaliação; o Postgres do Render expiraria em 30 dias. |
+| Deploy | **Vercel + Render + Supabase** | Planos gratuitos que continuam no ar durante a avaliação; o Postgres do Render expiraria em 30 dias. API e banco na mesma região (Virgínia): a lista responde em ~0,3 s ([ADR 0006](docs/decisoes/0006-deploy-e-ambientes.md)). |
 
 As justificativas completas, com as alternativas descartadas, estão em
 [`docs/decisoes/`](docs/decisoes/).
