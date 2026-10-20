@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { abrirTriagem, incidenteLivre, linha, SESSAO_ANA, SESSAO_BRUNO } from './apoio'
+import { abrirTriagem, incidenteLivre, linha, SESSAO_ANA, SESSAO_BRUNO, liberar } from './apoio'
 
 test('dois analistas no mesmo incidente: o segundo recebe o 409 com o estado atual', async ({
   browser,
@@ -27,7 +27,7 @@ test('dois analistas no mesmo incidente: o segundo recebe o 409 com o estado atu
   )
 
   // Devolve o incidente à fila.
-  await ana.getByRole('button', { name: `Liberar #${id}` }).click()
+  await liberar(ana, id)
   await expect(ana.getByRole('button', { name: `Assumir #${id}` })).not.toHaveAttribute(
     'aria-disabled',
   )

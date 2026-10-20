@@ -14,6 +14,7 @@ describe('regras geradas pela API', () => {
       ...Object.keys(dados.status_apos_liberar),
       ...Object.values(dados.status_apos_liberar),
       ...dados.status_final,
+      ...dados.comentario.obrigatorio_para,
     ]
     for (const status of citados) expect(STATUS).toContain(status)
     // Liberar tem resposta para todo status.
@@ -26,5 +27,6 @@ describe('regras geradas pela API', () => {
     expect(REGRAS.limites.descricao.max).toBeGreaterThan(0)
     expect(REGRAS.padraoPlaca.test('ABC1D23')).toBe(true)
     expect(REGRAS.padraoPlaca.test('ABC-1D23')).toBe(false)
+    expect(REGRAS.comentario.min).toBeLessThan(REGRAS.comentario.max)
   })
 })

@@ -1,4 +1,4 @@
-import { ehFinal, REGRAS } from '@/api/regras'
+import { ehFinal, exigeComentario, REGRAS } from '@/api/regras'
 import { ROTULO_STATUS } from '@/api/rotulos'
 import type { AnalistaResumo, Incidente, StatusIncidente } from '@/api/tipos'
 
@@ -6,10 +6,17 @@ import type { AnalistaResumo, Incidente, StatusIncidente } from '@/api/tipos'
 // o que a API recusaria e dizer o motivo; a API continua sendo a autoridade e devolve
 // 403/409/422 se o estado mudou entre a leitura e o clique.
 
+// `comentario`: obrigatório ao fechar e ao marcar inconclusivo (regras da API), opcional ao
+// liberar.
 export type Acao =
   | { tipo: 'assumir' }
-  | { tipo: 'liberar' }
-  | { tipo: 'status'; status: StatusIncidente }
+  | { tipo: 'liberar'; comentario?: string }
+  | { tipo: 'status'; status: StatusIncidente; comentario?: string }
+
+/** Comentário que o desfazer envia quando volta para um status que exige comentário. */
+export function comentarioDoDesfazer(status: StatusIncidente): string {
+  return `Desfeito: volta para ${ROTULO_STATUS[status]}.`
+}
 
 export const TRANSICOES_DO_RESPONSAVEL = REGRAS.transicoesDoResponsavel
 
@@ -111,7 +118,11 @@ export function descreverEstado(incidente: Incidente, idAnalista: number): strin
  * - liberar um Inconclusivo → assumir e voltar a Inconclusivo.
  */
 export function acoesParaDesfazer(antes: Incidente, acao: Acao): Acao[] | null {
-  const inconclusivo: Acao = { tipo: 'status', status: 'inconclusivo' }
+  const inconclusivo: Acao = {
+    tipo: 'status',
+    status: 'inconclusivo',
+    comentario: comentarioDoDesfazer('inconclusivo'),
+  }
   if (acao.tipo === 'assumir') {
     return antes.status === 'inconclusivo'
       ? [inconclusivo, { tipo: 'liberar' }]
@@ -123,5 +134,9 @@ export function acoesParaDesfazer(antes: Incidente, acao: Acao): Acao[] | null {
       : [{ tipo: 'assumir' }]
   }
   if (ehFinal(acao.status)) return null
-  return [{ tipo: 'status', status: antes.status }]
+  return [
+    exigeComentario(antes.status)
+      ? { tipo: 'status', status: antes.status, comentario: comentarioDoDesfazer(antes.status) }
+      : { tipo: 'status', status: antes.status },
+  ]
 }

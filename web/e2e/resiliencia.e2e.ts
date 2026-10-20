@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test'
-import { abrirTriagem, incidenteLivre, linha, SESSAO_ANA } from './apoio'
+import { abrirTriagem, incidenteLivre, linha, SESSAO_ANA, liberar } from './apoio'
 
 test.use({ storageState: SESSAO_ANA })
 
@@ -31,7 +31,7 @@ test('falha na escrita: a linha muda na hora e volta sozinha, com "Tentar de nov
   await page.unroute(`**/incidentes/${id}/assumir`)
   await page.getByRole('button', { name: 'Tentar de novo' }).click()
   await expect(linha(page, id).getByText('Você')).toBeVisible()
-  await page.getByRole('button', { name: `Liberar #${id}` }).click()
+  await liberar(page, id)
   await expect(page.getByRole('button', { name: `Assumir #${id}` })).not.toHaveAttribute(
     'aria-disabled',
   )

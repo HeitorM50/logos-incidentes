@@ -44,7 +44,9 @@ anônima ou em outro navegador e altere o mesmo incidente nas duas.
 - **Ingestão pelos caminhões:** os rastreadores enviam incidentes direto para a API, com chave
   de dispositivo e idempotência (um reenvio não duplica). Ver [Ingestão](#ingestão-pelos-caminhões).
 - **Ciclo de vida:** assumir, liberar e mudar status com as transições permitidas. "Fechado" é
-  final e pede confirmação. Ações que o analista não pode fazer aparecem desativadas **com o
+  final. Fechar e marcar Inconclusivo pedem um **comentário obrigatório** (como resolveu, ou por
+  que parou); liberar aceita um comentário opcional para o próximo analista. O comentário fica no
+  histórico. Ações que o analista não pode fazer aparecem desativadas **com o
   motivo** ("Só Bruno Lima pode mudar o status").
 - **CRUD completo:** criar, editar e remover incidentes num painel lateral, com validação por campo
   igual à da API. A edição envia só os campos alterados; se outro analista mudou o incidente com o

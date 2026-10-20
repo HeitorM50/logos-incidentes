@@ -60,6 +60,7 @@ export interface EventoIncidente {
   status_anterior: StatusIncidente | null
   status_novo: StatusIncidente | null
   campos: string[] | null
+  comentario: string | null
   criado_em: string
 }
 

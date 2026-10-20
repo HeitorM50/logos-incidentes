@@ -307,11 +307,16 @@ describe('TelaTriagem — ações', () => {
     expect(servidor.chamadas).toHaveLength(0)
 
     await userEvent.click(within(menu).getByRole('menuitem', { name: 'Inconclusivo' }))
+    // Inconclusivo pede o motivo; Ctrl+Enter confirma sem sair do campo.
+    await userEvent.type(
+      await screen.findByRole('textbox', { name: 'Por que ficou inconclusivo? (obrigatório)' }),
+      'Sem contato com o motorista{Control>}{Enter}{/Control}',
+    )
 
     expect(servidor.chamadas).toEqual([
       {
         url: expect.stringMatching(/\/incidentes\/5\/status$/),
-        corpo: { versao: 8, status: 'inconclusivo' },
+        corpo: { versao: 8, status: 'inconclusivo', comentario: 'Sem contato com o motorista' },
       },
     ])
     expect(within((await linhaDe(5))!).getByText('Salvando status…')).toBeInTheDocument()
@@ -333,9 +338,35 @@ describe('TelaTriagem — ações', () => {
 
     await userEvent.click(screen.getByRole('button', { name: 'Mudar status de #5' }))
     await userEvent.click(await screen.findByRole('menuitem', { name: 'Fechado' }))
+    // Sem comentário, o diálogo não envia e diz o que falta.
     await userEvent.click(await screen.findByRole('button', { name: 'Fechar incidente' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('Escreva pelo menos 3 caracteres.')
+    expect(servidor.chamadas).toHaveLength(0)
 
-    expect(servidor.chamadas.map((c) => c.corpo)).toEqual([{ versao: 8, status: 'fechado' }])
+    await userEvent.type(
+      screen.getByRole('textbox', { name: 'Como o incidente foi resolvido? (obrigatório)' }),
+      '  Guincho removeu o veículo  ',
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Fechar incidente' }))
+
+    expect(servidor.chamadas.map((c) => c.corpo)).toEqual([
+      { versao: 8, status: 'fechado', comentario: 'Guincho removeu o veículo' },
+    ])
+  })
+
+  it('liberar abre o diálogo com comentário opcional', async () => {
+    const servidor = simularServidor([
+      incidente({ id: 5, versao: 8, status: 'em_investigacao', responsavel: ANA }),
+    ])
+    renderizar()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Liberar #5' }))
+    const dialogo = await screen.findByRole('alertdialog', { name: 'Liberar o incidente #5?' })
+    expect(servidor.chamadas).toHaveLength(0)
+    // Vazio é aceito: o comentário é opcional e não vai no corpo.
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Liberar' }))
+
+    expect(servidor.chamadas.map((c) => c.corpo)).toEqual([{ versao: 8 }])
   })
 
   it('fechar um Alta e a ação falhar não gera aviso de "Alta novo"', async () => {
@@ -354,7 +385,8 @@ describe('TelaTriagem — ações', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Mudar status de #7' }))
     await userEvent.click(await screen.findByRole('menuitem', { name: 'Fechado' }))
-    await userEvent.click(await screen.findByRole('button', { name: 'Fechar incidente' }))
+    await userEvent.type(await screen.findByRole('textbox'), 'Resolvido no local')
+    await userEvent.click(screen.getByRole('button', { name: 'Fechar incidente' }))
 
     expect(await screen.findByText(/Não foi possível mudar o status de #7/)).toBeInTheDocument()
     await cliente.refetchQueries()
@@ -418,7 +450,11 @@ describe('TelaTriagem — ações', () => {
     expect(servidor.chamadas.slice(1)).toEqual([
       {
         url: expect.stringMatching(/\/status$/),
-        corpo: { versao: 4, status: 'inconclusivo' },
+        corpo: {
+          versao: 4,
+          status: 'inconclusivo',
+          comentario: 'Desfeito: volta para Inconclusivo.',
+        },
       },
       { url: expect.stringMatching(/\/liberar$/), corpo: { versao: 5 } },
     ])

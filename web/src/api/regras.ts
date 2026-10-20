@@ -18,6 +18,16 @@ export const REGRAS = {
   statusFinal: dados.status_final as StatusIncidente[],
   limites: dados.limites,
   padraoPlaca: new RegExp(dados.padrao_placa),
+  comentario: {
+    min: dados.comentario.min,
+    max: dados.comentario.max,
+    obrigatorioPara: dados.comentario.obrigatorio_para as StatusIncidente[],
+  },
+}
+
+/** Fechado e inconclusivo pedem comentário: como resolveu, ou por que parou. */
+export function exigeComentario(status: StatusIncidente): boolean {
+  return REGRAS.comentario.obrigatorioPara.includes(status)
 }
 
 /** Status que não aceita mais alteração (hoje: fechado). */

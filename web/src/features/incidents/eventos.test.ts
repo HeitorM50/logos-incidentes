@@ -11,6 +11,7 @@ function evento(dados: Partial<EventoIncidente>): EventoIncidente {
     status_anterior: null,
     status_novo: 'aberto',
     campos: null,
+    comentario: null,
     criado_em: '2026-10-19T12:00:00Z',
     ...dados,
   }

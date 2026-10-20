@@ -66,8 +66,10 @@ export interface AvisoFalha {
 
 function chamarApi({ incidente, acao }: Variaveis): Promise<Incidente> {
   if (acao.tipo === 'assumir') return assumirIncidente(incidente.id, incidente.versao)
-  if (acao.tipo === 'liberar') return liberarIncidente(incidente.id, incidente.versao)
-  return mudarStatus(incidente.id, incidente.versao, acao.status)
+  if (acao.tipo === 'liberar') {
+    return liberarIncidente(incidente.id, incidente.versao, acao.comentario)
+  }
+  return mudarStatus(incidente.id, incidente.versao, acao.status, acao.comentario)
 }
 
 function semChave<T>(registro: Record<number, T>, id: number): Record<number, T> {

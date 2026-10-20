@@ -68,6 +68,12 @@ export function HistoricoIncidente({ incidente, idAnalista, agora }: Props) {
                   <span className={cn('leading-snug', ultimo && 'font-medium text-foreground')}>
                     {descreverEvento(evento, idAnalista, incidente.dispositivo?.nome)}
                   </span>
+                  {/* O comentário do analista: como resolveu, por que parou ou o contexto. */}
+                  {evento.comentario && (
+                    <blockquote className="my-0.5 border-l-2 border-borda-forte pl-2 leading-snug whitespace-pre-line text-texto-2">
+                      {evento.comentario}
+                    </blockquote>
+                  )}
                   <time dateTime={evento.criado_em} className="font-mono text-xs text-texto-3">
                     {formatarTempoAberto(minutosDesde(evento.criado_em, agora))}
                     {' · '}

@@ -42,14 +42,25 @@ export function assumirIncidente(id: number, versao: number): Promise<Incidente>
   return requisitar(`/incidentes/${id}/assumir`, { metodo: 'POST', corpo: { versao } })
 }
 
-export function liberarIncidente(id: number, versao: number): Promise<Incidente> {
-  return requisitar(`/incidentes/${id}/liberar`, { metodo: 'POST', corpo: { versao } })
+export function liberarIncidente(
+  id: number,
+  versao: number,
+  comentario?: string,
+): Promise<Incidente> {
+  return requisitar(`/incidentes/${id}/liberar`, {
+    metodo: 'POST',
+    corpo: { versao, ...(comentario ? { comentario } : {}) },
+  })
 }
 
 export function mudarStatus(
   id: number,
   versao: number,
   status: StatusIncidente,
+  comentario?: string,
 ): Promise<Incidente> {
-  return requisitar(`/incidentes/${id}/status`, { metodo: 'POST', corpo: { versao, status } })
+  return requisitar(`/incidentes/${id}/status`, {
+    metodo: 'POST',
+    corpo: { versao, status, ...(comentario ? { comentario } : {}) },
+  })
 }

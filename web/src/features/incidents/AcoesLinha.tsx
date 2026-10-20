@@ -4,16 +4,6 @@ import { ROTULO_STATUS } from '@/api/rotulos'
 import type { Incidente, StatusIncidente } from '@/api/tipos'
 import { LogosLoader } from '@/components/LogosLoader'
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog'
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -22,6 +12,7 @@ import {
 import { cn } from '@/lib/utils'
 import { BotaoComMotivo, CONTROLE } from './BotaoComMotivo'
 import { motivoBloqueio, TRANSICOES_DO_RESPONSAVEL, textoPendente, type Acao } from './acoes'
+import { DialogoComentario, type AcaoComComentario } from './DialogoComentario'
 
 export const SEM_CONEXAO = 'Sem conexão com o servidor. As ações voltam quando a conexão voltar.'
 export const EM_ANDAMENTO = 'Aguarde: há uma ação em andamento neste incidente.'
@@ -49,7 +40,8 @@ interface Props {
 }
 
 export function AcoesLinha({ incidente, idAnalista, pendente, semConexao, aoExecutar }: Props) {
-  const [confirmarFechar, setConfirmarFechar] = useState(false)
+  // Fechar, marcar inconclusivo e liberar pedem comentário antes de chamar a API.
+  const [pedido, setPedido] = useState<AcaoComComentario | null>(null)
   // O menu e o diálogo devolvem o foco ao gatilho, mas ele sai da tela durante a ação: o
   // foco vai para o botão principal, que nunca desmonta.
   const principal = useRef<HTMLButtonElement>(null)
@@ -64,8 +56,7 @@ export function AcoesLinha({ incidente, idAnalista, pendente, semConexao, aoExec
   const rotuloStatus = `Mudar status de #${incidente.id}`
 
   function escolher(status: StatusIncidente) {
-    // Fechado é final: pede confirmação antes de chamar a API.
-    if (status === 'fechado') setConfirmarFechar(true)
+    if (status === 'fechado' || status === 'inconclusivo') setPedido({ tipo: 'status', status })
     else aoExecutar({ tipo: 'status', status })
   }
 
@@ -77,7 +68,7 @@ export function AcoesLinha({ incidente, idAnalista, pendente, semConexao, aoExec
         ref={principal}
         motivo={motivoBotao}
         rotulo={`${nomeBotao} #${incidente.id}`}
-        onClick={() => aoExecutar(acaoBotao)}
+        onClick={() => (meu ? setPedido({ tipo: 'liberar' }) : aoExecutar(acaoBotao))}
         className="w-[84px] font-medium"
       >
         {nomeBotao}
@@ -141,28 +132,16 @@ export function AcoesLinha({ incidente, idAnalista, pendente, semConexao, aoExec
         </DropdownMenu>
       )}
 
-      <AlertDialog open={confirmarFechar} onOpenChange={setConfirmarFechar}>
-        <AlertDialogContent
-          onCloseAutoFocus={(evento) => {
-            evento.preventDefault()
-            principal.current?.focus()
-          }}
-        >
-          <AlertDialogHeader>
-            <AlertDialogTitle>Fechar o incidente #{incidente.id}?</AlertDialogTitle>
-            <AlertDialogDescription>
-              {incidente.titulo}. Fechado é o estado final: o incidente não aceita mais
-              alterações e não volta a ser aberto.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={() => aoExecutar({ tipo: 'status', status: 'fechado' })}>
-              Fechar incidente
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <DialogoComentario
+        incidente={incidente}
+        acao={pedido}
+        aoCancelar={() => setPedido(null)}
+        aoConfirmar={(acao) => {
+          setPedido(null)
+          aoExecutar(acao)
+        }}
+        aoFecharFoco={() => principal.current?.focus()}
+      />
     </span>
   )
 }

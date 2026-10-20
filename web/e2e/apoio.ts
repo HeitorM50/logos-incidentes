@@ -35,3 +35,11 @@ export async function incidenteLivre(page: Page): Promise<number> {
 export function linha(page: Page, id: number) {
   return page.locator(`[data-incidente="${id}"]`)
 }
+
+/** Libera pelo diálogo (o comentário para o próximo analista é opcional). */
+export async function liberar(page: Page, id: number, comentario?: string) {
+  await page.getByRole('button', { name: `Liberar #${id}` }).click()
+  const dialogo = page.getByRole('alertdialog', { name: `Liberar o incidente #${id}?` })
+  if (comentario) await dialogo.getByRole('textbox').fill(comentario)
+  await dialogo.getByRole('button', { name: 'Liberar', exact: true }).click()
+}
