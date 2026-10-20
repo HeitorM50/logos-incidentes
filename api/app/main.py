@@ -7,7 +7,7 @@ from app.core.config import obter_configuracao
 from app.core.erros import corpo_erro, registrar_tratadores
 from app.core.limite import limitador
 from app.core.resiliencia import registrar_simulacao_de_falhas, registrar_tratadores_de_banco
-from app.routers import auth, incidentes, saude
+from app.routers import auth, incidentes, ingestao, saude
 
 
 def _limite_excedido(_: Request, erro: RateLimitExceeded) -> JSONResponse:
@@ -47,6 +47,7 @@ def criar_app(
     app.include_router(saude.router)
     app.include_router(auth.router)
     app.include_router(incidentes.router)
+    app.include_router(ingestao.router)
     return app
 
 

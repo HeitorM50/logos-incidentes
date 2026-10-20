@@ -34,7 +34,9 @@ class FiltrosIncidentes:
 
 def _consulta_com_relacoes():
     return select(Incidente).options(
-        joinedload(Incidente.responsavel), joinedload(Incidente.atualizado_por)
+        joinedload(Incidente.responsavel),
+        joinedload(Incidente.atualizado_por),
+        joinedload(Incidente.dispositivo),
     )
 
 

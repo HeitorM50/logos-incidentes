@@ -58,7 +58,9 @@ def sessao(fabrica_sessoes: sessionmaker[Session]) -> Iterator[Session]:
         yield sessao
     # Cada teste começa com as tabelas vazias.
     with fabrica_sessoes.begin() as limpeza:
-        limpeza.execute(text("TRUNCATE incidentes, analistas RESTART IDENTITY CASCADE"))
+        limpeza.execute(
+            text("TRUNCATE incidentes, analistas, dispositivos RESTART IDENTITY CASCADE")
+        )
 
 
 @pytest.fixture

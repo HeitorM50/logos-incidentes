@@ -17,6 +17,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.dominio import Categoria, Criticidade, StatusIncidente
 from app.models.analista import Analista
 from app.models.base import Base
+from app.models.dispositivo import Dispositivo
 
 
 def _enum_postgres(enum_python, nome: str) -> Enum:
@@ -43,6 +44,8 @@ class Incidente(Base):
     placa: Mapped[str | None] = mapped_column(String(8))
     responsavel_id: Mapped[int | None] = mapped_column(ForeignKey("analistas.id"))
     atualizado_por_id: Mapped[int | None] = mapped_column(ForeignKey("analistas.id"))
+    # Preenchido quando o incidente chegou direto de um caminhão (POST /ingestao/incidentes).
+    dispositivo_id: Mapped[int | None] = mapped_column(ForeignKey("dispositivos.id"), index=True)
     # Controle de concorrência otimista (ADR 0002).
     versao: Mapped[int] = mapped_column(Integer, default=1)
     criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
@@ -52,3 +55,4 @@ class Incidente(Base):
 
     responsavel: Mapped[Analista | None] = relationship(foreign_keys=[responsavel_id])
     atualizado_por: Mapped[Analista | None] = relationship(foreign_keys=[atualizado_por_id])
+    dispositivo: Mapped[Dispositivo | None] = relationship()

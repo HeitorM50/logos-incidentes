@@ -171,7 +171,7 @@ def gerar_eventos(incidente: Incidente) -> list[EventoIncidente]:
 def semear_incidentes(sessao: Session, analistas: list[Analista], recriar: bool = False) -> int:
     """Cria os 100 incidentes se a tabela estiver vazia. `recriar` apaga tudo antes."""
     if recriar:
-        sessao.execute(text("TRUNCATE incidentes, eventos_incidente RESTART IDENTITY"))
+        sessao.execute(text("TRUNCATE incidentes, eventos_incidente, ingestoes RESTART IDENTITY"))
     elif sessao.scalar(select(func.count()).select_from(Incidente)):
         return 0
     incidentes = gerar_incidentes(analistas)

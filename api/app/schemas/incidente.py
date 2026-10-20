@@ -42,7 +42,7 @@ Versao = Annotated[
 ]
 
 
-def _normalizar_placa(valor: str | None) -> str | None:
+def normalizar_placa(valor: str | None) -> str | None:
     if valor is None:
         return None
     placa = valor.replace("-", "").replace(" ", "").upper()
@@ -66,7 +66,7 @@ class IncidenteCriar(EntradaEstrita):
     local: Local
     placa: str | None = None
 
-    _placa = field_validator("placa")(_normalizar_placa)
+    _placa = field_validator("placa")(normalizar_placa)
 
 
 class IncidenteEditar(EntradaEstrita):
@@ -78,7 +78,7 @@ class IncidenteEditar(EntradaEstrita):
     local: Local | None = None
     placa: str | None = None
 
-    _placa = field_validator("placa")(_normalizar_placa)
+    _placa = field_validator("placa")(normalizar_placa)
 
     @model_validator(mode="after")
     def validar_campos(self):
@@ -111,6 +111,14 @@ class AnalistaResumo(BaseModel):
     nome: str
 
 
+class DispositivoResumo(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    nome: str
+    placa: str | None
+
+
 class IncidenteResposta(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
@@ -124,6 +132,8 @@ class IncidenteResposta(BaseModel):
     placa: str | None
     responsavel: AnalistaResumo | None
     atualizado_por: AnalistaResumo | None
+    # Caminhão que enviou o incidente pela ingestão; nulo quando um analista o registrou.
+    dispositivo: DispositivoResumo | None = None
     versao: int
     criado_em: datetime
     atualizado_em: datetime
