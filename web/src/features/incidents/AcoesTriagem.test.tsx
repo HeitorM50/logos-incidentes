@@ -52,9 +52,11 @@ function renderizar() {
 }
 
 async function linhaDe(id: number) {
-  const linhas = within(await screen.findByRole('list', { name: 'Incidentes' })).getAllByRole(
-    'listitem',
-  )
+  const linhas = [
+    ...(await screen.findByRole('table', { name: 'Incidentes' })).querySelectorAll<HTMLElement>(
+      '[data-incidente]',
+    ),
+  ]
   return linhas.find((l) => within(l).queryByText(`#${id}`)) ?? null
 }
 

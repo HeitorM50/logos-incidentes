@@ -23,21 +23,24 @@ const LARGURAS_ESQUELETO = [
   ['64%', '88%', '62%', '74%', '58%', '80%', '52%', '180px'],
 ]
 
+/** Cabeçalho fixo no topo ao rolar. O grupo (e não a linha) é sticky: o pai dele é a tabela. */
 function CabecalhoTabela() {
   return (
-    <div
-      aria-hidden
-      className={cn(
-        'sticky top-0 z-[1] grid h-9 items-center gap-x-3 border-b bg-cabecalho px-3 text-xs font-semibold tracking-[0.04em] text-texto-2 uppercase',
-        COLUNAS_TABELA,
-      )}
-    >
-      {CABECALHOS.map((titulo, i) => (
-        // O botão de detalhes ocupa o começo da coluna Título: o texto acompanha o recuo.
-        <span key={titulo} className={cn(i === 1 && 'pl-[34px]')}>
-          {titulo}
-        </span>
-      ))}
+    <div role="rowgroup" className="sticky top-0 z-[1] border-b bg-cabecalho">
+      <div
+        role="row"
+        className={cn(
+          'grid h-9 items-center gap-x-3 px-3 text-xs font-semibold tracking-[0.04em] text-texto-2 uppercase',
+          COLUNAS_TABELA,
+        )}
+      >
+        {CABECALHOS.map((titulo, i) => (
+          // O botão de detalhes ocupa o começo da coluna Título: o texto acompanha o recuo.
+          <span key={titulo} role="columnheader" className={cn(i === 1 && 'pl-[34px]')}>
+            {titulo}
+          </span>
+        ))}
+      </div>
     </div>
   )
 }
@@ -45,9 +48,9 @@ function CabecalhoTabela() {
 /** Esqueleto da tabela + cartão com o loader da marca por cima (o esqueleto continua). */
 export function TabelaCarregando() {
   return (
-    <div className="relative min-w-[1280px]">
+    <div aria-hidden className="relative min-w-[1280px]">
       <CabecalhoTabela />
-      <div aria-hidden>
+      <div>
         {Array.from({ length: 12 }, (_, linha) => (
           <div
             key={linha}
@@ -117,10 +120,11 @@ export function TabelaIncidentes({
   }
 
   return (
-    <div className="min-w-[1280px]">
+    // Tabela em ARIA sobre a grade: o leitor de tela anuncia o cabeçalho de cada coluna.
+    <div role="table" aria-label="Incidentes" className="min-w-[1280px]">
       <CabecalhoTabela />
       {/* A ordem vem da API: não fechados, criticidade (alta → baixa), mais antigo primeiro. */}
-      <ol aria-label="Incidentes">
+      <div role="rowgroup">
         {itens.map((incidente) => (
           <LinhaIncidente
             key={incidente.id}
@@ -139,7 +143,7 @@ export function TabelaIncidentes({
             novo={destaques.has(incidente.id)}
           />
         ))}
-      </ol>
+      </div>
     </div>
   )
 }

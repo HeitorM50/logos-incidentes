@@ -43,12 +43,28 @@ describe('TelaTriagem', () => {
     )
     renderizar()
 
-    const linhas = within(await screen.findByRole('list', { name: 'Incidentes' })).getAllByRole(
-      'listitem',
-    )
+    const linhas = [
+      ...(await screen.findByRole('table', { name: 'Incidentes' })).querySelectorAll<HTMLElement>(
+        '[data-incidente]',
+      ),
+    ]
     expect(linhas.map((l) => within(l).getByText(/^#\d+$/).textContent)).toEqual(['#7', '#3', '#9'])
     expect(within(linhas[1]).getByText('Você')).toBeInTheDocument()
     expect(within(linhas[0]).getByText('há 30 min')).toBeInTheDocument()
+
+    // Tabela em ARIA: o leitor de tela anuncia o cabeçalho de cada coluna.
+    const tabela = screen.getByRole('table', { name: 'Incidentes' })
+    expect(within(tabela).getAllByRole('columnheader').map((c) => c.textContent)).toEqual([
+      'Criticidade',
+      'Título',
+      'Categoria',
+      'Local',
+      'Tempo aberto',
+      'Status',
+      'Responsável',
+      'Ações',
+    ])
+    expect(within(within(tabela).getAllByRole('row')[1]).getAllByRole('cell')).toHaveLength(8)
 
     // O fechado aparece na lista, mas não conta como ativo.
     expect(screen.getByText('2 incidentes ativos · 1 fechados')).toBeInTheDocument()
@@ -103,7 +119,7 @@ describe('TelaTriagem', () => {
     fetchFalso.mockImplementation(async () => respostaJson(200, lista([incidente()])))
     await userEvent.click(screen.getByRole('button', { name: 'Tentar de novo' }))
 
-    expect(await screen.findByRole('list', { name: 'Incidentes' })).toBeInTheDocument()
+    expect(await screen.findByRole('table', { name: 'Incidentes' })).toBeInTheDocument()
   })
 
   it('mantém o painel de erro durante a nova tentativa automática', async () => {
@@ -197,9 +213,11 @@ describe('TelaTriagem — filtros', () => {
   ]
 
   async function idsVisiveis() {
-    const linhas = within(await screen.findByRole('list', { name: 'Incidentes' })).getAllByRole(
-      'listitem',
-    )
+    const linhas = [
+      ...(await screen.findByRole('table', { name: 'Incidentes' })).querySelectorAll<HTMLElement>(
+        '[data-incidente]',
+      ),
+    ]
     return linhas.map((l) => within(l).getByText(/^#\d+$/).textContent)
   }
 

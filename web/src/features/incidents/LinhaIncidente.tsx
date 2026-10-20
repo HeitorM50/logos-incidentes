@@ -71,11 +71,11 @@ export function LinhaIncidente({
       : motivoEdicao(incidente, idAnalista)
 
   return (
-    <li
+    <div
+      role="none"
       data-incidente={incidente.id}
       className={cn(
-        'grid min-h-11 items-center gap-x-3 border-b px-3 py-1.5 last:border-b-0',
-        COLUNAS_TABELA,
+        'border-b px-3 py-1.5 last:border-b-0',
         conflito
           ? 'bg-info-fundo'
           : pendente
@@ -86,151 +86,165 @@ export function LinhaIncidente({
         fechado && 'text-texto-3',
       )}
     >
-      <span
-        className={cn(
-          'inline-flex h-6 items-center gap-1.5 justify-self-start rounded-sm border px-2 text-xs tracking-[0.05em] whitespace-nowrap uppercase',
-          SELO[incidente.criticidade],
-          fechado && 'opacity-60',
-        )}
-      >
-        <IconeCriticidade criticidade={incidente.criticidade} />
-        {ROTULO_CRITICIDADE[incidente.criticidade]}
-      </span>
-
-      <span className="flex min-w-0 items-center gap-1.5">
-        <button
-          type="button"
-          onClick={aoAlternar}
-          aria-expanded={aberta}
-          aria-controls={aberta ? idDetalhes : undefined}
-          aria-label={`${aberta ? 'Ocultar' : 'Ver'} detalhes de #${incidente.id}`}
-          className={cn(
-            'flex size-7 flex-none items-center justify-center rounded-[5px] border text-texto-2',
-            aberta ? 'border-borda-forte bg-superficie-2' : 'border-transparent hover:bg-accent',
-          )}
-        >
-          <ChevronRight
-            aria-hidden
-            className={cn('size-4 transition-transform duration-150', aberta && 'rotate-90')}
-          />
-        </button>
-        <span className="flex-none font-mono text-xs text-texto-3">#{incidente.id}</span>
-        {/* Texto, e não só a cor do fundo: o destaque precisa ser legível sem cor. */}
-        {novo && (
-          <span className="flex-none rounded-sm bg-alta-fundo px-1.5 py-px text-[10px] font-bold tracking-[0.06em] text-alta-texto uppercase">
-            Novo
-          </span>
-        )}
+      <div role="row" className={cn('grid min-h-8 items-center gap-x-3', COLUNAS_TABELA)}>
         <span
-          title={incidente.titulo}
+          role="cell"
           className={cn(
-            'min-w-0 truncate text-sm',
-            incidente.criticidade === 'alta' ? 'font-semibold' : 'font-medium',
+            'inline-flex h-6 items-center gap-1.5 justify-self-start rounded-sm border px-2 text-xs tracking-[0.05em] whitespace-nowrap uppercase',
+            SELO[incidente.criticidade],
+            fechado && 'opacity-60',
           )}
         >
-          {incidente.titulo}
+          <IconeCriticidade criticidade={incidente.criticidade} />
+          {ROTULO_CRITICIDADE[incidente.criticidade]}
         </span>
-      </span>
 
-      <span className="text-[13px] leading-tight text-texto-2">
-        {ROTULO_CATEGORIA[incidente.categoria]}
-      </span>
+        <span role="cell" className="flex min-w-0 items-center gap-1.5">
+          <button
+            type="button"
+            onClick={aoAlternar}
+            aria-expanded={aberta}
+            aria-controls={aberta ? idDetalhes : undefined}
+            aria-label={`${aberta ? 'Ocultar' : 'Ver'} detalhes de #${incidente.id}`}
+            className={cn(
+              'flex size-7 flex-none items-center justify-center rounded-[5px] border text-texto-2',
+              aberta ? 'border-borda-forte bg-superficie-2' : 'border-transparent hover:bg-accent',
+            )}
+          >
+            <ChevronRight
+              aria-hidden
+              className={cn('size-4 transition-transform duration-150', aberta && 'rotate-90')}
+            />
+          </button>
+          <span className="flex-none font-mono text-xs text-texto-3">#{incidente.id}</span>
+          {/* Texto, e não só a cor do fundo: o destaque precisa ser legível sem cor. */}
+          {novo && (
+            <span className="flex-none rounded-sm bg-alta-fundo px-1.5 py-px text-[10px] font-bold tracking-[0.06em] text-alta-texto uppercase">
+              Novo
+            </span>
+          )}
+          <span
+            title={incidente.titulo}
+            className={cn(
+              'min-w-0 truncate text-sm',
+              incidente.criticidade === 'alta' ? 'font-semibold' : 'font-medium',
+            )}
+          >
+            {incidente.titulo}
+          </span>
+        </span>
 
-      <span title={incidente.local} className="truncate text-[13px]">
-        {incidente.local}
-      </span>
+        <span role="cell" className="text-[13px] leading-tight text-texto-2">
+          {ROTULO_CATEGORIA[incidente.categoria]}
+        </span>
 
-      <span className="font-mono text-[13px] whitespace-nowrap">
-        {formatarTempoAberto(minutosDesde(incidente.criado_em, agora))}
-      </span>
+        <span role="cell" title={incidente.local} className="truncate text-[13px]">
+          {incidente.local}
+        </span>
 
-      <span className="flex items-center gap-1.5 text-[13px] whitespace-nowrap text-texto-2">
-        <IconeStatus status={incidente.status} />
-        {ROTULO_STATUS[incidente.status]}
-      </span>
+        <span role="cell" className="font-mono text-[13px] whitespace-nowrap">
+          {formatarTempoAberto(minutosDesde(incidente.criado_em, agora))}
+        </span>
 
-      <span
-        className={cn(
-          'truncate text-[13px]',
-          !incidente.responsavel && 'text-texto-3 italic',
-          meu && 'font-semibold',
-        )}
-      >
-        {incidente.responsavel ? (meu ? 'Você' : incidente.responsavel.nome) : 'Sem responsável'}
-      </span>
+        <span role="cell" className="flex items-center gap-1.5 text-[13px] whitespace-nowrap text-texto-2">
+          <IconeStatus status={incidente.status} />
+          {ROTULO_STATUS[incidente.status]}
+        </span>
 
-      <AcoesLinha
-        incidente={incidente}
-        idAnalista={idAnalista}
-        pendente={pendente}
-        semConexao={semConexao}
-        aoExecutar={aoExecutar}
-      />
+        <span
+          role="cell"
+          className={cn(
+            'truncate text-[13px]',
+            !incidente.responsavel && 'text-texto-3 italic',
+            meu && 'font-semibold',
+          )}
+        >
+          {incidente.responsavel ? (meu ? 'Você' : incidente.responsavel.nome) : 'Sem responsável'}
+        </span>
 
+        <span role="cell">
+          <AcoesLinha
+            incidente={incidente}
+            idAnalista={idAnalista}
+            pendente={pendente}
+            semConexao={semConexao}
+            aoExecutar={aoExecutar}
+          />
+        </span>
+
+      </div>
       {conflito && (
-        <AvisoConflito
-          conflito={conflito}
-          incidente={incidente}
-          idAnalista={idAnalista}
-          aoManter={aoDispensarConflito}
-          aoRefazer={() => aoExecutar(conflito.acao)}
-        />
+        <div role="row">
+          <div role="cell" aria-colspan={8}>
+            <AvisoConflito
+              conflito={conflito}
+              incidente={incidente}
+              idAnalista={idAnalista}
+              aoManter={aoDispensarConflito}
+              aoRefazer={() => aoExecutar(conflito.acao)}
+            />
+          </div>
+        </div>
       )}
 
       {aberta && (
-        <section
-          id={idDetalhes}
-          aria-label={`Detalhes de #${incidente.id}`}
-          className="col-span-full mt-1.5 mb-2 grid gap-x-8 gap-y-3 rounded-md border bg-superficie-2 px-4 py-3 text-[13px] sm:grid-cols-[2fr_1fr_1fr]"
-        >
-          <div className="flex flex-col gap-1">
-            <p className="text-xs font-semibold tracking-[0.04em] text-texto-2 uppercase">
-              Descrição
-            </p>
-            <p className="leading-normal whitespace-pre-line">
-              {incidente.descricao || (
-                <span className="text-texto-3 italic">Sem descrição.</span>
-              )}
-            </p>
-          </div>
-          <dl className="grid grid-cols-[auto_1fr] content-start gap-x-3 gap-y-1">
-            <dt className="text-texto-3">Placa</dt>
-            <dd className="font-mono">{incidente.placa ?? '—'}</dd>
-            <dt className="text-texto-3">Local</dt>
-            <dd>{incidente.local}</dd>
-          </dl>
-          <dl className="grid grid-cols-[auto_1fr] content-start gap-x-3 gap-y-1">
-            <dt className="text-texto-3">Aberto em</dt>
-            <dd className="font-mono">{FORMATO_DATA.format(new Date(incidente.criado_em))}</dd>
-            <dt className="text-texto-3">Alterado em</dt>
-            <dd className="font-mono">
-              {FORMATO_DATA.format(new Date(incidente.atualizado_em))}
-            </dd>
-            <dt className="text-texto-3">Por</dt>
-            <dd>{incidente.atualizado_por?.nome ?? '—'}</dd>
-          </dl>
-          <div className="flex justify-end gap-2 border-t pt-3 sm:col-span-3">
-            <BotaoComMotivo
-              motivo={motivoAlterar}
-              rotulo={`Editar #${incidente.id}`}
-              onClick={aoEditar}
-              className="flex items-center gap-1.5 px-3 font-medium"
+        <div role="row">
+          <div role="cell" aria-colspan={8}>
+            <section
+              id={idDetalhes}
+              aria-label={`Detalhes de #${incidente.id}`}
+              className="col-span-full mt-1.5 mb-2 grid gap-x-8 gap-y-3 rounded-md border bg-superficie-2 px-4 py-3 text-[13px] sm:grid-cols-[2fr_1fr_1fr]"
             >
-              <Pencil aria-hidden className="size-3.5" />
-              Editar
-            </BotaoComMotivo>
-            <BotaoComMotivo
-              motivo={motivoAlterar}
-              rotulo={`Remover #${incidente.id}`}
-              onClick={aoRemover}
-              className="flex items-center gap-1.5 px-3 font-medium text-erro-texto"
-            >
-              <Trash2 aria-hidden className="size-3.5" />
-              Remover
-            </BotaoComMotivo>
+              <div className="flex flex-col gap-1">
+                <p className="text-xs font-semibold tracking-[0.04em] text-texto-2 uppercase">
+                  Descrição
+                </p>
+                <p className="leading-normal whitespace-pre-line">
+                  {incidente.descricao || (
+                    <span className="text-texto-3 italic">Sem descrição.</span>
+                  )}
+                </p>
+              </div>
+              <dl className="grid grid-cols-[auto_1fr] content-start gap-x-3 gap-y-1">
+                <dt className="text-texto-3">Placa</dt>
+                <dd className="font-mono">{incidente.placa ?? '—'}</dd>
+                <dt className="text-texto-3">Local</dt>
+                <dd>{incidente.local}</dd>
+              </dl>
+              <dl className="grid grid-cols-[auto_1fr] content-start gap-x-3 gap-y-1">
+                <dt className="text-texto-3">Aberto em</dt>
+                <dd className="font-mono">{FORMATO_DATA.format(new Date(incidente.criado_em))}</dd>
+                <dt className="text-texto-3">Alterado em</dt>
+                <dd className="font-mono">
+                  {FORMATO_DATA.format(new Date(incidente.atualizado_em))}
+                </dd>
+                <dt className="text-texto-3">Por</dt>
+                <dd>{incidente.atualizado_por?.nome ?? '—'}</dd>
+              </dl>
+              <div className="flex justify-end gap-2 border-t pt-3 sm:col-span-3">
+                <BotaoComMotivo
+                  motivo={motivoAlterar}
+                  rotulo={`Editar #${incidente.id}`}
+                  onClick={aoEditar}
+                  className="flex items-center gap-1.5 px-3 font-medium"
+                >
+                  <Pencil aria-hidden className="size-3.5" />
+                  Editar
+                </BotaoComMotivo>
+                <BotaoComMotivo
+                  motivo={motivoAlterar}
+                  rotulo={`Remover #${incidente.id}`}
+                  onClick={aoRemover}
+                  className="flex items-center gap-1.5 px-3 font-medium text-erro-texto"
+                >
+                  <Trash2 aria-hidden className="size-3.5" />
+                  Remover
+                </BotaoComMotivo>
+              </div>
+            </section>
           </div>
-        </section>
+        </div>
       )}
-    </li>
+    </div>
   )
 }

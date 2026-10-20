@@ -200,8 +200,6 @@ erro e transições permitidas: [`docs/contrato-api.md`](docs/contrato-api.md).
 - **Limite de login em memória.** Vale para uma instância da API; com várias, precisaria de Redis.
 - **Regras repetidas no front.** Transições e validações existem na API (a autoridade) e no front
   (para explicar o bloqueio antes do clique), sem um teste que compare as duas.
-- **A lista é uma `<ol>` com grade, não uma `<table>`.** O leitor de tela não anuncia
-  cabeçalho por coluna.
 - **Hibernação do plano gratuito.** Um job agendado chama `/health` a cada 10 min, mas o
   primeiro acesso ainda pode esperar o servidor acordar.
 
