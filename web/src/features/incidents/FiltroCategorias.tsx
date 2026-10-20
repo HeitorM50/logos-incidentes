@@ -46,7 +46,11 @@ export function FiltroCategorias({
               onClick={() => aoAlternar(categoria)}
               className={cn(CHIP, marcada ? CHIP_MARCADO : CHIP_LIVRE)}
             >
-              {marcada && <Check aria-hidden className="size-3" strokeWidth={3} />}
+              {marcada && <Check
+                  aria-hidden
+                  className="size-3 animate-in duration-200 zoom-in-50 fade-in-0"
+                  strokeWidth={3}
+                />}
               {rotulo}
               <span
                 className={cn(
@@ -74,7 +78,11 @@ export function FiltroCategorias({
         className={cn(CHIP, minhaFila.marcada ? CHIP_MARCADO : CHIP_LIVRE)}
       >
         {minhaFila.marcada ? (
-          <Check aria-hidden className="size-3" strokeWidth={3} />
+          <Check
+                  aria-hidden
+                  className="size-3 animate-in duration-200 zoom-in-50 fade-in-0"
+                  strokeWidth={3}
+                />
         ) : (
           <UserRound aria-hidden className="size-3.5" />
         )}

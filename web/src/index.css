@@ -116,6 +116,11 @@
         0% { box-shadow: 0 0 0 0 color-mix(in oklab, var(--alta-borda) 55%, transparent); }
         100% { box-shadow: 0 0 0 10px transparent; }
     }
+    /* Traço que se desenha (pathLength="1" no SVG): o ✓ do estado vazio. */
+    @keyframes desenhar {
+        from { stroke-dashoffset: 1; }
+        to { stroke-dashoffset: 0; }
+    }
     @keyframes brilho {
         from { background-position: 200% 0; }
         to { background-position: -200% 0; }
@@ -339,6 +344,20 @@ html.tema-em-transicao *::after {
     color 250ms ease,
     fill 250ms ease,
     stroke 250ms ease !important;
+}
+
+/* Troca de tema em círculo (src/theme/tema.ts): a revelação é feita pelo clip-path. */
+html.tema-instantaneo,
+html.tema-instantaneo *,
+html.tema-instantaneo *::before,
+html.tema-instantaneo *::after {
+  transition: none !important;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
 @media (prefers-reduced-motion: reduce) {

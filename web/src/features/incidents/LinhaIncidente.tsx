@@ -112,6 +112,7 @@ export function LinhaIncidente({
         <span role="cell" className="flex min-w-0 items-center gap-1.5">
           <button
             type="button"
+            data-alternar-detalhes
             onClick={aoAlternar}
             aria-expanded={aberta}
             aria-controls={aberta ? idDetalhes : undefined}

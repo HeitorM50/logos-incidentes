@@ -163,7 +163,7 @@ export function TelaTriagem({ analista, aoSair }: Props) {
   /** Foco depois do aviso de desfazer sumir: a linha do incidente, ou o título. */
   function focarLinhaOuTitulo(id: number) {
     const botao = document.querySelector<HTMLElement>(
-      `[data-incidente="${id}"] button[aria-expanded]`,
+      `[data-incidente="${id}"] button[data-alternar-detalhes]`,
     )
     if (botao) botao.focus()
     else focarTitulo()
@@ -215,7 +215,9 @@ export function TelaTriagem({ analista, aoSair }: Props) {
     if (linha) {
       const semMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
       linha.scrollIntoView?.({ block: 'center', behavior: semMovimento ? 'auto' : 'smooth' })
-      linha.querySelector<HTMLElement>('button[aria-expanded]')?.focus({ preventScroll: true })
+      linha
+        .querySelector<HTMLElement>('button[data-alternar-detalhes]')
+        ?.focus({ preventScroll: true })
     } else {
       mostrarNaLista(id) // também leva o foco à busca
     }

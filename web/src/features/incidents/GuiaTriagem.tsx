@@ -137,7 +137,11 @@ export function GuiaTriagem({ aberto, aoMudar }: PropsGuia) {
               <kbd className="rounded border bg-superficie-2 px-1 font-mono text-xs">Ctrl</kbd>+
               <kbd className="rounded border bg-superficie-2 px-1 font-mono text-xs">K</kbd> ou{' '}
               <kbd className="rounded border bg-superficie-2 px-1 font-mono text-xs">/</kbd>. Os
-              filtros ficam no endereço da página: dá para recarregar ou enviar o link.
+              filtros ficam no endereço da página: dá para recarregar ou enviar o link. Com o foco
+              na seta de uma linha,{' '}
+              <kbd className="rounded border bg-superficie-2 px-1 font-mono text-xs">↑</kbd> e{' '}
+              <kbd className="rounded border bg-superficie-2 px-1 font-mono text-xs">↓</kbd> passam
+              para a linha de cima ou de baixo.
             </p>
           </Secao>
 

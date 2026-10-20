@@ -277,6 +277,20 @@ describe('TelaTriagem — filtros', () => {
     await waitFor(() => expect(window.location.search).toBe('?responsavel=eu'))
   })
 
+  it('↑ e ↓ na seta de detalhes passam para a linha de cima ou de baixo', async () => {
+    abrirCom()
+    const primeira = await screen.findByRole('button', { name: 'Ver detalhes de #1' })
+    primeira.focus()
+
+    await userEvent.keyboard('{ArrowDown}')
+    expect(screen.getByRole('button', { name: 'Ver detalhes de #2' })).toHaveFocus()
+    await userEvent.keyboard('{ArrowUp}')
+    expect(primeira).toHaveFocus()
+    // Na primeira linha, ↑ não sai da tabela.
+    await userEvent.keyboard('{ArrowUp}')
+    expect(primeira).toHaveFocus()
+  })
+
   it('recarregar a página mantém os filtros da URL', async () => {
     abrirCom('/?categoria=bloqueio_pista')
 

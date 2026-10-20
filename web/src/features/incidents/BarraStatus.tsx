@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react'
 import { ROTULO_STATUS } from '@/api/rotulos'
 import { cn } from '@/lib/utils'
 import { STATUS_ATIVOS, type StatusAtivo } from './resumo'
@@ -17,6 +18,21 @@ interface Props {
 }
 
 export function BarraStatus({ porStatus }: Props) {
+  // Primeira carga: os segmentos crescem da esquerda, em sequência (Aberto → Investigação →
+  // Inconclusivo). Depois disso, mudam de tamanho sem atraso.
+  const [cresceu, setCresceu] = useState(false)
+  const [primeiraVez, setPrimeiraVez] = useState(true)
+  useEffect(() => {
+    if (!porStatus || cresceu) return
+    const quadro = requestAnimationFrame(() => setCresceu(true))
+    return () => cancelAnimationFrame(quadro)
+  }, [porStatus, cresceu])
+  useEffect(() => {
+    if (!cresceu) return
+    const id = setTimeout(() => setPrimeiraVez(false), 1_000)
+    return () => clearTimeout(id)
+  }, [cresceu])
+
   const total = porStatus ? STATUS_ATIVOS.reduce((soma, s) => soma + porStatus[s], 0) : 0
   const pct = (n: number) => (total ? Math.round((n / total) * 100) : 0)
   const descricao = porStatus
@@ -57,15 +73,23 @@ export function BarraStatus({ porStatus }: Props) {
       <div
         role="img"
         aria-label={descricao}
-        className="flex h-2.5 gap-0.5 overflow-hidden rounded-[3px] bg-esqueleto"
+        className="group flex h-2.5 gap-0.5 overflow-hidden rounded-[3px] bg-esqueleto"
       >
         {porStatus &&
-          STATUS_ATIVOS.map((status) =>
+          STATUS_ATIVOS.map((status, i) =>
             porStatus[status] ? (
               <span
                 key={status}
-                className={cn('min-w-1 transition-[flex-grow] duration-500', COR_SEGMENTO[status])}
-                style={{ flex: `${porStatus[status]} 1 0` }}
+                // Mouse sobre um segmento: os outros recuam e o título mostra a contagem.
+                title={`${ROTULO_STATUS[status]}: ${porStatus[status]} (${pct(porStatus[status])}%)`}
+                className={cn(
+                  'min-w-1 transition-[flex-grow,opacity] duration-500 group-hover:opacity-40 hover:opacity-100!',
+                  COR_SEGMENTO[status],
+                )}
+                style={{
+                  flex: `${cresceu ? porStatus[status] : 0} 1 0`,
+                  transitionDelay: primeiraVez ? `${i * 120}ms` : undefined,
+                }}
               />
             ) : null,
           )}

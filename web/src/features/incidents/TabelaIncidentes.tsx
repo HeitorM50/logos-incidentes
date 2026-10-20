@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type KeyboardEvent } from 'react'
 import type { Incidente } from '@/api/tipos'
 import { LogosLoader } from '@/components/LogosLoader'
 import { useFlipLinhas } from '@/lib/useFlipLinhas'
@@ -129,6 +129,25 @@ export function TabelaIncidentes({
     })
   }
 
+  /**
+   * ↑ e ↓ com o foco na seta de detalhes de uma linha: passa para a linha de cima ou de baixo.
+   * Só ali, para não roubar as setas de menus e campos. Em 100 linhas, é bem mais rápido que Tab.
+   */
+  function andarComSetas(evento: KeyboardEvent<HTMLDivElement>) {
+    if (evento.key !== 'ArrowDown' && evento.key !== 'ArrowUp') return
+    if (evento.altKey || evento.ctrlKey || evento.metaKey || evento.shiftKey) return
+    const alvo = evento.target as HTMLElement
+    if (!alvo.matches('[data-alternar-detalhes]')) return
+    const botoes = [
+      ...(grupo.current?.querySelectorAll<HTMLElement>('[data-alternar-detalhes]') ?? []),
+    ]
+    const proximo = botoes[botoes.indexOf(alvo) + (evento.key === 'ArrowDown' ? 1 : -1)]
+    if (!proximo) return
+    evento.preventDefault()
+    proximo.focus()
+    proximo.scrollIntoView?.({ block: 'nearest' })
+  }
+
   return (
     // Tabela em ARIA sobre a grade: o leitor de tela anuncia o cabeçalho de cada coluna.
     <div role="table" aria-label="Incidentes" className="min-w-[1280px]">
@@ -138,6 +157,7 @@ export function TabelaIncidentes({
         ref={grupo}
         role="rowgroup"
         className={cn(primeiraPintura && 'cascata [--cascata-passo:20ms]')}
+        onKeyDown={andarComSetas}
       >
         {itens.map((incidente) => (
           <LinhaIncidente

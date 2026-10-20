@@ -1,4 +1,4 @@
-import { CircleAlert, CircleCheck, Funnel } from 'lucide-react'
+import { CircleAlert, Funnel } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { LogosLoader } from '@/components/LogosLoader'
 import { Button } from '@/components/ui/button'
@@ -48,12 +48,27 @@ export function PainelErro({ mensagem, tentando, aoTentar }: PropsErro) {
   )
 }
 
+function faseDaEspera(segundos: number): string {
+  if (segundos < 15) return 'Ligando o servidor…'
+  if (segundos < 35) {
+    return 'Ainda iniciando: o primeiro acesso depois de um tempo parado é o mais lento.'
+  }
+  return 'Quase lá: a lista abre sozinha em instantes.'
+}
+
 export function PainelAcordando({ segundos }: { segundos: number }) {
   return (
     <Painel>
       <div role="status" className="flex flex-col items-center gap-3">
         <LogosLoader tamanho={64} decorativo fundo="var(--card)" />
         <h2 className="text-lg font-semibold">Acordando o servidor…</h2>
+        {/* A frase muda com a espera: os 30 a 60 s do primeiro acesso não parecem travados. */}
+        <p
+          key={faseDaEspera(segundos)}
+          className="animate-in text-sm font-medium duration-300 fade-in-0"
+        >
+          {faseDaEspera(segundos)}
+        </p>
         <p className="text-sm leading-normal text-texto-2">
           O servidor estava em repouso e está iniciando. Isso costuma levar até 1 minuto; a lista
           abre sozinha assim que ele responder.
@@ -69,7 +84,25 @@ export function PainelAcordando({ segundos }: { segundos: number }) {
 export function PainelVazio() {
   return (
     <Painel>
-      <CircleCheck aria-hidden className="size-8" strokeWidth={1.8} />
+      {/* O ✓ se desenha: o momento de "tudo sob controle" do analista. */}
+      <svg aria-hidden viewBox="0 0 24 24" className="size-8" fill="none" stroke="currentColor">
+        <circle
+          cx="12"
+          cy="12"
+          r="10"
+          pathLength={1}
+          strokeWidth={1.8}
+          className="animate-[desenhar_500ms_ease-out_both] [stroke-dasharray:1]"
+        />
+        <path
+          d="m8 12 3 3 5-6"
+          pathLength={1}
+          strokeWidth={1.8}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="animate-[desenhar_350ms_ease-out_350ms_both] [stroke-dasharray:1]"
+        />
+      </svg>
       <h2 className="text-lg font-semibold">Nenhum incidente ativo</h2>
       <p className="text-sm leading-normal text-texto-2">
         A frota não tem ocorrências abertas agora. Novos incidentes aparecem aqui automaticamente.

@@ -12,7 +12,11 @@ export function BotaoTema({ compacto = false }: { compacto?: boolean }) {
     <Button
       type="button"
       variant="outline"
-      onClick={alternarTema}
+      onClick={(evento) => {
+        // A troca se espalha em círculo a partir do centro do botão.
+        const caixa = evento.currentTarget.getBoundingClientRect()
+        alternarTema({ x: caixa.left + caixa.width / 2, y: caixa.top + caixa.height / 2 })
+      }}
       aria-label={claro ? 'Ativar modo escuro' : 'Ativar modo claro'}
       title={compacto ? (claro ? 'Modo escuro' : 'Modo claro') : undefined}
       className={cn(
@@ -20,7 +24,12 @@ export function BotaoTema({ compacto = false }: { compacto?: boolean }) {
         compacto ? 'size-9 px-0' : 'h-10 px-3.5',
       )}
     >
-      {claro ? <Moon aria-hidden /> : <Sun aria-hidden />}
+      {/* O ícone novo entra girando (a lua vira sol e o sol vira lua). */}
+      {claro ? (
+        <Moon key="lua" aria-hidden className="animate-in duration-300 spin-in-90 zoom-in-50" />
+      ) : (
+        <Sun key="sol" aria-hidden className="animate-in duration-300 spin-in-90 zoom-in-50" />
+      )}
       {!compacto && <span>{claro ? 'Modo escuro' : 'Modo claro'}</span>}
     </Button>
   )

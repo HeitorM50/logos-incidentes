@@ -50,4 +50,36 @@ describe('tema', () => {
     parar()
     vi.unstubAllGlobals()
   })
+
+  it('com View Transitions, revela em círculo; sem a API, usa a transição comum', async () => {
+    const animar = vi.fn()
+    document.documentElement.animate = animar
+    let callback: (() => unknown) | undefined
+    const iniciar = vi.fn((cb: () => unknown) => {
+      callback = cb
+      return { ready: Promise.resolve(), finished: Promise.resolve() }
+    })
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    Object.defineProperty(document, 'startViewTransition', { configurable: true, value: iniciar })
+
+    definirTema('escuro', { x: 10, y: 20 })
+    callback?.()
+    await Promise.resolve()
+
+    expect(iniciar).toHaveBeenCalledOnce()
+    expect(lerTema()).toBe('escuro')
+    expect(document.documentElement).not.toHaveClass('tema-em-transicao')
+    expect(animar.mock.calls[0][1]).toMatchObject({ pseudoElement: '::view-transition-new(root)' })
+    // As transições de cor ficam desligadas só durante a View Transition.
+    await Promise.resolve()
+    expect(document.documentElement).not.toHaveClass('tema-instantaneo')
+
+    // Sem a API: a troca usa a transição de cores.
+    Object.defineProperty(document, 'startViewTransition', { configurable: true, value: undefined })
+    definirTema('claro', { x: 10, y: 20 })
+    expect(lerTema()).toBe('claro')
+    expect(document.documentElement).toHaveClass('tema-em-transicao')
+    vi.unstubAllGlobals()
+  })
 })
+

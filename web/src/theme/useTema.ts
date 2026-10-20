@@ -1,10 +1,10 @@
 import { useSyncExternalStore } from 'react'
-import { aoMudarTema, definirTema, lerTema, type Tema } from './tema'
+import { aoMudarTema, definirTema, lerTema, type Origem, type Tema } from './tema'
 
-export function useTema(): { tema: Tema; alternarTema: () => void } {
+export function useTema(): { tema: Tema; alternarTema: (origem?: Origem) => void } {
   const tema = useSyncExternalStore(aoMudarTema, lerTema)
   return {
     tema,
-    alternarTema: () => definirTema(tema === 'claro' ? 'escuro' : 'claro'),
+    alternarTema: (origem) => definirTema(tema === 'claro' ? 'escuro' : 'claro', origem),
   }
 }

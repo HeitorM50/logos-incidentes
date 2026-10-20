@@ -36,6 +36,9 @@ interface Props {
 
 // Cada cartão é também o filtro da sua criticidade (gestão por exceção: um clique em ALTA
 // deixa só o que pede ação imediata).
+// Acima disso, um Alta esperando já é atraso: o "mais antigo" muda de tom.
+const LIMITE_ALTA_MIN = 30
+
 /** Para onde o número foi na última mudança (null na primeira leitura e sem mudança). */
 function useDirecao(valor: number | null): { direcao: 'sobe' | 'desce' | null; chave: number } {
   const [estado, setEstado] = useState<{
@@ -149,12 +152,27 @@ export function CartoesCriticidade({ porCriticidade, selecionadas, aoAlternar }:
                       aria-hidden
                       className="flex items-center gap-1 text-xs font-semibold text-texto-2"
                     >
-                      <Check className="size-3" strokeWidth={3} />
+                      <Check
+                        className="size-3 animate-in duration-200 zoom-in-50 fade-in-0"
+                        strokeWidth={3}
+                      />
                       Filtrando
                     </span>
                   )}
                 </span>
-                <span className="text-[12.5px] whitespace-nowrap text-texto-3">{detalhe}</span>
+                {/* Alta aberto há mais de 30 min: o texto ganha o tom de alerta aos poucos. */}
+                <span
+                  className={cn(
+                    'text-[12.5px] whitespace-nowrap transition-colors duration-[2000ms]',
+                    criticidade === 'alta' &&
+                      resumo?.maisAntigoMin != null &&
+                      resumo.maisAntigoMin > LIMITE_ALTA_MIN
+                      ? 'font-medium text-alta-numero'
+                      : 'text-texto-3',
+                  )}
+                >
+                  {detalhe}
+                </span>
               </span>
               <span
                 className={cn(
