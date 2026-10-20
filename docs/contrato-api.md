@@ -45,6 +45,21 @@ Os valores trafegam como códigos estáveis; o front traduz para os rótulos do 
 | versao | integer | começa em 1; +1 a cada alteração (ADR 0002) |
 | criado_em / atualizado_em | timestamptz | preenchidos pelo banco |
 
+**eventos_incidente** (histórico, ADR 0007)
+
+| Coluna | Tipo | Regra |
+|---|---|---|
+| id | bigint identity | PK |
+| incidente_id | FK incidentes | `ON DELETE CASCADE`: remover o incidente remove o histórico |
+| tipo | enum `tipo_evento` | `criado`, `assumido`, `liberado`, `status`, `editado` |
+| analista_id | FK analistas | nulo em eventos sem autor (seed, registros anteriores ao histórico) |
+| status_anterior / status_novo | enum `status_incidente` | nulos quando não se aplicam |
+| campos | varchar(20)[] | campos que mudaram numa edição |
+| criado_em | timestamptz | preenchido pelo banco |
+
+Gravado **na mesma transação** da alteração: um 409 ou uma falha não deixam evento de algo que
+não aconteceu. Índice `ix_eventos_incidente_linha_do_tempo (incidente_id, criado_em)`.
+
 **Índice** `ix_incidentes_triagem (status, criticidade, criado_em)` — atende a listagem padrão filtrada
 por status e ordenada por criticidade e tempo aberto.
 
@@ -82,6 +97,7 @@ por status e ordenada por criticidade e tempo aberto.
 | `POST /incidentes/{id}/liberar` | `{versao}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
 | `POST /incidentes/{id}/status` | `{versao, status}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
 | `DELETE /incidentes/{id}?versao=N` | — | 204 | 401, 403, 404, 409, 422 |
+| `GET /incidentes/{id}/eventos` | — | 200 `[Evento]`, do mais antigo ao mais novo | 401, 404 |
 
 **`ListaIncidentes`**
 

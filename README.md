@@ -38,6 +38,9 @@ anônima ou em outro navegador e altere o mesmo incidente nas duas.
 
 - **Triagem:** lista ordenada, contadores por criticidade, barra de status dos ativos, tempo
   aberto relativo e atualização automática a cada 5 s ("Ao vivo · atualizado há 3 s").
+- **Desfazer e histórico:** depois de assumir, liberar ou mudar status, "Desfazer" fica 6 s na
+  tela (é uma ação nova, com as mesmas regras e a versão atual). Os detalhes de cada incidente
+  mostram a linha do tempo: quem registrou, assumiu, mudou o status ou editou, e quando.
 - **Ciclo de vida:** assumir, liberar e mudar status com as transições permitidas. "Fechado" é
   final e pede confirmação. Ações que o analista não pode fazer aparecem desativadas **com o
   motivo** ("Só Bruno Lima pode mudar o status").
@@ -74,7 +77,7 @@ api/                FastAPI
   app/core/         configuração, banco, segurança, erros, resiliência, limite de login
   app/seed/         analistas e 100 incidentes de demonstração
   alembic/          migrations
-  tests/            pytest (91 testes)
+  tests/            pytest (97 testes)
 web/                React + Vite + TypeScript
   src/api/          cliente tipado da API, erros e sessão
   src/features/     auth (login) e incidents (triagem, filtros, ações, formulário)
@@ -161,8 +164,8 @@ Postgres (o projeto usa a versão 17 localmente e o Postgres do Supabase em prod
 ### Testes e qualidade
 
 ```bash
-cd api && uv run pytest && uv run ruff check .        # 91 testes
-cd web && npm test && npm run lint && npm run build   # 218 testes
+cd api && uv run pytest && uv run ruff check .        # 97 testes
+cd web && npm test && npm run lint && npm run build   # 252 testes
 ```
 
 Os testes da API rodam num schema temporário, criado e apagado a cada execução. O CI (GitHub
@@ -189,6 +192,7 @@ gravar. As duas ficam desligadas por padrão.
 | `POST` | `/incidentes` | Cria |
 | `GET` · `PATCH` · `DELETE` | `/incidentes/{id}` | Detalha, edita, remove (`versao` obrigatória para alterar) |
 | `POST` | `/incidentes/{id}/assumir` · `/liberar` · `/status` | Ciclo de vida, com `versao` |
+| `GET` | `/incidentes/{id}/eventos` | Histórico, gravado na mesma transação de cada alteração |
 | `GET` | `/health` | API e banco respondendo |
 
 Erros sempre no formato `{"erro": {"codigo", "mensagem", ...}}`. Contrato completo, códigos de
@@ -211,5 +215,5 @@ erro e transições permitidas: [`docs/contrato-api.md`](docs/contrato-api.md).
 ## Próximos passos
 
 Ideias que ficaram fora do MVP estão na issue
-[#25](https://github.com/HeitorM50/logos-incidentes/issues/25), como desfazer a última ação e o
-histórico de cada incidente.
+[#25](https://github.com/HeitorM50/logos-incidentes/issues/25), como a ingestão direta pelos
+caminhões (com chave por dispositivo e idempotência) e testes ponta a ponta no CI.

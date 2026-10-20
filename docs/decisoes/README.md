@@ -11,3 +11,4 @@ consideradas e consequências. Esses registros são a fonte das justificativas n
 | [0004](0004-priorizacao-visual.md) | Priorização visual dos 100 incidentes |
 | [0005](0005-seguranca.md) | Autenticação e segurança básica da API |
 | [0006](0006-deploy-e-ambientes.md) | Deploy e ambientes |
+| [0007](0007-historico-do-incidente.md) | Histórico do incidente |
