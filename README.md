@@ -172,8 +172,21 @@ cd api && uv run pytest && uv run ruff check .        # 120 testes
 cd web && npm test && npm run lint && npm run build   # 267 testes
 ```
 
-Os testes da API rodam num schema temporário, criado e apagado a cada execução. O CI (GitHub
-Actions) roda tudo a cada push.
+Os testes da API rodam num schema temporário, criado e apagado a cada execução.
+
+**Ponta a ponta (Playwright):** navegador de verdade contra a API e o Postgres de verdade, em 7
+cenários — triagem e filtros, login, dois analistas no mesmo incidente (409), CRUD com dado
+inválido barrado, rollback com falha na escrita, desfazer e histórico, e ingestão pelo caminhão
+aparecendo na triagem.
+
+```bash
+docker compose up -d
+cd api && uv run alembic upgrade head && uv run python -m app.seed --recriar
+cd web && npm run build && npm run e2e     # sobe a API e o front sozinho
+```
+
+O CI (GitHub Actions) roda tudo a cada push: API, front e os testes ponta a ponta, estes com um
+Postgres descartável do próprio job.
 
 ### Simular banco lento e falhas
 
