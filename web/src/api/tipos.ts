@@ -42,6 +42,19 @@ export interface Incidente {
   atualizado_em: string
 }
 
+export type TipoEvento = 'criado' | 'assumido' | 'liberado' | 'status' | 'editado'
+
+/** Item do histórico (GET /incidentes/{id}/eventos). `analista` nulo: evento sem autor. */
+export interface EventoIncidente {
+  id: number
+  tipo: TipoEvento
+  analista: AnalistaResumo | null
+  status_anterior: StatusIncidente | null
+  status_novo: StatusIncidente | null
+  campos: string[] | null
+  criado_em: string
+}
+
 export interface ListaIncidentes {
   itens: Incidente[]
   total: number

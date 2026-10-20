@@ -19,6 +19,7 @@ function simularServidor(itens: Incidente[]) {
   const servidor = {
     itens,
     chamadas: [] as Chamada[],
+    eventos: [] as unknown[],
     responder: (_chamada: Chamada): Promise<Response> => new Promise(() => {}),
   }
   vi.stubGlobal(
@@ -26,6 +27,7 @@ function simularServidor(itens: Incidente[]) {
     vi.fn(async (entrada: RequestInfo | URL, init?: RequestInit) => {
       const url = String(entrada)
       const metodo = init?.method ?? 'GET'
+      if (url.includes('/eventos')) return respostaJson(200, servidor.eventos)
       if (metodo === 'GET') return respostaJson(200, lista(servidor.itens))
       const chamada = { metodo, url, corpo: init?.body ? JSON.parse(String(init.body)) : null }
       servidor.chamadas.push(chamada)
@@ -345,7 +347,12 @@ describe('TelaTriagem — remover', () => {
     const dialogo = await screen.findByRole('alertdialog')
 
     // Bruno muda o título enquanto a confirmação está aberta; a leitura de 5 s traz a mudança.
-    const deBruno = { ...alvo, versao: 4, titulo: 'Pneu estourado e carga solta', atualizado_por: BRUNO }
+    const deBruno = {
+      ...alvo,
+      versao: 4,
+      titulo: 'Pneu estourado e carga solta',
+      atualizado_por: BRUNO,
+    }
     servidor.itens = [deBruno]
     await cliente.refetchQueries()
     expect(await within(dialogo).findByText(/mudou desde que você abriu/)).toBeInTheDocument()
@@ -415,3 +422,53 @@ describe('TelaTriagem — incidente Alta novo', () => {
     expect(screen.queryByText('Novo incidente Alta')).toBeNull()
   })
 })
+
+describe('TelaTriagem — histórico', () => {
+  it('mostra o histórico nos detalhes e relê quando o incidente muda', async () => {
+    const original = incidente({ id: 7, versao: 1 })
+    const servidor = simularServidor([original])
+    servidor.eventos = [
+      {
+        id: 1,
+        tipo: 'criado',
+        analista: null,
+        status_anterior: null,
+        status_novo: 'aberto',
+        campos: null,
+        criado_em: original.criado_em,
+      },
+    ]
+    const cliente = renderizar()
+    await abrirDetalhes(7)
+
+    const detalhes = screen.getByRole('group', { name: 'Detalhes de #7' })
+    expect(await within(detalhes).findByText('Incidente registrado')).toBeInTheDocument()
+
+    // Bruno assume: a leitura de 5 s traz a versão 2, e o histórico é relido.
+    servidor.itens = [
+      {
+        ...original,
+        versao: 2,
+        status: 'em_investigacao',
+        responsavel: BRUNO,
+        atualizado_por: BRUNO,
+      },
+    ]
+    servidor.eventos = [
+      ...servidor.eventos,
+      {
+        id: 2,
+        tipo: 'assumido',
+        analista: BRUNO,
+        status_anterior: 'aberto',
+        status_novo: 'em_investigacao',
+        campos: null,
+        criado_em: new Date().toISOString(),
+      },
+    ]
+    await cliente.refetchQueries({ queryKey: ['incidentes'] })
+
+    expect(await within(detalhes).findByText('Bruno Lima assumiu o incidente')).toBeInTheDocument()
+  })
+})
+

@@ -8,7 +8,10 @@ import { TelaTriagem } from './TelaTriagem'
 import { estadoDaConexao } from './useIncidentes'
 
 function simularLista(responder: () => Promise<Response>) {
-  const fetchFalso = vi.fn<typeof fetch>(() => responder())
+  // O histórico (aberto nos detalhes) tem rota própria; nestes testes ele vem vazio.
+  const fetchFalso = vi.fn<typeof fetch>(async (entrada) =>
+    String(entrada).includes('/eventos') ? respostaJson(200, []) : responder(),
+  )
   vi.stubGlobal('fetch', fetchFalso)
   return fetchFalso
 }

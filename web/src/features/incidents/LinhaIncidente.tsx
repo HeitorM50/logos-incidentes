@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils'
 import type { Acao } from './acoes'
 import { AcoesLinha, EM_ANDAMENTO, SEM_CONEXAO } from './AcoesLinha'
 import { AvisoConflito } from './Avisos'
+import { HistoricoIncidente } from './HistoricoIncidente'
 import { BotaoComMotivo } from './BotaoComMotivo'
 import { motivoEdicao } from './formulario'
 import { IconeCriticidade, IconeStatus } from './Icones'
@@ -222,6 +223,9 @@ export function LinhaIncidente({
                 <dt className="text-texto-3">Por</dt>
                 <dd>{incidente.atualizado_por?.nome ?? '—'}</dd>
               </dl>
+              <div className="border-t pt-3 sm:col-span-3">
+                <HistoricoIncidente incidente={incidente} idAnalista={idAnalista} agora={agora} />
+              </div>
               <div className="flex justify-end gap-2 border-t pt-3 sm:col-span-3">
                 <BotaoComMotivo
                   motivo={motivoAlterar}

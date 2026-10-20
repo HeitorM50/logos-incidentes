@@ -1,6 +1,7 @@
 import { requisitar } from './cliente'
 import type {
   EdicaoIncidente,
+  EventoIncidente,
   FiltrosIncidentes,
   Incidente,
   ListaIncidentes,
@@ -17,6 +18,10 @@ export function listarIncidentes(
 
 export function obterIncidente(id: number, sinal?: AbortSignal): Promise<Incidente> {
   return requisitar(`/incidentes/${id}`, { sinal })
+}
+
+export function listarEventos(id: number, sinal?: AbortSignal): Promise<EventoIncidente[]> {
+  return requisitar(`/incidentes/${id}/eventos`, { sinal })
 }
 
 export function criarIncidente(dados: NovoIncidente): Promise<Incidente> {

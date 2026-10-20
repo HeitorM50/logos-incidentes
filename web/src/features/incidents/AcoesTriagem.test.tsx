@@ -29,6 +29,7 @@ function simularServidor(itens: Incidente[]) {
     'fetch',
     vi.fn(async (entrada: RequestInfo | URL, init?: RequestInit) => {
       const url = String(entrada)
+      if (url.includes('/eventos')) return respostaJson(200, [])
       if (!init?.method || init.method === 'GET') {
         if (servidor.leiturasCongeladas) return new Promise<Response>(() => {})
         return respostaJson(200, lista(servidor.itens))
