@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Playwright (testes ponta a ponta)
+/e2e/.sessoes/
+/playwright-report/
+/test-results/
