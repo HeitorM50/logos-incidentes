@@ -16,6 +16,7 @@ from app.schemas.incidente import MINIMO_COMENTARIO, PADRAO_PLACA, IncidenteCria
 from app.services.ciclo_vida import (
     EXIGE_COMENTARIO,
     PODE_ASSUMIR,
+    PRAZO_PARA_ASSUMIR_MIN,
     TRANSICOES_DO_RESPONSAVEL,
     status_apos_liberar,
 )
@@ -53,6 +54,7 @@ def regras() -> dict[str, Any]:
         ],
         "limites": {campo: _limites(campo) for campo in ("titulo", "descricao", "local")},
         "padrao_placa": PADRAO_PLACA.pattern,
+        "prazo_para_assumir_min": {c.value: m for c, m in PRAZO_PARA_ASSUMIR_MIN.items()},
         "comentario": {
             **_limites("comentario", MudarStatus),
             "min": MINIMO_COMENTARIO,

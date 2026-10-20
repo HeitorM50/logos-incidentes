@@ -1,4 +1,5 @@
 from collections import Counter
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -7,6 +8,7 @@ from app.core.dominio import StatusIncidente
 from app.models import Incidente
 from app.seed.analistas import semear_analistas
 from app.seed.incidentes import TOTAL_INCIDENTES, gerar_incidentes, semear_incidentes
+from app.services.ciclo_vida import PRAZO_PARA_ASSUMIR_MIN
 
 
 def _total(sessao: Session) -> int:
@@ -66,3 +68,18 @@ def test_seed_gera_historico_coerente_com_o_estado(sessao: Session):
         assert (historico[-1].status_novo or "aberto") == incidente.status
         datas = [e.criado_em for e in historico]
         assert datas == sorted(datas)
+
+
+def test_poucos_abertos_passam_do_prazo_para_assumir(sessao: Session):
+    # Atrasado é a exceção: a demo precisa de alguns, não de quase todos.
+    agora = datetime.now(UTC)
+    abertos = [
+        i for i in gerar_incidentes(semear_analistas(sessao)) if i.status == StatusIncidente.ABERTO
+    ]
+    atrasados = [
+        i
+        for i in abertos
+        if agora - i.criado_em > timedelta(minutes=PRAZO_PARA_ASSUMIR_MIN[i.criticidade])
+    ]
+
+    assert 1 <= len(atrasados) <= len(abertos) * 0.3

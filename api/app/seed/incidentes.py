@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session
 
 from app.core.dominio import Categoria, Criticidade, StatusIncidente, TipoEvento
 from app.models import Analista, EventoIncidente, Incidente
+from app.services.ciclo_vida import PRAZO_PARA_ASSUMIR_MIN
 
 TOTAL_INCIDENTES = 100
 
@@ -99,6 +100,19 @@ def _status(gerador: random.Random) -> StatusIncidente:
     return gerador.choices(list(StatusIncidente), weights=(60, 20, 8, 12))[0]
 
 
+def _idade_minutos(
+    gerador: random.Random, status: StatusIncidente, criticidade: Criticidade
+) -> int:
+    # Sem responsável, a central real atende quase tudo dentro do prazo: só alguns passam dele e
+    # aparecem como atrasados (a exceção). Os já assumidos têm qualquer idade até 10 h.
+    if status != StatusIncidente.ABERTO:
+        return gerador.randint(1, 600)
+    prazo = PRAZO_PARA_ASSUMIR_MIN[criticidade]
+    if gerador.random() < 0.15:
+        return gerador.randint(prazo + 1, prazo * 3)
+    return gerador.randint(1, prazo - 1)
+
+
 def gerar_incidentes(analistas: list[Analista], semente: int = 42) -> list[Incidente]:
     gerador = random.Random(semente)  # determinístico: a demo é sempre a mesma
     agora = datetime.now(UTC)
@@ -110,7 +124,7 @@ def gerar_incidentes(analistas: list[Analista], semente: int = 42) -> list[Incid
         responsavel = None
         if status != StatusIncidente.ABERTO:
             responsavel = gerador.choice(analistas)
-        criado_em = agora - timedelta(minutes=gerador.randint(1, 600))
+        criado_em = agora - timedelta(minutes=_idade_minutos(gerador, status, criticidade))
         incidentes.append(
             Incidente(
                 titulo=gerador.choice(TITULOS[categoria]),
