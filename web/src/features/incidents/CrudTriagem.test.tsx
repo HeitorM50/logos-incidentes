@@ -20,6 +20,7 @@ function simularServidor(itens: Incidente[]) {
     itens,
     chamadas: [] as Chamada[],
     eventos: [] as unknown[],
+    veiculos: {} as Record<string, unknown>,
     responder: (_chamada: Chamada): Promise<Response> => new Promise(() => {}),
   }
   vi.stubGlobal(
@@ -28,6 +29,10 @@ function simularServidor(itens: Incidente[]) {
       const url = String(entrada)
       const metodo = init?.method ?? 'GET'
       if (url.includes('/eventos')) return respostaJson(200, servidor.eventos)
+      if (url.includes('/veiculos/')) {
+        const veiculo = servidor.veiculos[url.split('/veiculos/')[1]]
+        return veiculo ? respostaJson(200, veiculo) : erroDaApi(404, 'nao_encontrado')
+      }
       if (metodo === 'GET') return respostaJson(200, lista(servidor.itens))
       const chamada = { metodo, url, corpo: init?.body ? JSON.parse(String(init.body)) : null }
       servidor.chamadas.push(chamada)
@@ -61,6 +66,29 @@ afterEach(() => {
 })
 
 describe('TelaTriagem — criar', () => {
+  it('com placa da frota e contato em branco, mostra o motorista que a API vai copiar', async () => {
+    const servidor = simularServidor([incidente({ id: 1 })])
+    servidor.veiculos.RTA4E21 = {
+      placa: 'RTA4E21',
+      modelo: 'Volvo FH 540',
+      motorista: { nome: 'José Almeida', telefone: '+5510912345678' },
+    }
+    renderizar()
+    await userEvent.click(await screen.findByRole('button', { name: 'Novo incidente' }))
+    const painel = await screen.findByRole('dialog', { name: 'Novo incidente' })
+
+    await userEvent.type(within(painel).getByLabelText(/Placa/), 'rta-4e21')
+    expect(
+      await within(painel).findByText(/usa o motorista atual do RTA4E21 \(Volvo FH 540\)/),
+    ).toHaveTextContent('José Almeida, (10) 91234-5678.')
+
+    // Placa fora do cadastro: o analista sabe que precisa informar o contato.
+    await userEvent.clear(within(painel).getByLabelText(/Placa/))
+    await userEvent.type(within(painel).getByLabelText(/Placa/), 'ABC1D23')
+    expect(await within(painel).findByText(/Placa fora do cadastro da frota/)).toBeInTheDocument()
+  })
+
+
   it('dado inválido não chega à API: o erro aparece no campo e o foco vai para ele', async () => {
     const servidor = simularServidor([incidente({ id: 1 })])
     renderizar()
@@ -116,6 +144,8 @@ describe('TelaTriagem — criar', () => {
           criticidade: 'alta',
           local: 'BR-376, km 668',
           placa: 'ABC1D23',
+          motorista_nome: null,
+          motorista_telefone: null,
         },
       },
     ])

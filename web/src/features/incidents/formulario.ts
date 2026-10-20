@@ -1,6 +1,7 @@
 import { ehErroApi } from '@/api/erros'
 import { ehFinal, REGRAS } from '@/api/regras'
 import type { Categoria, Criticidade, Incidente, NovoIncidente } from '@/api/tipos'
+import { formatarTelefone, lerTelefone } from '@/lib/telefone'
 
 // Espelho da validação da API (api/app/schemas/incidente.py). O formulário barra o que a API
 // recusaria, e a API continua sendo a autoridade: um 422 dela também aparece no campo.
@@ -10,13 +11,23 @@ export const LIMITES = {
   titulo: REGRAS.limites.titulo.max,
   descricao: REGRAS.limites.descricao.max,
   local: REGRAS.limites.local.max,
+  motoristaNome: REGRAS.limites.motorista_nome.max,
 }
 const MINIMO = { titulo: REGRAS.limites.titulo.min, local: REGRAS.limites.local.min }
 
 // Placa no padrão antigo (ABC1234) ou Mercosul (ABC1D23), depois de tirar hífen e espaço.
 const PADRAO_PLACA = REGRAS.padraoPlaca
 
-export const CAMPOS = ['titulo', 'categoria', 'criticidade', 'local', 'placa', 'descricao'] as const
+export const CAMPOS = [
+  'titulo',
+  'categoria',
+  'criticidade',
+  'local',
+  'placa',
+  'motorista_nome',
+  'motorista_telefone',
+  'descricao',
+] as const
 export type Campo = (typeof CAMPOS)[number]
 
 /** O que está digitado no formulário (texto cru; selects vazios valem ''). */
@@ -27,6 +38,8 @@ export interface ValoresFormulario {
   criticidade: Criticidade | ''
   local: string
   placa: string
+  motorista_nome: string
+  motorista_telefone: string
 }
 
 export type ErrosFormulario = Partial<Record<Campo, string>>
@@ -38,6 +51,8 @@ export const FORMULARIO_VAZIO: ValoresFormulario = {
   criticidade: '',
   local: '',
   placa: '',
+  motorista_nome: '',
+  motorista_telefone: '',
 }
 
 export function valoresDe(incidente: Incidente): ValoresFormulario {
@@ -48,6 +63,10 @@ export function valoresDe(incidente: Incidente): ValoresFormulario {
     criticidade: incidente.criticidade,
     local: incidente.local,
     placa: incidente.placa ?? '',
+    motorista_nome: incidente.motorista_nome ?? '',
+    motorista_telefone: incidente.motorista_telefone
+      ? formatarTelefone(incidente.motorista_telefone)
+      : '',
   }
 }
 
@@ -84,6 +103,19 @@ export function validar(valores: ValoresFormulario): ErrosFormulario {
   if (placa && !PADRAO_PLACA.test(placa)) {
     erros.placa = 'Placa inválida. Use o formato ABC1234 ou ABC1D23.'
   }
+  // Contato do motorista: opcional (sem ele, a API copia do cadastro da frota).
+  if (valores.motorista_nome.trim()) {
+    const nome = validarTexto(
+      valores.motorista_nome,
+      'o nome',
+      REGRAS.limites.motorista_nome.min,
+      LIMITES.motoristaNome,
+    )
+    if (nome) erros.motorista_nome = nome
+  }
+  if (lerTelefone(valores.motorista_telefone) === 'invalido') {
+    erros.motorista_telefone = 'Telefone inválido. Use DDD + número, ex.: (11) 98765-4321.'
+  }
   if (valores.descricao.includes('\0')) erros.descricao = INVALIDO
   else if (tamanho(valores.descricao.trim()) > LIMITES.descricao) {
     erros.descricao = `Use no máximo ${LIMITES.descricao} caracteres.`
@@ -100,6 +132,9 @@ export function paraNovo(valores: ValoresFormulario): NovoIncidente {
     criticidade: valores.criticidade as Criticidade,
     local: valores.local.trim(),
     placa: normalizarPlaca(valores.placa),
+    motorista_nome: valores.motorista_nome.trim() || null,
+    // validar() já barrou o inválido.
+    motorista_telefone: lerTelefone(valores.motorista_telefone) as string | null,
   }
 }
 
@@ -132,6 +167,8 @@ export const ROTULO_CAMPO: Record<Campo, string> = {
   criticidade: 'Criticidade',
   local: 'Local',
   placa: 'Placa',
+  motorista_nome: 'Motorista',
+  motorista_telefone: 'Telefone do motorista',
   descricao: 'Descrição',
 }
 

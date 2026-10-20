@@ -3,12 +3,15 @@ import {
   ChevronRight,
   ExternalLink,
   ListChecks,
+  MessageCircle,
   Pencil,
+  Phone,
   Trash2,
   Truck,
 } from 'lucide-react'
 import { ROTULO_CATEGORIA, ROTULO_CRITICIDADE, ROTULO_STATUS } from '@/api/rotulos'
 import type { Criticidade, Incidente } from '@/api/tipos'
+import { formatarTelefone, linkLigar, linkWhatsApp } from '@/lib/telefone'
 import { cn } from '@/lib/utils'
 import type { Acao } from './acoes'
 import { AcoesLinha, EM_ANDAMENTO, SEM_CONEXAO } from './AcoesLinha'
@@ -352,6 +355,42 @@ function Responsavel({ incidente, idAnalista }: { incidente: Incidente; idAnalis
   )
 }
 
+const LINK_CONTATO =
+  'inline-flex h-7 items-center gap-1 rounded-[5px] border border-borda-forte bg-card px-2 text-xs font-medium outline-none hover:bg-accent focus-visible:ring-3 focus-visible:ring-ring/50'
+
+/** Nome, telefone e os atalhos para ligar ou abrir o WhatsApp com o motorista. */
+function ContatoMotorista({ incidente }: { incidente: Incidente }) {
+  const { motorista_nome: nome, motorista_telefone: telefone } = incidente
+  if (!nome && !telefone) return <span className="text-texto-3 italic">Não informado</span>
+  const quem = nome ?? 'o motorista'
+  return (
+    <span className="flex flex-col items-start gap-1">
+      {nome && <span>{nome}</span>}
+      {telefone && (
+        <>
+          <span className="font-mono">{formatarTelefone(telefone)}</span>
+          <span className="flex flex-wrap gap-1.5">
+            <a href={linkLigar(telefone)} aria-label={`Ligar para ${quem}`} className={LINK_CONTATO}>
+              <Phone aria-hidden className="size-3" />
+              Ligar
+            </a>
+            <a
+              href={linkWhatsApp(telefone)}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={`Abrir o WhatsApp de ${quem} (nova aba)`}
+              className={LINK_CONTATO}
+            >
+              <MessageCircle aria-hidden className="size-3" />
+              WhatsApp
+            </a>
+          </span>
+        </>
+      )}
+    </span>
+  )
+}
+
 interface PropsBotaoDetalhes {
   incidente: Incidente
   aberta: boolean
@@ -451,6 +490,10 @@ function Detalhes({
       <dl className="grid grid-cols-[auto_1fr] content-start gap-x-3 gap-y-1">
         <dt className="text-texto-3">Placa</dt>
         <dd className="font-mono">{incidente.placa ?? '—'}</dd>
+        <dt className="text-texto-3">Motorista</dt>
+        <dd>
+          <ContatoMotorista incidente={incidente} />
+        </dd>
         <dt className="text-texto-3">Local</dt>
         <dd className="flex flex-col items-start gap-0.5">
           {incidente.local}

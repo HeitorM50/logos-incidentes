@@ -1,4 +1,5 @@
 import { requisitar } from './cliente'
+import { ehErroApi } from './erros'
 import type {
   EdicaoIncidente,
   EventoIncidente,
@@ -7,6 +8,7 @@ import type {
   ListaIncidentes,
   NovoIncidente,
   StatusIncidente,
+  Veiculo,
 } from './tipos'
 
 export function listarIncidentes(
@@ -22,6 +24,16 @@ export function obterIncidente(id: number, sinal?: AbortSignal): Promise<Inciden
 
 export function listarEventos(id: number, sinal?: AbortSignal): Promise<EventoIncidente[]> {
   return requisitar(`/incidentes/${id}/eventos`, { sinal })
+}
+
+/** Veículo da frota e o motorista atual; null quando a placa não está cadastrada. */
+export async function obterVeiculo(placa: string, sinal?: AbortSignal): Promise<Veiculo | null> {
+  try {
+    return await requisitar(`/veiculos/${encodeURIComponent(placa)}`, { sinal })
+  } catch (erro) {
+    if (ehErroApi(erro) && erro.codigo === 'nao_encontrado') return null
+    throw erro
+  }
 }
 
 export function criarIncidente(dados: NovoIncidente): Promise<Incidente> {

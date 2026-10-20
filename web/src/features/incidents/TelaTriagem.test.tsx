@@ -92,6 +92,39 @@ describe('TelaTriagem', () => {
     expect(detalhes).toHaveTextContent('OrigemRegistrado na central')
   })
 
+  it('os detalhes mostram o motorista com "Ligar" e "WhatsApp"', async () => {
+    simularLista(async () =>
+      respostaJson(
+        200,
+        lista([
+          incidente({
+            id: 4,
+            motorista_nome: 'José Almeida',
+            motorista_telefone: '+5510912345678',
+          }),
+          incidente({ id: 5 }),
+        ]),
+      ),
+    )
+    renderizar()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Ver detalhes de #4' }))
+    const detalhes = screen.getByRole('group', { name: 'Detalhes de #4' })
+    expect(detalhes).toHaveTextContent('José Almeida(10) 91234-5678')
+    expect(within(detalhes).getByRole('link', { name: 'Ligar para José Almeida' })).toHaveAttribute(
+      'href',
+      'tel:+5510912345678',
+    )
+    expect(
+      within(detalhes).getByRole('link', { name: 'Abrir o WhatsApp de José Almeida (nova aba)' }),
+    ).toHaveAttribute('href', 'https://wa.me/5510912345678')
+
+    await userEvent.click(screen.getByRole('button', { name: 'Ver detalhes de #5' }))
+    expect(screen.getByRole('group', { name: 'Detalhes de #5' })).toHaveTextContent(
+      'MotoristaNão informado',
+    )
+  })
+
   it('"Mesma placa" lista os outros incidentes do caminhão e leva até cada um', async () => {
     simularLista(async () =>
       respostaJson(

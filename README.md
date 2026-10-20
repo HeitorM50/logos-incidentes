@@ -52,6 +52,11 @@ anônima ou em outro navegador e altere o mesmo incidente nas duas.
   igual à da API. A edição envia só os campos alterados; se outro analista mudou o incidente com o
   painel aberto, o painel mostra quais campos mudaram e deixa escolher entre usar a versão atual
   ou manter as próprias mudanças.
+- **Contato do motorista:** cadastro da frota (veículo → motorista atual) e, no incidente, uma
+  cópia do contato no momento em que ele foi aberto. Os detalhes trazem "Ligar" e "WhatsApp"; o
+  formulário mostra o motorista que será copiado antes de salvar. Telefone é dado pessoal: só sai
+  pela API autenticada, e a API não grava o corpo das requisições em log. Na demonstração, os telefones usam o DDD 10, que não
+  existe: nenhum número fictício toca o telefone de alguém.
 - **Prazo para assumir:** Alta 15 min, Média 60, Baixa 240 (regra da API, em `/regras`). Um
   incidente ativo sem responsável além do prazo ganha o marcador "Atrasado" (texto e ícone, não
   só cor), e o filtro **Atrasados** mostra quantos são e quais.
@@ -262,6 +267,7 @@ por `uv run python -m app.dispositivos criar "Caminhão 042" --placa ABC1D23`.
 | `POST` | `/incidentes/{id}/assumir` · `/liberar` · `/status` | Ciclo de vida, com `versao` |
 | `GET` | `/incidentes/{id}/eventos` | Histórico, gravado na mesma transação de cada alteração |
 | `POST` | `/ingestao/incidentes` | Envio direto pelo caminhão (chave de dispositivo + `Idempotency-Key`) |
+| `GET` | `/veiculos/{placa}` | Veículo da frota e o motorista atual (com login: telefone é dado pessoal) |
 | `GET` | `/regras` | Transições, limites dos campos e padrão da placa, derivados do código |
 | `GET` | `/health` | API e banco respondendo |
 

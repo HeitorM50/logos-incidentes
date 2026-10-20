@@ -1,6 +1,9 @@
 import { Check, CircleAlert, UserRoundCog } from 'lucide-react'
+import { useQuery } from '@tanstack/react-query'
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { ehErroApi } from '@/api/erros'
+import { obterVeiculo } from '@/api/incidentes'
+import { REGRAS } from '@/api/regras'
 import { ROTULO_CATEGORIA, ROTULO_CRITICIDADE } from '@/api/rotulos'
 import { CATEGORIAS, CRITICIDADES, type AnalistaResumo, type Incidente } from '@/api/tipos'
 import { LogosLoader } from '@/components/LogosLoader'
@@ -14,6 +17,8 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
+import { formatarTelefone } from '@/lib/telefone'
+import { useValorAtrasado } from '@/lib/useValorAtrasado'
 import { cn } from '@/lib/utils'
 import {
   alteracoes,
@@ -517,6 +522,43 @@ function Formulario({
           />
         </CampoRotulado>
 
+        <fieldset className="flex flex-col gap-3 rounded-md border px-3 pt-1 pb-3">
+          <legend className="px-1 text-sm font-medium">Motorista</legend>
+          {!editando && <AvisoCadastro placa={valores.placa} contato={valores} />}
+          <CampoRotulado
+            id={id('motorista_nome')}
+            rotulo="Nome"
+            erro={erros.motorista_nome}
+          >
+            <Input
+              ref={guardar('motorista_nome')}
+              {...aria('motorista_nome')}
+              value={valores.motorista_nome}
+              onChange={(e) => mudar('motorista_nome', e.target.value)}
+              maxLength={LIMITES.motoristaNome}
+              autoComplete="off"
+              className="h-9"
+            />
+          </CampoRotulado>
+          <CampoRotulado
+            id={id('motorista_telefone')}
+            rotulo="Telefone"
+            dica="DDD + número, ex.: (11) 98765-4321."
+            erro={erros.motorista_telefone}
+          >
+            <Input
+              ref={guardar('motorista_telefone')}
+              {...aria('motorista_telefone', true)}
+              value={valores.motorista_telefone}
+              onChange={(e) => mudar('motorista_telefone', e.target.value)}
+              maxLength={20}
+              inputMode="tel"
+              autoComplete="off"
+              className="h-9 max-w-[220px] font-mono"
+            />
+          </CampoRotulado>
+        </fieldset>
+
         <CampoRotulado
           id={id('descricao')}
           rotulo="Descrição"
@@ -611,6 +653,54 @@ function Formulario({
         </div>
       )}
     </form>
+  )
+}
+
+/**
+ * Ao criar, com uma placa válida e o contato em branco, diz o que a API vai fazer: copiar o
+ * motorista atual do cadastro da frota. O analista vê o contato antes de salvar.
+ */
+function AvisoCadastro({
+  placa,
+  contato,
+}: {
+  placa: string
+  contato: { motorista_nome: string; motorista_telefone: string }
+}) {
+  const normalizada = placa.replace(/[-\s]/g, '').toUpperCase()
+  // Espera a digitação parar: sem isto, cada letra da placa seria uma consulta.
+  const consultada = useValorAtrasado(normalizada, 400)
+  const valida = REGRAS.padraoPlaca.test(consultada)
+  const consulta = useQuery({
+    queryKey: ['veiculo', consultada],
+    queryFn: ({ signal }) => obterVeiculo(consultada, signal),
+    enabled: valida,
+    staleTime: 60_000,
+    retry: false,
+  })
+  const emBranco = !contato.motorista_nome.trim() && !contato.motorista_telefone.trim()
+  if (!valida || !emBranco || consultada !== normalizada || !consulta.isSuccess) {
+    return (
+      <p className="text-xs text-texto-3">
+        Opcional. Em branco, o Logos copia o motorista atual do caminhão no cadastro da frota.
+      </p>
+    )
+  }
+  const veiculo = consulta.data
+  return (
+    <p role="status" className="text-xs text-texto-2">
+      {veiculo?.motorista ? (
+        <>
+          Em branco, o Logos usa o motorista atual do {veiculo.placa} ({veiculo.modelo}):{' '}
+          <strong className="font-semibold text-foreground">{veiculo.motorista.nome}</strong>,{' '}
+          <span className="font-mono">{formatarTelefone(veiculo.motorista.telefone)}</span>.
+        </>
+      ) : veiculo ? (
+        <>O {veiculo.placa} está no pátio, sem motorista escalado. Informe o contato, se tiver.</>
+      ) : (
+        <>Placa fora do cadastro da frota. Informe o contato, se tiver.</>
+      )}
+    </p>
   )
 }
 

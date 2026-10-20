@@ -20,9 +20,22 @@ const VALIDO: ValoresFormulario = {
   criticidade: 'alta',
   local: 'BR-376, km 668',
   placa: '',
+  motorista_nome: '',
+  motorista_telefone: '',
 }
 
 describe('validar', () => {
+  it('aceita o contato do motorista vazio e valida o telefone quando preenchido', () => {
+    expect(validar({ ...VALIDO, motorista_telefone: '' })).toEqual({})
+    expect(validar({ ...VALIDO, motorista_telefone: '98765-4321' }).motorista_telefone).toMatch(
+      /Telefone inválido/,
+    )
+    expect(validar({ ...VALIDO, motorista_nome: 'J' }).motorista_nome).toMatch(/pelo menos 2/)
+    expect(
+      paraNovo({ ...VALIDO, motorista_nome: ' José ', motorista_telefone: '(10) 91234-5678' }),
+    ).toMatchObject({ motorista_nome: 'José', motorista_telefone: '+5510912345678' })
+  })
+
   it('exige título, categoria, criticidade e local', () => {
     expect(validar(FORMULARIO_VAZIO)).toEqual({
       titulo: 'Informe o título.',
@@ -72,6 +85,9 @@ describe('paraNovo e alteracoes', () => {
       criticidade: 'alta',
       local: 'BR-376, km 668',
       placa: 'ABC1D23',
+      // Sem contato: a API copia o motorista atual do cadastro da frota.
+      motorista_nome: null,
+      motorista_telefone: null,
     })
     expect(normalizarPlaca('  ')).toBeNull()
   })

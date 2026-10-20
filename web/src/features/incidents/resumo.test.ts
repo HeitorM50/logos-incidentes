@@ -14,6 +14,8 @@ function incidente(dados: Partial<Incidente>): Incidente {
     status: 'aberto',
     local: 'BR-116, km 212',
     placa: null,
+    motorista_nome: null,
+    motorista_telefone: null,
     responsavel: null,
     atualizado_por: null,
     dispositivo: null,

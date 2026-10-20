@@ -41,6 +41,9 @@ export interface Incidente {
   status: StatusIncidente
   local: string
   placa: string | null
+  /** Contato do motorista no momento do incidente (cópia do cadastro da frota). */
+  motorista_nome: string | null
+  motorista_telefone: string | null
   responsavel: AnalistaResumo | null
   atualizado_por: AnalistaResumo | null
   /** Caminhão que enviou pela ingestão (ADR 0008); nulo quando um analista registrou. */
@@ -84,6 +87,15 @@ export interface NovoIncidente {
   criticidade: Criticidade
   local: string
   placa?: string | null
+  motorista_nome?: string | null
+  motorista_telefone?: string | null
+}
+
+/** Veículo da frota (GET /veiculos/{placa}). */
+export interface Veiculo {
+  placa: string
+  modelo: string
+  motorista: { nome: string; telefone: string } | null
 }
 
 export type EdicaoIncidente = Partial<NovoIncidente> & { versao: number }

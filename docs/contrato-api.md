@@ -94,6 +94,16 @@ por status e ordenada por criticidade e tempo aberto.
   incidente fechado é registro histórico da operação; só se remove o que ainda está em andamento.
 - **Editar e remover:** qualquer analista se não houver responsável; senão, só o responsável.
 
+**Frota e contato do motorista** (migração 0005)
+
+- `motoristas` (nome, telefone em E.164) e `veiculos` (placa única, modelo, `motorista_id` = quem
+  dirige agora).
+- `incidentes.motorista_nome` e `incidentes.motorista_telefone`: **cópia** do contato no momento
+  do incidente. Ao criar (ou na ingestão) com placa cadastrada e sem contato informado, a API copia
+  o motorista atual do veículo. A cópia mantém o histórico certo quando o motorista muda.
+- Telefone aceito como `(11) 98765-4321`, `11987654321` ou `+55 11 98765-4321`; gravado como
+  `+5511987654321`. Número estrangeiro é recusado (422).
+
 ## Rotas
 
 | Método e rota | Corpo | Sucesso | Erros |
@@ -103,13 +113,14 @@ por status e ordenada por criticidade e tempo aberto.
 | `GET /auth/eu` | — | 200 `Analista` | 401 |
 | `GET /incidentes` | query: `criticidade`, `categoria`, `status` (repetíveis), `responsavel=eu` | 200 `ListaIncidentes` | 401, 422 |
 | `GET /incidentes/{id}` | — | 200 `Incidente` | 401, 404 |
-| `POST /incidentes` | `{titulo, descricao?, categoria, criticidade, local, placa?}` | 201 `Incidente` | 401, 422 |
-| `PATCH /incidentes/{id}` | `{versao, titulo?, descricao?, categoria?, criticidade?, local?, placa?}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
+| `POST /incidentes` | `{titulo, descricao?, categoria, criticidade, local, placa?, motorista_nome?, motorista_telefone?}` | 201 `Incidente` | 401, 422 |
+| `PATCH /incidentes/{id}` | `{versao, titulo?, descricao?, categoria?, criticidade?, local?, placa?, motorista_nome?, motorista_telefone?}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
 | `POST /incidentes/{id}/assumir` | `{versao}` | 200 `Incidente` | 401, 404, 409, 422 |
 | `POST /incidentes/{id}/liberar` | `{versao, comentario?}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
 | `POST /incidentes/{id}/status` | `{versao, status, comentario?}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
 | `DELETE /incidentes/{id}?versao=N` | — | 204 | 401, 403, 404, 409, 422 |
 | `GET /incidentes/{id}/eventos` | — | 200 `[Evento]`, do mais antigo ao mais novo | 401, 404 |
+| `GET /veiculos/{placa}` | — | 200 `{placa, modelo, motorista: {nome, telefone} \| null}` | 401, 404 |
 | `GET /regras` | — | 200 transições, `pode_assumir`, `status_apos_liberar`, `status_final`, limites dos campos, padrão da placa e regra do comentário (público, sem dados) | — |
 | `POST /ingestao/incidentes` | cabeçalhos `X-Chave-Dispositivo` e `Idempotency-Key`; corpo igual ao `POST /incidentes` | 201 `Incidente` (novo) · 200 (reenvio, `Idempotent-Replayed: true`) | 401, 409 `ja_recebido`, 422 (inclui `chave_reutilizada`), 429 (por IP ou `cota_do_dispositivo`) |
 
