@@ -112,7 +112,7 @@ export function GuiaTriagem({ aberto, aoMudar }: PropsGuia) {
                 <span
                   key={c}
                   className={cn(
-                    'inline-flex h-6 items-center gap-1.5 rounded-sm border px-2 text-xs tracking-[0.05em] uppercase',
+                    'inline-flex h-[26px] items-center gap-1.5 rounded-full border pr-2.5 pl-2 text-xs tracking-[0.05em] uppercase',
                     SELO[c],
                   )}
                 >
@@ -157,42 +157,86 @@ export function GuiaTriagem({ aberto, aoMudar }: PropsGuia) {
                 o responsável e o incidente vai para Em Investigação.
               </li>
               <li>
-                Só o responsável muda o status: Em Investigação, Inconclusivo ou Fechado.
-                <strong className="font-semibold text-foreground"> Fechado é final</strong> e pede
-                confirmação.
+                Só o responsável muda o status: Em Investigação, Inconclusivo ou Fechado. Fechar e
+                marcar Inconclusivo pedem um <strong className="font-semibold text-foreground">
+                comentário</strong>: como o incidente foi resolvido, ou por que a investigação parou.
+                <strong className="font-semibold text-foreground"> Fechado é final.</strong>
               </li>
               <li>
                 <strong className="font-semibold text-foreground">Liberar</strong> devolve o
-                incidente para a fila, para outro analista assumir.
+                incidente para a fila. O comentário é opcional e ajuda o próximo analista.
+              </li>
+              <li>
+                Errou? <strong className="font-semibold text-foreground">Desfazer</strong> fica
+                alguns segundos no aviso do canto (ou{' '}
+                <kbd className="rounded border bg-superficie-2 px-1 font-mono text-xs">Ctrl</kbd>+
+                <kbd className="rounded border bg-superficie-2 px-1 font-mono text-xs">Z</kbd>).
+                Fechar não tem desfazer.
               </li>
             </ol>
             <p>
-              Para ver a descrição, a placa ou editar e remover, abra os detalhes pela seta no
-              início da linha (no celular, pelo botão Detalhes do cartão). Um incidente novo entra por{' '}
+              Um incidente novo entra por{' '}
               <strong className="font-semibold text-foreground">Novo incidente</strong>, ao lado do
-              título.
+              título. Com a placa de um caminhão da frota, o contato do motorista é preenchido
+              sozinho.
             </p>
           </Secao>
 
-          <Secao titulo="4. Trabalho em equipe">
+          <Secao titulo="4. O que os detalhes mostram">
+            <p>
+              Abra os detalhes pela seta no início da linha (no celular, pelo botão Detalhes do
+              cartão). Lá estão:
+            </p>
+            <ul className="flex list-disc flex-col gap-1 pl-5">
+              <li>
+                o <strong className="font-semibold text-foreground">protocolo</strong> da categoria,
+                passo a passo (em Acidente com Vítimas, SAMU e Bombeiros antes de tudo);
+              </li>
+              <li>
+                o <strong className="font-semibold text-foreground">motorista</strong>, com{' '}
+                <em>Ligar</em> e <em>WhatsApp</em>, e o local com <em>Abrir no mapa</em>;
+              </li>
+              <li>
+                <strong className="font-semibold text-foreground">Mesma placa</strong>: outros
+                incidentes do caminhão (problema que se repete pede manutenção);
+              </li>
+              <li>
+                o <strong className="font-semibold text-foreground">histórico</strong>: quem fez
+                cada coisa, quando e com que comentário; e Editar e Remover.
+              </li>
+            </ul>
+          </Secao>
+
+          <Secao titulo="5. Trabalho em equipe">
             <p>
               A lista se atualiza sozinha a cada 5 segundos. Se outro analista alterar o mesmo
               incidente antes de você, o Logos avisa quem alterou e mostra a versão atual: nada é
-              sobrescrito sem você ver.
+              sobrescrito sem você ver. Botão desativado sempre diz o motivo ao passar o mouse,
+              tocar ou focar com o teclado.
             </p>
             <p>
-              <strong className="font-semibold text-foreground">Relatório</strong>, ao lado de
-              "Novo incidente", mostra como a central está atendendo: o funil do atendimento, os
-              tempos médios e a taxa de atraso, comparados com o período anterior. Botão
-              desativado sempre diz o motivo ao passar o mouse, tocar ou focar com o teclado.
               Quando chega um incidente Alta novo, um aviso no canto leva até ele. O marcador{' '}
               <strong className="font-semibold text-foreground">Dup. #N</strong> indica que o
               incidente parece o mesmo problema de outro aberto pouco antes (mesma placa, ou mesmo
               local e categoria): confira antes de tratar os dois.
             </p>
+            <p>
+              O <strong className="font-semibold text-foreground">supervisor</strong> pode
+              transferir um incidente para outro analista (troca de turno, sobrecarga) pelo botão
+              Transferir, nos detalhes.
+            </p>
           </Secao>
 
-          <Secao titulo="5. Se a conexão oscilar">
+          <Secao titulo="6. Como a central está indo">
+            <p>
+              <strong className="font-semibold text-foreground">Relatório</strong>, ao lado de
+              "Novo incidente", mostra o funil do atendimento (recebidos, assumidos, assumidos no
+              prazo e fechados), os tempos médios até assumir e até fechar e a taxa de atraso,
+              comparados com o período anterior.
+            </p>
+          </Secao>
+
+          <Secao titulo="7. Se a conexão oscilar">
             <p>
               A tela muda na hora quando você age. Se o servidor não confirmar, a linha volta ao
               estado anterior e um aviso oferece <em>Tentar de novo</em>. O topo da tela mostra se
