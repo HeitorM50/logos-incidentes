@@ -53,6 +53,8 @@ anônima ou em outro navegador e altere o mesmo incidente nas duas.
 - **Gestão por exceção ao vivo:** "Atribuídos a mim" mostra a fila do analista; quando chega um
   incidente Alta novo, um aviso leva até ele, a linha fica destacada e, com a aba em segundo
   plano, o título conta os novos ("(2) Logos").
+- **Apoio à decisão nos detalhes:** o protocolo sugerido da categoria (ex.: Acidente com
+  Vítimas → SAMU 192 e Bombeiros 193 antes de tudo) e "Abrir no mapa" no local do incidente.
 - **Ajuda dentro do app:** o botão "?" abre o guia "Como funciona a triagem", oferecido também
   no primeiro acesso, para usar o sistema sem instrução externa.
 - **Celular e tablet:** abaixo de 1024 px, cada incidente vira um cartão com as mesmas ações,

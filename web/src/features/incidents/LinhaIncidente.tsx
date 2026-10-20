@@ -1,4 +1,4 @@
-import { ChevronRight, Pencil, Trash2, Truck } from 'lucide-react'
+import { ChevronRight, ExternalLink, ListChecks, Pencil, Trash2, Truck } from 'lucide-react'
 import { ROTULO_CATEGORIA, ROTULO_CRITICIDADE, ROTULO_STATUS } from '@/api/rotulos'
 import type { Criticidade, Incidente } from '@/api/tipos'
 import { cn } from '@/lib/utils'
@@ -9,6 +9,7 @@ import { HistoricoIncidente } from './HistoricoIncidente'
 import { BotaoComMotivo } from './BotaoComMotivo'
 import { motivoEdicao } from './formulario'
 import { IconeCriticidade, IconeStatus } from './Icones'
+import { linkDoMapa, PROTOCOLOS } from './protocolos'
 import { tempoDoIncidente } from './tempo'
 import type { Conflito } from './useAcoesIncidente'
 
@@ -393,12 +394,41 @@ function Detalhes({
         <p className="leading-normal whitespace-pre-line">
           {incidente.descricao || <span className="text-texto-3 italic">Sem descrição.</span>}
         </p>
+        {/* Fechado não pede mais ação: o protocolo aparece só enquanto o incidente está ativo. */}
+        {incidente.status !== 'fechado' && (
+          <section aria-labelledby={`protocolo-${incidente.id}`} className="mt-2 flex flex-col gap-1">
+            <p
+              id={`protocolo-${incidente.id}`}
+              className="flex items-center gap-1.5 text-xs font-semibold tracking-[0.04em] text-texto-2 uppercase"
+            >
+              <ListChecks aria-hidden className="size-3.5" />
+              Protocolo sugerido · {ROTULO_CATEGORIA[incidente.categoria]}
+            </p>
+            <ol className="flex list-decimal flex-col gap-0.5 pl-5 leading-snug marker:text-texto-3">
+              {PROTOCOLOS[incidente.categoria].map((passo) => (
+                <li key={passo}>{passo}</li>
+              ))}
+            </ol>
+          </section>
+        )}
       </div>
       <dl className="grid grid-cols-[auto_1fr] content-start gap-x-3 gap-y-1">
         <dt className="text-texto-3">Placa</dt>
         <dd className="font-mono">{incidente.placa ?? '—'}</dd>
         <dt className="text-texto-3">Local</dt>
-        <dd>{incidente.local}</dd>
+        <dd className="flex flex-col items-start gap-0.5">
+          {incidente.local}
+          <a
+            href={linkDoMapa(incidente.local)}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Abrir ${incidente.local} no mapa (nova aba)`}
+            className="inline-flex items-center gap-1 rounded-sm font-medium text-foreground underline underline-offset-3 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+          >
+            Abrir no mapa
+            <ExternalLink aria-hidden className="size-3" />
+          </a>
+        </dd>
         <dt className="text-texto-3">Origem</dt>
         <dd>{incidente.dispositivo ? incidente.dispositivo.nome : 'Registrado na central'}</dd>
       </dl>

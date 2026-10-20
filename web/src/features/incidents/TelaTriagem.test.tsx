@@ -92,6 +92,38 @@ describe('TelaTriagem', () => {
     expect(detalhes).toHaveTextContent('OrigemRegistrado na central')
   })
 
+  it('os detalhes trazem o mapa do local e o protocolo da categoria', async () => {
+    simularLista(async () =>
+      respostaJson(
+        200,
+        lista([
+          incidente({ id: 5, categoria: 'acidente_vitimas', local: 'BR-116, km 212' }),
+          incidente({ id: 6, status: 'fechado' }),
+        ]),
+      ),
+    )
+    window.history.replaceState(null, '', '/?situacao=todos')
+    renderizar()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Ver detalhes de #5' }))
+    const detalhes = screen.getByRole('group', { name: 'Detalhes de #5' })
+    const mapa = within(detalhes).getByRole('link', { name: 'Abrir BR-116, km 212 no mapa (nova aba)' })
+    expect(mapa).toHaveAttribute(
+      'href',
+      'https://www.google.com/maps/search/?api=1&query=BR-116%2C%20km%20212',
+    )
+    expect(mapa).toHaveAttribute('rel', 'noopener noreferrer')
+    const protocolo = within(detalhes).getByRole('region', {
+      name: 'Protocolo sugerido · Acidente com Vítimas',
+    })
+    expect(within(protocolo).getAllByRole('listitem')[0]).toHaveTextContent('SAMU (192)')
+
+    // Fechado não pede ação: sem protocolo.
+    await userEvent.click(screen.getByRole('button', { name: 'Ver detalhes de #6' }))
+    const fechado = screen.getByRole('group', { name: 'Detalhes de #6' })
+    expect(within(fechado).queryByText(/Protocolo sugerido/)).not.toBeInTheDocument()
+  })
+
   it('incidente enviado por caminhão mostra a origem na linha e nos detalhes', async () => {
     const dispositivo = { id: 1, nome: 'Simulador do caminhão RTA4E21', placa: 'RTA4E21' }
     simularLista(async () => respostaJson(200, lista([incidente({ id: 4, dispositivo })])))
