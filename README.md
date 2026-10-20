@@ -57,6 +57,9 @@ anônima ou em outro navegador e altere o mesmo incidente nas duas.
   formulário mostra o motorista que será copiado antes de salvar. Telefone é dado pessoal: só sai
   pela API autenticada, e a API não grava o corpo das requisições em log. Na demonstração, os telefones usam o DDD 10, que não
   existe: nenhum número fictício toca o telefone de alguém.
+- **Possível duplicata:** a API aponta o incidente ativo que parece cópia de outro aberto até
+  2 h antes (mesma placa, ou mesmo local e categoria). A linha mostra "Dup. #N", e os detalhes
+  levam até o original. Só aponta: quem decide é o analista.
 - **Prazo para assumir:** Alta 15 min, Média 60, Baixa 240 (regra da API, em `/regras`). Um
   incidente ativo sem responsável além do prazo ganha o marcador "Atrasado" (texto e ícone, não
   só cor), e o filtro **Atrasados** mostra quantos são e quais.

@@ -48,6 +48,8 @@ export interface Incidente {
   atualizado_por: AnalistaResumo | null
   /** Caminhão que enviou pela ingestão (ADR 0008); nulo quando um analista registrou. */
   dispositivo: DispositivoResumo | null
+  /** Incidente ativo mais antigo de que este parece cópia (mesma placa, ou local e categoria). */
+  possivel_duplicata_de: number | null
   versao: number
   criado_em: string
   atualizado_em: string

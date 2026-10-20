@@ -34,6 +34,7 @@ export function incidente(dados: Partial<Incidente> = {}): Incidente {
     placa: null,
     motorista_nome: null,
     motorista_telefone: null,
+    possivel_duplicata_de: null,
     responsavel: null,
     atualizado_por: null,
     dispositivo: null,

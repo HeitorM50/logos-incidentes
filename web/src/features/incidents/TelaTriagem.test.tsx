@@ -92,6 +92,23 @@ describe('TelaTriagem', () => {
     expect(detalhes).toHaveTextContent('OrigemRegistrado na central')
   })
 
+  it('possível duplicata: marcador na linha e, nos detalhes, o caminho até o original', async () => {
+    simularLista(async () =>
+      respostaJson(200, lista([incidente({ id: 1 }), incidente({ id: 2, possivel_duplicata_de: 1 })])),
+    )
+    renderizar()
+
+    const linha = (await screen.findByRole('button', { name: 'Ver detalhes de #2' })).closest(
+      '[data-incidente]',
+    ) as HTMLElement
+    expect(within(linha).getByText('Possível duplicata de #1')).toBeInTheDocument()
+    expect(within(linha).getByText('Dup. #1')).toBeInTheDocument()
+
+    await userEvent.click(within(linha).getByRole('button', { name: 'Ver detalhes de #2' }))
+    await userEvent.click(screen.getByRole('button', { name: 'Ver #1 na lista' }))
+    expect(screen.getByRole('searchbox', { name: 'Buscar incidente' })).toHaveValue('#1')
+  })
+
   it('os detalhes mostram o motorista com "Ligar" e "WhatsApp"', async () => {
     simularLista(async () =>
       respostaJson(

@@ -1,6 +1,7 @@
 import {
   AlarmClock,
   ChevronRight,
+  Copy,
   ExternalLink,
   ListChecks,
   MessageCircle,
@@ -311,6 +312,17 @@ function Marcadores({ incidente, novo, atrasado }: PropsMarcadores) {
           <span className="sr-only">Enviado por {incidente.dispositivo.nome}</span>
         </span>
       )}
+      {incidente.possivel_duplicata_de && (
+        <span
+          title={`Mesma placa, ou mesmo local e categoria, de #${incidente.possivel_duplicata_de} aberto pouco antes`}
+          className="inline-flex flex-none items-center gap-1 rounded-sm border border-info-borda bg-info-fundo px-1 py-px text-[10px] font-bold tracking-[0.06em] text-info-texto uppercase"
+        >
+          <Copy aria-hidden className="size-3" />
+          {/* Curto na linha (o título precisa de espaço); completo para o leitor de tela. */}
+          <span aria-hidden>Dup. #{incidente.possivel_duplicata_de}</span>
+          <span className="sr-only">Possível duplicata de #{incidente.possivel_duplicata_de}</span>
+        </span>
+      )}
       {/* Texto, e não só a cor do fundo: o destaque precisa ser legível sem cor. */}
       {atrasado && (
         <span
@@ -510,6 +522,23 @@ function Detalhes({
         </dd>
         <dt className="text-texto-3">Origem</dt>
         <dd>{incidente.dispositivo ? incidente.dispositivo.nome : 'Registrado na central'}</dd>
+        {incidente.possivel_duplicata_de && (
+          <>
+            <dt className="text-texto-3">Duplicata?</dt>
+            <dd className="flex flex-col items-start gap-0.5">
+              <span>
+                Parece o mesmo problema de #{incidente.possivel_duplicata_de}, aberto pouco antes.
+              </span>
+              <button
+                type="button"
+                onClick={() => aoVerIncidente?.(incidente.possivel_duplicata_de!)}
+                className="cursor-pointer rounded-sm font-medium underline underline-offset-3 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+              >
+                Ver #{incidente.possivel_duplicata_de} na lista
+              </button>
+            </dd>
+          </>
+        )}
         {mesmaPlaca.length > 0 && (
           <>
             <dt className="text-texto-3">Mesma placa</dt>
