@@ -55,9 +55,14 @@ anônima ou em outro navegador e altere o mesmo incidente nas duas.
   plano, o título conta os novos ("(2) Logos").
 - **Ajuda dentro do app:** o botão "?" abre o guia "Como funciona a triagem", oferecido também
   no primeiro acesso, para usar o sistema sem instrução externa.
+- **Celular e tablet:** abaixo de 1024 px, cada incidente vira um cartão com as mesmas ações,
+  detalhes e avisos da linha da tabela, sem rolagem horizontal.
+- **Movimento com propósito:** as linhas deslizam até a nova posição quando a ordem muda, a ação
+  pendente brilha até o servidor confirmar e o tema troca num círculo a partir do botão. O
+  [mapa de animações](docs/mapa-motions.md) explica cada uma e o que ficou de fora.
 - **Modo claro e escuro** com transição suave, seguindo o sistema até o analista escolher. Os dois
   temas passam no contraste WCAG AA (verificado por teste automático).
-- **Acessibilidade:** navegação por teclado, foco visível, lista com semântica de tabela,
+- **Acessibilidade:** navegação por teclado, foco visível, lista com semântica de tabela (ou de lista, no celular),
   anúncios para leitor de tela e `prefers-reduced-motion` respeitado. Atalhos: `Ctrl+K` ou `/` levam à busca.
 
 ## Arquitetura
@@ -178,15 +183,16 @@ Postgres (o projeto usa a versão 17 localmente e o Postgres do Supabase em prod
 
 ```bash
 cd api && uv run pytest && uv run ruff check .        # 123 testes
-cd web && npm test && npm run lint && npm run build   # 269 testes
+cd web && npm test && npm run lint && npm run build   # 272 testes
 ```
 
 Os testes da API rodam num schema temporário, criado e apagado a cada execução.
 
-**Ponta a ponta (Playwright):** navegador de verdade contra a API e o Postgres de verdade, em 8
+**Ponta a ponta (Playwright):** navegador de verdade contra a API e o Postgres de verdade, em 9
 cenários — triagem e filtros, login, dois analistas no mesmo incidente (409), CRUD com dado
 inválido barrado, rollback com falha na escrita, desfazer e histórico, ingestão pelo caminhão
-aparecendo na triagem e paridade das regras entre a API rodando e o front.
+aparecendo na triagem, paridade das regras entre a API rodando e o front e a tela de celular
+(cartões, sem rolagem horizontal).
 
 ```bash
 docker compose up -d
@@ -265,5 +271,8 @@ erro e transições permitidas: [`docs/contrato-api.md`](docs/contrato-api.md).
 ## Próximos passos
 
 Ideias que ficaram fora do MVP estão na issue
-[#25](https://github.com/HeitorM50/logos-incidentes/issues/25), como testes ponta a ponta no CI
-e cartões no celular.
+[#25](https://github.com/HeitorM50/logos-incidentes/issues/25):
+
+- **Eventos em tempo real (SSE)** no lugar da leitura a cada 5 s, quando o número de analistas
+  justificar o custo.
+- **Sugestão de criticidade por IA** no formulário de criação, sempre confirmada pelo analista.
