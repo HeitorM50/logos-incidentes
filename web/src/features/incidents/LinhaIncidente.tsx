@@ -26,13 +26,16 @@ import { motivoEdicao } from './formulario'
 import { IconeCriticidade, IconeStatus } from './Icones'
 import { estaAtrasado, explicarAtraso } from './prazos'
 import { linkDoMapa, PROTOCOLOS } from './protocolos'
-import { tempoDoIncidente } from './tempo'
+import { tempoCurtoDoIncidente, tempoDoIncidente } from './tempo'
 import type { Conflito } from './useAcoesIncidente'
 
 // Mínimos somam 1.280 px com espaços: a tabela cabe sem rolagem lateral num notebook de 1366
 // px (com a margem da página e a barra de rolagem). Em telas maiores, título e local crescem.
+// O título é a coluna que cresce e quebra em até 2 linhas; local e categoria também quebram;
+// tempo, responsável e ações ficam estreitos. Mínimo de ~1.210 px: cabe numa tela de 1.280 px
+// sem rolagem lateral.
 export const COLUNAS_TABELA =
-  'grid-cols-[88px_minmax(160px,2fr)_160px_minmax(170px,1.4fr)_104px_136px_120px_232px]'
+  'grid-cols-[84px_minmax(220px,3fr)_136px_minmax(150px,1.2fr)_72px_132px_112px_212px]'
 
 const SELO: Record<Criticidade, string> = {
   alta: 'bg-alta-fundo text-alta-texto border-alta-borda font-bold',
@@ -243,22 +246,26 @@ export function LinhaIncidente({
     >
       {camadas}
       {/* relative: o conteúdo fica por cima das camadas de realce e de brilho. */}
-      <div role="row" className={cn('relative grid min-h-8 items-center gap-x-3', COLUNAS_TABELA)}>
+      <div role="row" className={cn('relative grid min-h-8 items-center gap-x-2.5', COLUNAS_TABELA)}>
         <span role="cell" className="justify-self-start">
           <Selo incidente={incidente} />
         </span>
 
-        <span role="cell" className="flex min-w-0 items-center gap-1.5">
+        <span role="cell" className="flex min-w-0 items-start gap-1.5">
           {botaoDetalhes}
-          <span className="flex-none font-mono text-xs text-texto-3">#{incidente.id}</span>
-          <Marcadores incidente={incidente} novo={novo} atrasado={atrasado} />
+          {/* Número, marcadores e título no mesmo fluxo de texto, em até 2 linhas: o título
+              aparece inteiro na maioria dos casos, e o title mostra o resto. */}
           <span
             title={incidente.titulo}
             className={cn(
-              'min-w-0 truncate text-sm',
+              'line-clamp-2 min-w-0 pt-[5px] text-sm leading-snug',
               incidente.criticidade === 'alta' ? 'font-semibold' : 'font-medium',
             )}
           >
+            <span className="mr-1.5 font-mono text-xs font-normal text-texto-3">
+              #{incidente.id}
+            </span>
+            <Marcadores incidente={incidente} novo={novo} atrasado={atrasado} />
             {incidente.titulo}
           </span>
         </span>
@@ -267,7 +274,7 @@ export function LinhaIncidente({
           {ROTULO_CATEGORIA[incidente.categoria]}
         </span>
 
-        <span role="cell" title={incidente.local} className="truncate text-[13px]">
+        <span role="cell" title={incidente.local} className="line-clamp-2 text-[13px] leading-tight">
           {incidente.local}
         </span>
 
@@ -276,7 +283,8 @@ export function LinhaIncidente({
           title={fechado ? 'Quanto ficou aberto até fechar' : undefined}
           className="font-mono text-[13px] whitespace-nowrap"
         >
-          {tempoDoIncidente(incidente, agora)}
+          <span aria-hidden>{tempoCurtoDoIncidente(incidente, agora)}</span>
+          <span className="sr-only">{tempoDoIncidente(incidente, agora)}</span>
         </span>
 
         <span role="cell">
@@ -334,7 +342,7 @@ function Marcadores({ incidente, novo, atrasado }: PropsMarcadores) {
     <>
       {/* Chegou sozinho, pelo rastreador: o analista distingue do que a central registrou. */}
       {incidente.dispositivo && (
-        <span className="flex-none">
+        <span className="mr-1.5 inline-block align-[-2px]">
           <Truck aria-hidden className="size-3.5 text-texto-3" />
           <span className="sr-only">Enviado por {incidente.dispositivo.nome}</span>
         </span>
@@ -342,7 +350,7 @@ function Marcadores({ incidente, novo, atrasado }: PropsMarcadores) {
       {incidente.possivel_duplicata_de && (
         <span
           title={`Mesma placa, ou mesmo local e categoria, de #${incidente.possivel_duplicata_de} aberto pouco antes`}
-          className="inline-flex flex-none items-center gap-1 rounded-sm border border-info-borda bg-info-fundo px-1 py-px text-[10px] font-bold tracking-[0.06em] text-info-texto uppercase"
+          className="mr-1.5 inline-flex flex-none align-[1px] items-center gap-1 rounded-sm border border-info-borda bg-info-fundo px-1 py-px text-[10px] font-bold tracking-[0.06em] text-info-texto uppercase"
         >
           <Copy aria-hidden className="size-3" />
           {/* Curto na linha (o título precisa de espaço); completo para o leitor de tela. */}
@@ -354,14 +362,14 @@ function Marcadores({ incidente, novo, atrasado }: PropsMarcadores) {
       {atrasado && (
         <span
           title={explicarAtraso(incidente)}
-          className="inline-flex flex-none items-center gap-1 rounded-sm border border-erro-borda bg-erro-fundo px-1 py-px text-[10px] font-bold tracking-[0.06em] text-erro-texto uppercase"
+          className="mr-1.5 inline-flex flex-none align-[1px] items-center gap-1 rounded-sm border border-erro-borda bg-erro-fundo px-1 py-px text-[10px] font-bold tracking-[0.06em] text-erro-texto uppercase"
         >
           <AlarmClock aria-hidden className="size-3" />
           Atrasado
         </span>
       )}
       {novo && (
-        <span className="flex-none rounded-sm bg-alta-fundo px-1.5 py-px text-[10px] font-bold tracking-[0.06em] text-alta-texto uppercase">
+        <span className="mr-1.5 inline-block flex-none rounded-sm bg-alta-fundo px-1.5 py-px align-[1px] text-[10px] font-bold tracking-[0.06em] text-alta-texto uppercase">
           Novo
         </span>
       )}

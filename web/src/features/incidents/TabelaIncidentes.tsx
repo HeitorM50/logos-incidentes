@@ -20,9 +20,9 @@ const CABECALHOS = [
 
 // Larguras fixas por linha: o esqueleto parece uma tabela de verdade, sem pular de tamanho.
 const LARGURAS_ESQUELETO = [
-  ['60%', '78%', '70%', '82%', '64%', '72%', '58%', '180px'],
-  ['56%', '64%', '84%', '66%', '70%', '60%', '74%', '180px'],
-  ['64%', '88%', '62%', '74%', '58%', '80%', '52%', '180px'],
+  ['60%', '78%', '70%', '82%', '64%', '72%', '58%', '170px'],
+  ['56%', '64%', '84%', '66%', '70%', '60%', '74%', '170px'],
+  ['64%', '88%', '62%', '74%', '58%', '80%', '52%', '170px'],
 ]
 
 /** Cabeçalho fixo no topo ao rolar. O grupo (e não a linha) é sticky: o pai dele é a tabela. */
@@ -35,7 +35,7 @@ function CabecalhoTabela() {
       <div
         role="row"
         className={cn(
-          'grid h-9 items-center gap-x-3 px-3 text-[11.5px] font-semibold tracking-[0.05em] text-texto-3 uppercase',
+          'grid min-h-9 items-center gap-x-2.5 px-3 py-1 text-[11.5px] leading-tight font-semibold tracking-[0.05em] text-texto-3 uppercase',
           COLUNAS_TABELA,
         )}
       >
@@ -63,7 +63,7 @@ function Barra({ largura, className }: { largura: string; className?: string }) 
 export function TabelaCarregando() {
   const celular = useEhCelular()
   return (
-    <div aria-hidden className={cn('relative', !celular && 'min-w-[1280px]')}>
+    <div aria-hidden className={cn('relative', !celular && 'min-w-[1210px]')}>
       {celular ? (
         <div className="flex flex-col gap-2 p-2">
           {Array.from({ length: 5 }, (_, cartao) => {
@@ -93,7 +93,7 @@ export function TabelaCarregando() {
             {Array.from({ length: 12 }, (_, linha) => (
               <div
                 key={linha}
-                className={cn('grid h-11 items-center gap-x-3 border-b px-3', COLUNAS_TABELA)}
+                className={cn('grid h-11 items-center gap-x-2.5 px-3', COLUNAS_TABELA)}
               >
                 {LARGURAS_ESQUELETO[linha % 3].map((largura, coluna) => (
                   <Barra key={coluna} largura={largura} />
@@ -237,7 +237,7 @@ export function TabelaIncidentes({
 
   return (
     // Tabela em ARIA sobre a grade: o leitor de tela anuncia o cabeçalho de cada coluna.
-    <div role="table" aria-label="Incidentes" className="min-w-[1280px]">
+    <div role="table" aria-label="Incidentes" className="min-w-[1210px]">
       <CabecalhoTabela />
       {/* A ordem vem da API: não fechados, criticidade (alta → baixa), mais antigo primeiro. */}
       <div ref={grupo} role="rowgroup" className={cascata} onKeyDown={andarComSetas}>
