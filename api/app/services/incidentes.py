@@ -230,7 +230,11 @@ def assumir(
 
 
 def liberar(
-    sessao: Session, incidente_id: int, versao_lida: int, analista_id: int
+    sessao: Session,
+    incidente_id: int,
+    versao_lida: int,
+    analista_id: int,
+    comentario: str | None = None,
 ) -> IncidenteResposta:
     incidente = _buscar(sessao, incidente_id)
     _exigir_versao_atual(sessao, incidente, versao_lida)
@@ -247,6 +251,7 @@ def liberar(
             tipo=TipoEvento.LIBERADO,
             status_anterior=incidente.status,
             status_novo=status_apos_liberar(incidente.status),
+            comentario=comentario,
         ),
     )
 
@@ -257,6 +262,7 @@ def mudar_status(
     versao_lida: int,
     novo_status: StatusIncidente,
     analista_id: int,
+    comentario: str | None = None,
 ) -> IncidenteResposta:
     incidente = _buscar(sessao, incidente_id)
     _exigir_versao_atual(sessao, incidente, versao_lida)
@@ -277,7 +283,10 @@ def mudar_status(
         analista_id,
         {"status": novo_status},
         EventoIncidente(
-            tipo=TipoEvento.STATUS, status_anterior=incidente.status, status_novo=novo_status
+            tipo=TipoEvento.STATUS,
+            status_anterior=incidente.status,
+            status_novo=novo_status,
+            comentario=comentario,
         ),
     )
 

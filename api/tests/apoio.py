@@ -14,6 +14,9 @@ def criar_incidente(cliente: TestClient, **sobrescrever) -> dict:
 
 
 def acao(cliente: TestClient, incidente: dict, nome: str, **corpo):
+    # Fechado e inconclusivo exigem comentário; os testes que não tratam disso usam um padrão.
+    if nome == "status" and corpo.get("status") in ("fechado", "inconclusivo"):
+        corpo.setdefault("comentario", "Registrado pelo teste")
     return cliente.post(
         f"/incidentes/{incidente['id']}/{nome}", json={"versao": incidente["versao"]} | corpo
     )

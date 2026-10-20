@@ -13,6 +13,7 @@ from pydantic import (
 )
 
 from app.core.dominio import Categoria, Criticidade, StatusIncidente, TipoEvento
+from app.services.ciclo_vida import EXIGE_COMENTARIO
 
 # Placa no padrão antigo (ABC1234) ou Mercosul (ABC1D23).
 PADRAO_PLACA = re.compile(r"^[A-Z]{3}[0-9][A-Z0-9][0-9]{2}$")
@@ -37,6 +38,8 @@ Descricao = Annotated[str, StringConstraints(strip_whitespace=True, max_length=2
 Local = Annotated[
     str, StringConstraints(strip_whitespace=True, min_length=3, max_length=160), TextoSeguro
 ]
+Comentario = Annotated[str, StringConstraints(strip_whitespace=True, max_length=500), TextoSeguro]
+MINIMO_COMENTARIO = 3
 Versao = Annotated[
     int, Field(ge=1, le=MAXIMO_INTEGER, description="Versão do incidente que o cliente leu")
 ]
@@ -99,9 +102,38 @@ class VersaoLida(EntradaEstrita):
     versao: Versao
 
 
+def _comentario_ou_nulo(valor: str | None) -> str | None:
+    # Só espaços é o mesmo que não comentar.
+    return valor or None
+
+
+class LiberarIncidente(EntradaEstrita):
+    versao: Versao
+    comentario: Comentario | None = Field(
+        default=None, description="Contexto para o próximo analista (opcional)"
+    )
+
+    _comentario = field_validator("comentario")(_comentario_ou_nulo)
+
+
 class MudarStatus(EntradaEstrita):
     versao: Versao
     status: StatusIncidente
+    comentario: Comentario | None = Field(
+        default=None,
+        description="Obrigatório para fechado e inconclusivo: como resolveu ou por que parou",
+    )
+
+    _comentario = field_validator("comentario")(_comentario_ou_nulo)
+
+    @model_validator(mode="after")
+    def exigir_comentario(self):
+        if self.status in EXIGE_COMENTARIO and len(self.comentario or "") < MINIMO_COMENTARIO:
+            raise ValueError(
+                f"comentário obrigatório para {self.status.value} "
+                f"(mínimo de {MINIMO_COMENTARIO} caracteres)"
+            )
+        return self
 
 
 class AnalistaResumo(BaseModel):
@@ -162,4 +194,5 @@ class EventoResposta(BaseModel):
     status_anterior: StatusIncidente | None
     status_novo: StatusIncidente | None
     campos: list[str] | None
+    comentario: str | None
     criado_em: datetime

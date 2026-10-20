@@ -12,8 +12,13 @@ import json
 from typing import Any
 
 from app.core.dominio import StatusIncidente
-from app.schemas.incidente import PADRAO_PLACA, IncidenteCriar
-from app.services.ciclo_vida import PODE_ASSUMIR, TRANSICOES_DO_RESPONSAVEL, status_apos_liberar
+from app.schemas.incidente import MINIMO_COMENTARIO, PADRAO_PLACA, IncidenteCriar, MudarStatus
+from app.services.ciclo_vida import (
+    EXIGE_COMENTARIO,
+    PODE_ASSUMIR,
+    TRANSICOES_DO_RESPONSAVEL,
+    status_apos_liberar,
+)
 
 ORDEM = list(StatusIncidente)
 
@@ -22,9 +27,9 @@ def _em_ordem(status: frozenset[StatusIncidente]) -> list[str]:
     return [s.value for s in ORDEM if s in status]
 
 
-def _limites(campo: str) -> dict[str, int]:
+def _limites(campo: str, modelo=IncidenteCriar) -> dict[str, int]:
     """minLength/maxLength do campo no schema Pydantic (também dentro de anyOf com null)."""
-    esquema = IncidenteCriar.model_json_schema()["properties"][campo]
+    esquema = modelo.model_json_schema()["properties"][campo]
     texto = next(opcao for opcao in esquema.get("anyOf", [esquema]) if "maxLength" in opcao)
     limites = {"max": texto["maxLength"]}
     if "minLength" in texto:
@@ -48,6 +53,11 @@ def regras() -> dict[str, Any]:
         ],
         "limites": {campo: _limites(campo) for campo in ("titulo", "descricao", "local")},
         "padrao_placa": PADRAO_PLACA.pattern,
+        "comentario": {
+            **_limites("comentario", MudarStatus),
+            "min": MINIMO_COMENTARIO,
+            "obrigatorio_para": _em_ordem(EXIGE_COMENTARIO),
+        },
     }
 
 

@@ -13,6 +13,10 @@ TRANSICOES_DO_RESPONSAVEL: dict[S, frozenset[S]] = {
     S.INCONCLUSIVO: frozenset({S.EM_INVESTIGACAO, S.FECHADO}),
 }
 
+# Status que pedem comentário: como o incidente foi resolvido, ou por que ficou inconclusivo.
+# Sem ele, o histórico diz que o incidente fechou, mas não diz por quê.
+EXIGE_COMENTARIO: frozenset[S] = frozenset({S.INCONCLUSIVO, S.FECHADO})
+
 # Status a partir dos quais um analista pode assumir o incidente.
 PODE_ASSUMIR: frozenset[S] = frozenset({S.ABERTO, S.INCONCLUSIVO})
 

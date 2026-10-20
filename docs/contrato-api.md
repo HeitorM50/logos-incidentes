@@ -86,6 +86,10 @@ por status e ordenada por criticidade e tempo aberto.
   - `em_investigacao` → `inconclusivo` ou `fechado`
   - `inconclusivo` → `em_investigacao` ou `fechado`
 - **Liberar** — só o responsável: remove o responsável; `em_investigacao` volta para `aberto`.
+- **Comentário:** fechar e marcar inconclusivo exigem `comentario` (3 a 500 caracteres): como o
+  incidente foi resolvido, ou por que a investigação parou. Liberar aceita um comentário opcional
+  para o próximo analista. O comentário vai para o evento do histórico (`GET .../eventos`). Sem
+  ele, a API responde 422.
 - **Fechado** é final: não aceita edição, mudança de status, assumir, liberar nem remoção. O
   incidente fechado é registro histórico da operação; só se remove o que ainda está em andamento.
 - **Editar e remover:** qualquer analista se não houver responsável; senão, só o responsável.
@@ -102,11 +106,11 @@ por status e ordenada por criticidade e tempo aberto.
 | `POST /incidentes` | `{titulo, descricao?, categoria, criticidade, local, placa?}` | 201 `Incidente` | 401, 422 |
 | `PATCH /incidentes/{id}` | `{versao, titulo?, descricao?, categoria?, criticidade?, local?, placa?}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
 | `POST /incidentes/{id}/assumir` | `{versao}` | 200 `Incidente` | 401, 404, 409, 422 |
-| `POST /incidentes/{id}/liberar` | `{versao}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
-| `POST /incidentes/{id}/status` | `{versao, status}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
+| `POST /incidentes/{id}/liberar` | `{versao, comentario?}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
+| `POST /incidentes/{id}/status` | `{versao, status, comentario?}` | 200 `Incidente` | 401, 403, 404, 409, 422 |
 | `DELETE /incidentes/{id}?versao=N` | — | 204 | 401, 403, 404, 409, 422 |
 | `GET /incidentes/{id}/eventos` | — | 200 `[Evento]`, do mais antigo ao mais novo | 401, 404 |
-| `GET /regras` | — | 200 transições, `pode_assumir`, `status_apos_liberar`, `status_final`, limites dos campos e padrão da placa (público, sem dados) | — |
+| `GET /regras` | — | 200 transições, `pode_assumir`, `status_apos_liberar`, `status_final`, limites dos campos, padrão da placa e regra do comentário (público, sem dados) | — |
 | `POST /ingestao/incidentes` | cabeçalhos `X-Chave-Dispositivo` e `Idempotency-Key`; corpo igual ao `POST /incidentes` | 201 `Incidente` (novo) · 200 (reenvio, `Idempotent-Replayed: true`) | 401, 409 `ja_recebido`, 422 (inclui `chave_reutilizada`), 429 (por IP ou `cota_do_dispositivo`) |
 
 **`ListaIncidentes`**

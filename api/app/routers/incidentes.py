@@ -12,6 +12,7 @@ from app.schemas.incidente import (
     IncidenteCriar,
     IncidenteEditar,
     IncidenteResposta,
+    LiberarIncidente,
     ListaIncidentes,
     MudarStatus,
     VersaoLida,
@@ -108,9 +109,12 @@ def assumir_incidente(
     summary="Libera o incidente para outro analista",
 )
 def liberar_incidente(
-    incidente_id: IdIncidente, dados: VersaoLida, sessao: SessaoDep, analista: AnalistaAtualDep
+    incidente_id: IdIncidente,
+    dados: LiberarIncidente,
+    sessao: SessaoDep,
+    analista: AnalistaAtualDep,
 ):
-    return servico.liberar(sessao, incidente_id, dados.versao, analista.id)
+    return servico.liberar(sessao, incidente_id, dados.versao, analista.id, dados.comentario)
 
 
 @router.post(
@@ -121,4 +125,6 @@ def liberar_incidente(
 def mudar_status_incidente(
     incidente_id: IdIncidente, dados: MudarStatus, sessao: SessaoDep, analista: AnalistaAtualDep
 ):
-    return servico.mudar_status(sessao, incidente_id, dados.versao, dados.status, analista.id)
+    return servico.mudar_status(
+        sessao, incidente_id, dados.versao, dados.status, analista.id, dados.comentario
+    )

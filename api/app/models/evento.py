@@ -39,6 +39,9 @@ class EventoIncidente(Base):
     )
     # Campos alterados numa edição (ex.: ["titulo", "local"]).
     campos: Mapped[list[str] | None] = mapped_column(ARRAY(String(20)))
+    # Comentário do analista: como resolveu (fechado), por que ficou inconclusivo ou o contexto
+    # para o próximo analista (liberar).
+    comentario: Mapped[str | None] = mapped_column(String(500))
     criado_em: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
     analista: Mapped[Analista | None] = relationship()
