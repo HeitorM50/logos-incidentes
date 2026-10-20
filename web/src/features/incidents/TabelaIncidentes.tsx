@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import type { Incidente } from '@/api/tipos'
 import { LogosLoader } from '@/components/LogosLoader'
+import { useFlipLinhas } from '@/lib/useFlipLinhas'
 import { cn } from '@/lib/utils'
 import { COLUNAS_TABELA, LinhaIncidente } from './LinhaIncidente'
 import type { AcoesIncidente, Conflito } from './useAcoesIncidente'
@@ -111,6 +112,8 @@ export function TabelaIncidentes({
   const [abertas, setAbertas] = useState<ReadonlySet<number>>(() => new Set())
   // As primeiras linhas entram em cascata só quando a tabela aparece; linhas que chegam depois
   // (filtro, leitura de 5 s) entram sem coreografia.
+  const grupo = useRef<HTMLDivElement>(null)
+  useFlipLinhas(grupo, ':scope > [data-incidente]')
   const [primeiraPintura, setPrimeiraPintura] = useState(true)
   useEffect(() => {
     const id = setTimeout(() => setPrimeiraPintura(false), 900)
@@ -131,7 +134,11 @@ export function TabelaIncidentes({
     <div role="table" aria-label="Incidentes" className="min-w-[1280px]">
       <CabecalhoTabela />
       {/* A ordem vem da API: não fechados, criticidade (alta → baixa), mais antigo primeiro. */}
-      <div role="rowgroup" className={cn(primeiraPintura && 'cascata [--cascata-passo:20ms]')}>
+      <div
+        ref={grupo}
+        role="rowgroup"
+        className={cn(primeiraPintura && 'cascata [--cascata-passo:20ms]')}
+      >
         {itens.map((incidente) => (
           <LinhaIncidente
             key={incidente.id}
