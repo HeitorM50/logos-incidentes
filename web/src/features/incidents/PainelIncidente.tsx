@@ -172,11 +172,28 @@ function Formulario({
   // Salvou: o botão mostra "✓ Salvo" por meio segundo e só então o painel fecha (o analista
   // vê a confirmação no lugar onde clicou). Com menos movimento, fecha na hora.
   const [salvo, setSalvo] = useState(false)
+  const conclusao = useRef<{ timer: ReturnType<typeof setTimeout>; concluir: () => void } | null>(
+    null,
+  )
   function concluirComConfirmacao(concluido: Concluido) {
     setSalvo(true)
     const semMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    setTimeout(() => aoConcluir(concluido), semMovimento ? 0 : 500)
+    const concluir = () => {
+      conclusao.current = null
+      aoConcluir(concluido)
+    }
+    conclusao.current = { timer: setTimeout(concluir, semMovimento ? 0 : 500), concluir }
   }
+  // Painel fechado durante o "Salvo" (Esc, X, saída): conclui na hora, sem perder o aviso.
+  useEffect(
+    () => () => {
+      const pendente = conclusao.current
+      if (!pendente) return
+      clearTimeout(pendente.timer)
+      pendente.concluir()
+    },
+    [],
+  )
 
   const refs = useRef<Partial<Record<Alvo, HTMLElement | null>>>({})
   const prefixo = useId()
@@ -199,7 +216,8 @@ function Formulario({
   const bloqueado = removido || motivo !== null || mudouFora.length > 0
   const sujo = editando ? minhas.length > 0 : CAMPOS.some((c) => valores[c] !== FORMULARIO_VAZIO[c])
 
-  useEffect(() => aoMudarSujo(sujo), [sujo, aoMudarSujo])
+  // Já salvo: nada a descartar (Esc fecha direto, sem a pergunta de descarte).
+  useEffect(() => aoMudarSujo(sujo && !salvo), [sujo, salvo, aoMudarSujo])
   useEffect(() => {
     if (pedirDescarte) refs.current.continuar?.focus()
   }, [pedirDescarte])

@@ -44,6 +44,9 @@ export interface Origem {
 }
 
 const DURACAO_CIRCULO_MS = 500
+// Troca em andamento: um segundo clique pula a primeira, e só a última pode religar as
+// transições de cor no fim (senão a primeira as religaria no meio da segunda).
+let transicaoAtiva: ViewTransition | null = null
 
 /**
  * Troca em círculo crescendo a partir do botão (View Transitions API). O navegador tira uma
@@ -54,6 +57,7 @@ function revelarEmCirculo(tema: Tema, { x, y }: Origem): boolean {
   const semMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
   if (semMovimento || typeof document.startViewTransition !== 'function') return false
   const raiz = document.documentElement
+  transicaoAtiva?.skipTransition()
   const transicao = document.startViewTransition(() => {
     // A View Transition já mistura as duas telas: as transições de cor de cada componente
     // atrasariam o texto em relação ao fundo (contraste baixo por um instante).
@@ -76,7 +80,12 @@ function revelarEmCirculo(tema: Tema, { x, y }: Origem): boolean {
       )
     })
     .catch(() => {}) // transição pulada (ex.: outra começou): o tema já foi aplicado
-  transicao.finished.finally(() => raiz.classList.remove('tema-instantaneo'))
+  transicaoAtiva = transicao
+  transicao.finished.finally(() => {
+    if (transicaoAtiva !== transicao) return
+    transicaoAtiva = null
+    raiz.classList.remove('tema-instantaneo')
+  })
   return true
 }
 

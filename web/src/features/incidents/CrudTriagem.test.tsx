@@ -151,6 +151,29 @@ describe('TelaTriagem — criar', () => {
   })
 })
 
+describe('TelaTriagem — Salvo', () => {
+  it('Esc durante o "✓ Salvo" fecha sem perguntar e não perde a confirmação', async () => {
+    const servidor = simularServidor([])
+    const criado = incidente({ id: 101, titulo: 'Pane elétrica' })
+    servidor.responder = async () => respostaJson(201, criado)
+    renderizar()
+    await userEvent.click(await screen.findByRole('button', { name: 'Novo incidente' }))
+    const painel = await screen.findByRole('dialog', { name: 'Novo incidente' })
+    await userEvent.type(within(painel).getByLabelText(/Título/), 'Pane elétrica')
+    await userEvent.selectOptions(within(painel).getByLabelText(/Categoria/), 'problema_mecanico')
+    await userEvent.click(within(painel).getByRole('radio', { name: 'Baixa' }))
+    await userEvent.type(within(painel).getByLabelText(/Local/), 'Pátio')
+    await userEvent.click(within(painel).getByRole('button', { name: 'Criar incidente' }))
+    await within(painel).findByText('Salvo')
+
+    await userEvent.keyboard('{Escape}')
+
+    expect(screen.queryByText('Descartar o que você digitou?')).toBeNull()
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    expect(anuncioSucesso()).toHaveTextContent('Incidente #101 criado.')
+  })
+})
+
 describe('TelaTriagem — editar', () => {
   it('envia só o campo alterado com a versão lida', async () => {
     const original = incidente({ id: 7, versao: 4, titulo: 'Pneu estourado' })

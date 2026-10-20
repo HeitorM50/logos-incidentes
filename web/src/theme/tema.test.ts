@@ -81,5 +81,38 @@ describe('tema', () => {
     expect(document.documentElement).toHaveClass('tema-em-transicao')
     vi.unstubAllGlobals()
   })
+
+  it('duas trocas seguidas: só a última religa as transições de cor', async () => {
+    document.documentElement.animate = vi.fn()
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    const fins: (() => void)[] = []
+    const pular = vi.fn()
+    Object.defineProperty(document, 'startViewTransition', {
+      configurable: true,
+      value: (cb: () => unknown) => {
+        cb()
+        let terminar!: () => void
+        const finished = new Promise<void>((r) => (terminar = r))
+        fins.push(terminar)
+        return { ready: Promise.resolve(), finished, skipTransition: pular }
+      },
+    })
+
+    definirTema('escuro', { x: 0, y: 0 })
+    definirTema('claro', { x: 0, y: 0 })
+    expect(pular).toHaveBeenCalledOnce() // a primeira foi pulada
+
+    fins[0]() // a primeira termina enquanto a segunda ainda roda
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(document.documentElement).toHaveClass('tema-instantaneo')
+
+    fins[1]()
+    await Promise.resolve()
+    await Promise.resolve()
+    expect(document.documentElement).not.toHaveClass('tema-instantaneo')
+    Object.defineProperty(document, 'startViewTransition', { configurable: true, value: undefined })
+    vi.unstubAllGlobals()
+  })
 })
 

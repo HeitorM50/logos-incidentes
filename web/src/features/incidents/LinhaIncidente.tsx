@@ -76,7 +76,8 @@ export function LinhaIncidente({
       role="none"
       data-incidente={incidente.id}
       className={cn(
-        'relative border-b px-3 py-1.5 last:border-b-0',
+        // scroll-mt-9: ao rolar até a linha (setas ↑↓), ela não fica sob o cabeçalho fixo.
+        'relative scroll-mt-9 border-b px-3 py-1.5 last:border-b-0',
         conflito ? 'bg-info-fundo' : pendente ? 'bg-linha-pendente' : 'bg-card',
         fechado && 'text-texto-3',
         // Alta novo: a linha entra deslizando.

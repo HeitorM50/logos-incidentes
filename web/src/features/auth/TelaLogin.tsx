@@ -92,16 +92,18 @@ export function TelaLogin({ aoEntrar }: Props) {
       </header>
 
       <main className="relative flex flex-1 items-center justify-center px-4 pt-4 pb-12">
-        <div className="flex w-full max-w-[420px] cascata flex-col gap-4 [--cascata-inicio:200ms]">
-          <div
-            onAnimationEnd={(evento) => {
-              if (evento.target === evento.currentTarget) setTremer(false)
-            }}
-            className={cn(
-              'flex cascata flex-col gap-6 rounded-lg border bg-card p-6 shadow-[0_10px_40px_-12px_rgb(0_0_0/0.25)] [--cascata-inicio:260ms] sm:p-8',
-              tremer && 'animate-tremer',
-            )}
-          >
+        {/* A tremida do erro fica nesta coluna, que não é filha de uma cascata: se ficasse no
+            cartão, o fim da tremida devolveria a animação de entrada e o cartão sumiria. */}
+        <div
+          onAnimationEnd={(evento) => {
+            if (evento.target === evento.currentTarget) setTremer(false)
+          }}
+          className={cn(
+            'flex w-full max-w-[420px] cascata flex-col gap-4 [--cascata-inicio:200ms]',
+            tremer && 'animate-tremer',
+          )}
+        >
+          <div className="flex cascata flex-col gap-6 rounded-lg border bg-card p-6 shadow-[0_10px_40px_-12px_rgb(0_0_0/0.25)] [--cascata-inicio:260ms] sm:p-8">
             <div className="flex flex-col gap-1.5">
               <h1 className="text-2xl font-semibold tracking-[-0.01em]">Entrar na central</h1>
               <p className="text-sm leading-normal text-texto-2">

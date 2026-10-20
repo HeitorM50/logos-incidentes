@@ -87,6 +87,8 @@ describe('TelaLogin', () => {
     const titulo = screen.getByRole('heading', { name: 'Entrar na central' })
     const cartao = titulo.closest('.animate-tremer')
     expect(cartao).not.toBeNull()
+    // Quem treme não pode ser filho de uma cascata: ao parar, a entrada recomeçaria.
+    expect(cartao!.parentElement).not.toHaveClass('cascata')
 
     // O jsdom não tem AnimationEvent, e o React escuta a versão prefixada do fim da animação.
     fireEvent(cartao!, new Event('webkitAnimationEnd', { bubbles: true }))

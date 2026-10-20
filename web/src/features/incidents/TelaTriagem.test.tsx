@@ -179,6 +179,10 @@ describe('TelaTriagem', () => {
     expect(screen.getByText('Ao vivo')).toBeInTheDocument()
     // A queda termina com um estado positivo, que some sozinho.
     expect(screen.getByText('Conexão restabelecida.')).toBeInTheDocument()
+    // O leitor de tela ouve a volta por uma região fixa (a faixa visível entra já com texto).
+    expect(
+      screen.getByText('Conexão restabelecida. A lista está ao vivo de novo.'),
+    ).toHaveAttribute('role', 'status')
     await act(() => vi.advanceTimersByTimeAsync(2_500))
     expect(screen.queryByText('Conexão restabelecida.')).not.toBeInTheDocument()
   })

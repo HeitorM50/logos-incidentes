@@ -406,6 +406,10 @@ export function TelaTriagem({ analista, aoSair }: Props) {
       <p role="status" className="sr-only">
         {altaNova.anuncio}
       </p>
+      {/* A faixa visível de reconexão entra já com texto: o anúncio sai desta região fixa. */}
+      <p role="status" className="sr-only">
+        {reconectou ? 'Conexão restabelecida. A lista está ao vivo de novo.' : ''}
+      </p>
       <GuiaTriagem aberto={guia.aberto} aoMudar={guia.setAberto} />
       <PainelIncidente
         modo={painel}

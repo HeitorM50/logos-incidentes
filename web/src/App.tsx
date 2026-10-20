@@ -8,7 +8,8 @@ import { TelaTriagem } from '@/features/incidents/TelaTriagem'
 
 // A abertura dura um ciclo completo do loader (2 s) e some em 300 ms.
 const DURACAO_ABERTURA_MS = 2_000
-const DURACAO_SAIDA_ABERTURA_MS = 300
+// 300 ms de saída + 80 ms de folga: o loader termina o voo até a marca antes de desmontar.
+const DURACAO_SAIDA_ABERTURA_MS = 380
 
 type FaseAbertura = 'oculta' | 'visivel' | 'saindo'
 
