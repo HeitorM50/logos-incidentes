@@ -83,7 +83,7 @@ describe('TelaTriagem', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Ver detalhes de #4' }))
 
-    const detalhes = screen.getByRole('region', { name: 'Detalhes de #4' })
+    const detalhes = screen.getByRole('group', { name: 'Detalhes de #4' })
     expect(detalhes).toHaveTextContent('Carreta parada')
     expect(detalhes).toHaveTextContent('RTA4E21')
   })
@@ -430,4 +430,14 @@ describe('TelaTriagem — guia', () => {
     await userEvent.click(screen.getByRole('button', { name: 'Como funciona a triagem' }))
     expect(await screen.findByRole('dialog', { name: 'Como funciona a triagem' })).toBeVisible()
   })
+
+  it('dispensar a dica leva o foco ao botão de ajuda', async () => {
+    localStorage.clear()
+    simularLista(async () => respostaJson(200, lista([incidente({ id: 1 })])))
+    renderizar()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Dispensar a dica' }))
+    expect(screen.getByRole('button', { name: 'Como funciona a triagem' })).toHaveFocus()
+  })
 })
+

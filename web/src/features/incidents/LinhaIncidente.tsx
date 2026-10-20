@@ -190,8 +190,9 @@ export function LinhaIncidente({
       {aberta && (
         <div role="row">
           <div role="cell" aria-colspan={8}>
-            <section
+            <div
               id={idDetalhes}
+              role="group"
               aria-label={`Detalhes de #${incidente.id}`}
               className="col-span-full mt-1.5 mb-2 grid gap-x-8 gap-y-3 rounded-md border bg-superficie-2 px-4 py-3 text-[13px] sm:grid-cols-[2fr_1fr_1fr]"
             >
@@ -241,7 +242,7 @@ export function LinhaIncidente({
                   Remover
                 </BotaoComMotivo>
               </div>
-            </section>
+            </div>
           </div>
         </div>
       )}

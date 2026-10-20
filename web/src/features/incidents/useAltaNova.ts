@@ -1,14 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Incidente } from '@/api/tipos'
 
 // Gestão por exceção: um incidente Alta novo entra no fim do grupo Alta (o mais antigo vem
 // primeiro) e pode ficar fora da tela. Este hook compara cada leitura com a anterior e aponta
 // os Alta que apareceram — incidente novo ou que subiu para Alta —, para a tela avisar.
+//
+// Recebe a lista CONFIRMADA pela API, sem a atualização otimista por cima: senão, fechar um
+// Alta e ver a ação falhar faria ele "reaparecer" como Alta novo.
 
 export const DURACAO_DESTAQUE_MS = 15_000
 
 export interface AvisoAltaNova {
-  /** Ids na ordem em que chegaram; o primeiro é o alvo do botão "Ver". */
+  /** Ids na ordem em que chegaram, só os ainda Alta ativos; o primeiro é o alvo do "Ver". */
   ids: number[]
   /** Título do primeiro, para o texto do aviso. */
   titulo: string
@@ -33,8 +36,11 @@ export function useAltaNova(
   // Alta ativos da leitura anterior; null até a primeira leitura (que nunca gera aviso).
   const conhecidos = useRef<Set<number> | null>(null)
   const [destaques, setDestaques] = useState<ReadonlySet<number>>(() => new Set())
-  const [aviso, setAviso] = useState<AvisoAltaNova | null>(null)
+  const [idsAviso, setIdsAviso] = useState<number[]>([])
   const [anuncio, setAnuncio] = useState('')
+  // O anúncio é limpo depois de alguns segundos: o mesmo texto repetido mais tarde (ex.: o
+  // mesmo incidente voltando a Alta) precisa mudar a região viva para ser lido de novo.
+  const limparAnuncio = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   // Alta novos que chegaram com a aba em segundo plano: vão para o título da aba.
   const [naoVistos, setNaoVistos] = useState(0)
   // Um temporizador por leitura com novidade. Fora do efeito: a próxima leitura (5 s depois)
@@ -42,7 +48,10 @@ export function useAltaNova(
   const temporizadores = useRef(new Set<ReturnType<typeof setTimeout>>())
   useEffect(() => {
     const ativos = temporizadores.current
-    return () => ativos.forEach(clearTimeout)
+    return () => {
+      ativos.forEach(clearTimeout)
+      clearTimeout(limparAnuncio.current)
+    }
   }, [])
 
   useEffect(() => {
@@ -59,10 +68,9 @@ export function useAltaNova(
 
     const ids = novos.map((i) => i.id)
     setDestaques((atual) => new Set([...atual, ...ids]))
-    setAviso((atual) => {
-      const todos = [...(atual?.ids ?? []), ...ids.filter((id) => !atual?.ids.includes(id))]
-      return { ids: todos, titulo: atual?.titulo ?? novos[0].titulo }
-    })
+    setIdsAviso((atual) => [...atual, ...ids.filter((id) => !atual.includes(id))])
+    clearTimeout(limparAnuncio.current)
+    limparAnuncio.current = setTimeout(() => setAnuncio(''), 7_000)
     setAnuncio(
       novos.length === 1
         ? `Novo incidente Alta: #${novos[0].id}, ${novos[0].titulo}.`
@@ -96,7 +104,20 @@ export function useAltaNova(
     }
   }, [tituloBase])
 
-  const dispensar = useCallback(() => setAviso(null), [])
+  // O aviso mostra só quem ainda é Alta ativo: um incidente fechado ou removido depois de
+  // chegar não tem mais o que "Ver".
+  const aviso = useMemo<AvisoAltaNova | null>(() => {
+    if (!itens || idsAviso.length === 0) return null
+    const ativos = altaAtivos(itens)
+    const ids = idsAviso.filter((id) => ativos.has(id))
+    const primeiro = itens.find((i) => i.id === ids[0])
+    return primeiro ? { ids, titulo: primeiro.titulo } : null
+  }, [itens, idsAviso])
+
+  /** Sem id, fecha o aviso; com id, tira só esse incidente (o "Ver" passa para o próximo). */
+  const dispensar = useCallback((id?: number) => {
+    setIdsAviso((atual) => (id === undefined ? [] : atual.filter((x) => x !== id)))
+  }, [])
 
   return { destaques, aviso, anuncio, dispensar }
 }

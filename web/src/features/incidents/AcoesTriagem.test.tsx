@@ -335,4 +335,28 @@ describe('TelaTriagem — ações', () => {
 
     expect(servidor.chamadas.map((c) => c.corpo)).toEqual([{ versao: 8, status: 'fechado' }])
   })
+
+  it('fechar um Alta e a ação falhar não gera aviso de "Alta novo"', async () => {
+    // O aviso observa só a lista confirmada: a linha sair e voltar pelo rollback não é novidade.
+    const servidor = simularServidor([
+      incidente({
+        id: 7,
+        criticidade: 'alta',
+        status: 'em_investigacao',
+        responsavel: ANA,
+        atualizado_por: BRUNO,
+      }),
+    ])
+    servidor.responder = async () => erroDaApi(503, 'servico_indisponivel')
+    const cliente = renderizar()
+
+    await userEvent.click(await screen.findByRole('button', { name: 'Mudar status de #7' }))
+    await userEvent.click(await screen.findByRole('menuitem', { name: 'Fechado' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Fechar incidente' }))
+
+    expect(await screen.findByText(/Não foi possível mudar o status de #7/)).toBeInTheDocument()
+    await cliente.refetchQueries()
+    expect(screen.queryByText('Novo incidente Alta')).toBeNull()
+    expect(within((await linhaDe(7))!).queryByText('Novo')).toBeNull()
+  })
 })

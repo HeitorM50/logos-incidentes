@@ -35,7 +35,12 @@ describe('useAltaNova', () => {
     vi.useFakeTimers()
     const { result, rerender } = montar(base)
 
-    const novo = incidente({ id: 9, criticidade: 'alta', titulo: 'Tombamento', atualizado_por: BRUNO })
+    const novo = incidente({
+      id: 9,
+      criticidade: 'alta',
+      titulo: 'Tombamento',
+      atualizado_por: BRUNO,
+    })
     rerender({ itens: [...base, novo] })
 
     expect(result.current.aviso).toEqual({ ids: [9], titulo: 'Tombamento' })
@@ -90,4 +95,30 @@ describe('useAltaNova', () => {
     act(() => ocultarAba(false))
     expect(document.title).toBe(TITULO)
   })
+
+  it('o aviso mostra só quem ainda é Alta ativo, e "Ver" tira um por vez', () => {
+    const { result, rerender } = montar(base)
+    const a = incidente({ id: 9, criticidade: 'alta', titulo: 'A', atualizado_por: BRUNO })
+    const b = incidente({ id: 10, criticidade: 'alta', titulo: 'B', atualizado_por: BRUNO })
+    rerender({ itens: [...base, a, b] })
+    expect(result.current.aviso).toEqual({ ids: [9, 10], titulo: 'A' })
+
+    act(() => result.current.dispensar(9))
+    expect(result.current.aviso).toEqual({ ids: [10], titulo: 'B' })
+
+    // #10 fechou depois de chegar: não há mais o que ver.
+    rerender({ itens: [...base, a, { ...b, status: 'fechado' }] })
+    expect(result.current.aviso).toBeNull()
+  })
+
+  it('limpa o anúncio depois de alguns segundos, para um repetido ser lido de novo', () => {
+    vi.useFakeTimers()
+    const { result, rerender } = montar(base)
+    rerender({ itens: [...base, incidente({ id: 9, criticidade: 'alta', atualizado_por: BRUNO })] })
+    expect(result.current.anuncio).not.toBe('')
+
+    act(() => vi.advanceTimersByTime(7_000))
+    expect(result.current.anuncio).toBe('')
+  })
 })
+

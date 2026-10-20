@@ -35,6 +35,8 @@ export function useGuia() {
   function dispensarDica() {
     marcarVisto()
     setMostrarDica(false)
+    // O botão clicado some com a faixa: o foco vai para o botão de ajuda, onde o guia continua.
+    document.getElementById(ID_BOTAO_AJUDA)?.focus()
   }
 
   return { aberto, setAberto, abrir, mostrarDica, dispensarDica }

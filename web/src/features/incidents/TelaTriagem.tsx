@@ -84,7 +84,7 @@ export function TelaTriagem({ analista, aoSair }: Props) {
   // Ações em andamento aparecem por cima da lista confirmada (contadores incluídos).
   const { sobrepor } = acoes
   const itens = useMemo(() => confirmados && sobrepor(confirmados), [confirmados, sobrepor])
-  const altaNova = useAltaNova(itens, analista.id, TITULO_DA_ABA)
+  const altaNova = useAltaNova(confirmados, analista.id, TITULO_DA_ABA)
   const guia = useGuia()
   const resumo = useMemo(() => (itens ? resumirTriagem(itens, agora) : null), [itens, agora])
 
@@ -133,15 +133,16 @@ export function TelaTriagem({ analista, aoSair }: Props) {
 
   /** "Ver" do aviso de Alta novo: rola até a linha; se um filtro a esconde, busca por ela. */
   function irPara(id: number) {
-    altaNova.dispensar()
     const linha = document.querySelector<HTMLElement>(`[data-incidente="${id}"]`)
-    if (!linha) {
-      mostrarNaLista(id)
-      return
+    if (linha) {
+      const semMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+      linha.scrollIntoView?.({ block: 'center', behavior: semMovimento ? 'auto' : 'smooth' })
+      linha.querySelector<HTMLElement>('button[aria-expanded]')?.focus({ preventScroll: true })
+    } else {
+      mostrarNaLista(id) // também leva o foco à busca
     }
-    const semMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
-    linha.scrollIntoView?.({ block: 'center', behavior: semMovimento ? 'auto' : 'smooth' })
-    linha.querySelector<HTMLElement>('button[aria-expanded]')?.focus({ preventScroll: true })
+    // Só depois de mover o foco: o botão "Ver" pode sumir junto com o aviso.
+    altaNova.dispensar(id)
   }
 
   function mostrarNaLista(id: number) {
@@ -344,7 +345,14 @@ export function TelaTriagem({ analista, aoSair }: Props) {
         outros={
           <>
             {altaNova.aviso && (
-              <AvisoAltaNova aviso={altaNova.aviso} aoVer={irPara} aoFechar={altaNova.dispensar} />
+              <AvisoAltaNova
+                aviso={altaNova.aviso}
+                aoVer={irPara}
+                aoFechar={() => {
+                  altaNova.dispensar()
+                  focarTitulo()
+                }}
+              />
             )}
             {sucesso && (
               <div
