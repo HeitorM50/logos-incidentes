@@ -68,3 +68,27 @@ def test_periodo_anterior_entra_na_comparacao(cliente: TestClient, sessao: Sessi
 def test_periodo_invalido_e_login(cliente: TestClient, cliente_anonimo: TestClient):
     assert cliente.get("/relatorio", params={"horas": 5}).status_code == 422
     assert cliente_anonimo.get("/relatorio").status_code == 401
+
+
+def test_registro_traz_recebidos_fechados_e_a_linha_do_tempo(cliente: TestClient, sessao: Session):
+    # Chegou há 8 h (fora das últimas 6 h), mas fechou agora: entra no registro.
+    antigo = criar_incidente(cliente, titulo="Pneu estourado antigo")
+    recuar(sessao, antigo, 8 * 60)
+    antigo = acao(cliente, antigo, "assumir").json()
+    acao(cliente, antigo, "status", status="fechado", comentario="Borracheiro trocou o pneu")
+    novo = criar_incidente(cliente, titulo="Neblina na serra", placa="RTA4E21")
+
+    resposta = cliente.get("/relatorio/registro", params={"horas": 6})
+
+    assert resposta.status_code == 200
+    corpo = resposta.json()
+    linhas = {i["id"]: i for i in corpo["incidentes"]}
+    assert set(linhas) == {antigo["id"], novo["id"]}
+    assert linhas[antigo["id"]]["comentario_fechamento"] == "Borracheiro trocou o pneu"
+    assert linhas[antigo["id"]]["fechado_em"] is not None
+    assert linhas[novo["id"]]["origem"] == "Central"
+    # Linha do tempo só do período: o registro do antigo (há 8 h) fica fora.
+    tipos = [(e["incidente_id"], e["tipo"]) for e in corpo["eventos"]]
+    assert (antigo["id"], "criado") not in tipos
+    assert (antigo["id"], "status") in tipos
+    assert (novo["id"], "criado") in tipos

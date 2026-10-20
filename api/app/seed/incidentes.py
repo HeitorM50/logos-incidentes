@@ -225,6 +225,46 @@ def _evitar_duplicatas_por_acaso(
             alvo.local = _local(gerador)
 
 
+# Comentários de fechamento por categoria (a regra exige comentário ao fechar e ao marcar
+# inconclusivo): o histórico e o PDF do relatório mostram como cada caso terminou.
+COMENTARIOS_FECHAMENTO = {
+    Categoria.ACIDENTE_VEICULO: [
+        "Guincho removeu o veículo; seguradora acionada e boletim registrado.",
+        "Sem feridos. Carga transferida para outro caminhão e pista liberada.",
+    ],
+    Categoria.ACIDENTE_VITIMAS: [
+        "SAMU atendeu no local; motorista levado ao hospital e família avisada.",
+        "Vítima socorrida pelos Bombeiros; PRF liberou a pista após a perícia.",
+    ],
+    Categoria.CONDICAO_CLIMATICA: [
+        "Motorista aguardou no posto até a visibilidade voltar e seguiu viagem.",
+        "Rota alterada pela alternativa indicada pela Defesa Civil.",
+    ],
+    Categoria.PROBLEMA_MECANICO: [
+        "Mecânico credenciado trocou a peça no local; caminhão seguiu viagem.",
+        "Caminhão rebocado para a oficina; carga transbordada para outro veículo.",
+    ],
+    Categoria.BLOQUEIO_PISTA: [
+        "Pista liberada pela concessionária; motorista retomou a rota.",
+        "Desvio pela rota alternativa; cliente avisado do atraso.",
+    ],
+}
+COMENTARIOS_INCONCLUSIVO = [
+    "Sem contato com o motorista; aguardando retorno do rastreador.",
+    "Informações divergentes; aguardando confirmação da PRF.",
+]
+
+
+def _comentario(incidente: Incidente) -> str:
+    # Escolha estável (mesmo incidente, mesmo comentário) sem gastar o gerador do seed.
+    opcoes = (
+        COMENTARIOS_FECHAMENTO[incidente.categoria]
+        if incidente.status == StatusIncidente.FECHADO
+        else COMENTARIOS_INCONCLUSIVO
+    )
+    return opcoes[len(incidente.titulo) % len(opcoes)]
+
+
 def gerar_eventos(incidente: Incidente) -> list[EventoIncidente]:
     """Histórico coerente com o estado do incidente de demonstração.
 
@@ -257,6 +297,7 @@ def gerar_eventos(incidente: Incidente) -> list[EventoIncidente]:
                 analista_id=incidente.responsavel_id,
                 status_anterior=StatusIncidente.EM_INVESTIGACAO,
                 status_novo=incidente.status,
+                comentario=_comentario(incidente),
                 criado_em=criado + idade * 0.6,
             )
         )

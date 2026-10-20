@@ -9,12 +9,20 @@ from collections import defaultdict
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy import or_, select
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.dominio import Criticidade, StatusIncidente, TipoEvento
 from app.models import EventoIncidente, Incidente
-from app.schemas.relatorio import EtapaFunil, Metrica, PontoSerie, RelatorioResposta
+from app.schemas.relatorio import (
+    EtapaFunil,
+    EventoDoRegistro,
+    IncidenteDoRegistro,
+    Metrica,
+    PontoSerie,
+    RegistroDoPeriodo,
+    RelatorioResposta,
+)
 from app.services.ciclo_vida import PRAZO_PARA_ASSUMIR_MIN
 
 INICIO_DO_ATENDIMENTO = (TipoEvento.ASSUMIDO, TipoEvento.TRANSFERIDO)
@@ -125,4 +133,79 @@ def gerar(sessao: Session, horas: int, agora: datetime | None = None) -> Relator
             PontoSerie(inicio=inicio + passo * n, total=serie_total[n], alta=serie_alta[n])
             for n in range(pontos)
         ],
+    )
+
+
+def registro(sessao: Session, horas: int, agora: datetime | None = None) -> RegistroDoPeriodo:
+    """Incidentes recebidos OU fechados no período (um fechado hoje pode ter chegado ontem) e
+    a linha do tempo de todos os eventos do período, para o PDF do relatório."""
+    agora = agora or datetime.now(UTC)
+    inicio = agora - timedelta(hours=horas)
+
+    eventos = sessao.scalars(
+        select(EventoIncidente)
+        .options(joinedload(EventoIncidente.analista), joinedload(EventoIncidente.responsavel_novo))
+        .where(EventoIncidente.criado_em >= inicio, EventoIncidente.criado_em <= agora)
+        .order_by(EventoIncidente.criado_em, EventoIncidente.id)
+    ).all()
+    fechados_no_periodo = {
+        e.incidente_id for e in eventos if e.status_novo == StatusIncidente.FECHADO
+    }
+    incidentes = sessao.scalars(
+        select(Incidente)
+        .options(joinedload(Incidente.responsavel), joinedload(Incidente.dispositivo))
+        .where(
+            or_(
+                Incidente.criado_em.between(inicio, agora),
+                Incidente.id.in_(fechados_no_periodo or {0}),
+            )
+        )
+        .order_by(Incidente.criado_em, Incidente.id)
+    ).all()
+
+    # Marcos de cada incidente, do histórico completo (o assumir pode ser de antes do período).
+    ids = [i.id for i in incidentes]
+    marcos = sessao.execute(
+        select(
+            EventoIncidente.incidente_id,
+            EventoIncidente.tipo,
+            EventoIncidente.status_novo,
+            EventoIncidente.comentario,
+            EventoIncidente.criado_em,
+        )
+        .where(EventoIncidente.incidente_id.in_(ids or [0]))
+        .order_by(EventoIncidente.criado_em)
+    ).all()
+    assumido_em: dict[int, datetime] = {}
+    fechamento: dict[int, tuple[datetime, str | None]] = {}
+    for m in marcos:
+        if m.tipo in INICIO_DO_ATENDIMENTO:
+            assumido_em.setdefault(m.incidente_id, m.criado_em)
+        if m.status_novo == StatusIncidente.FECHADO:
+            fechamento.setdefault(m.incidente_id, (m.criado_em, m.comentario))
+
+    return RegistroDoPeriodo(
+        horas=horas,
+        inicio=inicio,
+        gerado_em=agora,
+        incidentes=[
+            IncidenteDoRegistro(
+                id=i.id,
+                titulo=i.titulo,
+                criticidade=i.criticidade,
+                categoria=i.categoria,
+                status=i.status,
+                local=i.local,
+                placa=i.placa,
+                origem=i.dispositivo.nome if i.dispositivo else "Central",
+                responsavel=i.responsavel.nome if i.responsavel else None,
+                motorista=i.motorista_nome,
+                criado_em=i.criado_em,
+                assumido_em=assumido_em.get(i.id),
+                fechado_em=fechamento[i.id][0] if i.id in fechamento else None,
+                comentario_fechamento=fechamento[i.id][1] if i.id in fechamento else None,
+            )
+            for i in incidentes
+        ],
+        eventos=[EventoDoRegistro.model_validate(e) for e in eventos],
     )

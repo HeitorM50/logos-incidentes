@@ -10,6 +10,7 @@ from app.seed.analistas import semear_analistas
 from app.seed.incidentes import (
     TOTAL_INCIDENTES,
     _ativos_em_ordem,
+    gerar_eventos,
     gerar_incidentes,
     semear_incidentes,
 )
@@ -106,3 +107,11 @@ def test_seed_planta_duas_duplicatas_e_nenhuma_por_acaso(sessao: Session):
         if parece_duplicata(atual, anterior)
     ]
     assert len(pares) == 2
+
+
+def test_fechar_e_inconclusivo_do_seed_tem_comentario(sessao: Session):
+    # A regra da API exige comentário nesses status; o seed segue a mesma regra.
+    for incidente in gerar_incidentes(semear_analistas(sessao)):
+        for evento in gerar_eventos(incidente):
+            if evento.status_novo in (StatusIncidente.FECHADO, StatusIncidente.INCONCLUSIVO):
+                assert evento.comentario

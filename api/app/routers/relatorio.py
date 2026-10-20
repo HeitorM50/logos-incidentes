@@ -5,7 +5,7 @@ from pydantic import AfterValidator
 
 from app.core.autenticacao import obter_analista_atual
 from app.core.banco import SessaoDep
-from app.schemas.relatorio import RelatorioResposta
+from app.schemas.relatorio import RegistroDoPeriodo, RelatorioResposta
 from app.services import relatorio as servico
 
 router = APIRouter(tags=["relatorio"], dependencies=[Depends(obter_analista_atual)])
@@ -32,3 +32,15 @@ def obter_relatorio(
     horas: Annotated[Periodo, Query(description="Tamanho do período: 6 h, 24 h ou 7 dias")] = 24,
 ):
     return servico.gerar(sessao, horas)
+
+
+@router.get(
+    "/relatorio/registro",
+    response_model=RegistroDoPeriodo,
+    summary="Incidentes recebidos ou fechados no período e a linha do tempo (para o PDF)",
+)
+def obter_registro(
+    sessao: SessaoDep,
+    horas: Annotated[Periodo, Query(description="Tamanho do período: 6 h, 24 h ou 7 dias")] = 24,
+):
+    return servico.registro(sessao, horas)
