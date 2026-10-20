@@ -326,7 +326,8 @@ export function TelaTriagem({ analista, aoSair }: Props) {
         />
       )}
 
-      <main className="flex min-h-0 flex-1 flex-col gap-3.5 px-4 pt-[18px] pb-4 sm:px-6">
+      {/* Primeira pintura em camadas: título → barra → cartões → filtros → tabela (50 ms). */}
+      <main className="flex min-h-0 flex-1 cascata flex-col gap-3.5 px-4 pt-[18px] pb-4 [--cascata-passo:50ms] sm:px-6">
         {guia.mostrarDica && (
           <DicaPrimeiroAcesso aoAbrir={guia.abrir} aoDispensar={guia.dispensarDica} />
         )}

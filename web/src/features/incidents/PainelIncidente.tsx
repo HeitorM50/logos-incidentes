@@ -1,4 +1,4 @@
-import { CircleAlert, UserRoundCog } from 'lucide-react'
+import { Check, CircleAlert, UserRoundCog } from 'lucide-react'
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from 'react'
 import { ehErroApi } from '@/api/erros'
 import { ROTULO_CATEGORIA, ROTULO_CRITICIDADE } from '@/api/rotulos'
@@ -169,6 +169,15 @@ function Formulario({
   const [geral, setGeral] = useState<string | null>(null)
   const [foco, setFoco] = useState<{ alvo: Alvo } | null>(null)
 
+  // Salvou: o botão mostra "✓ Salvo" por meio segundo e só então o painel fecha (o analista
+  // vê a confirmação no lugar onde clicou). Com menos movimento, fecha na hora.
+  const [salvo, setSalvo] = useState(false)
+  function concluirComConfirmacao(concluido: Concluido) {
+    setSalvo(true)
+    const semMovimento = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    setTimeout(() => aoConcluir(concluido), semMovimento ? 0 : 500)
+  }
+
   const refs = useRef<Partial<Record<Alvo, HTMLElement | null>>>({})
   const prefixo = useId()
 
@@ -233,7 +242,7 @@ function Formulario({
 
   function enviar(evento: FormEvent) {
     evento.preventDefault()
-    if (pendente) return
+    if (pendente || salvo) return
     // O botão continua focável quando bloqueado: o clique leva ao aviso que explica o motivo.
     if (bloqueado) {
       setFoco({ alvo: 'aviso' })
@@ -252,7 +261,11 @@ function Formulario({
     if (!editando) {
       criar.mutate(paraNovo(valores), {
         onSuccess: (novo) =>
-          aoConcluir({ texto: `Incidente #${novo.id} criado.`, id: novo.id, criado: true }),
+          concluirComConfirmacao({
+            texto: `Incidente #${novo.id} criado.`,
+            id: novo.id,
+            criado: true,
+          }),
         onError: falhou,
       })
       return
@@ -267,7 +280,8 @@ function Formulario({
     editar.mutate(
       { base, mudou },
       {
-        onSuccess: (novo) => aoConcluir({ texto: `Incidente #${novo.id} salvo.`, id: novo.id }),
+        onSuccess: (novo) =>
+          concluirComConfirmacao({ texto: `Incidente #${novo.id} salvo.`, id: novo.id }),
         onError: falhou,
       },
     )
@@ -370,7 +384,8 @@ function Formulario({
         </SheetDescription>
       </SheetHeader>
 
-      <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto px-5 py-4">
+      {/* Os campos entram em cascata logo depois do painel deslizar. */}
+      <div className="flex min-h-0 flex-1 cascata flex-col gap-4 overflow-y-auto px-5 py-4 [--cascata-inicio:120ms] [--cascata-passo:30ms]">
         {/* Sempre montado: o aviso pode surgir com o painel aberto (leitura de 5 s), e uma
             região viva criada já com conteúdo nem sempre é anunciada. Vazio, o -mb-4 anula o
             espaço entre os campos. */}
@@ -559,7 +574,12 @@ function Formulario({
             aria-disabled={bloqueado || pendente || undefined}
             className="h-9 min-w-[150px] aria-disabled:cursor-not-allowed aria-disabled:opacity-50"
           >
-            {pendente ? (
+            {salvo ? (
+              <span className="flex animate-in items-center gap-1.5 duration-200 zoom-in-95 fade-in-0">
+                <Check aria-hidden className="size-4" strokeWidth={3} />
+                Salvo
+              </span>
+            ) : pendente ? (
               <>
                 <LogosLoader tamanho={16} decorativo fundo="var(--primary)" />
                 Salvando…
