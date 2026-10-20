@@ -52,6 +52,9 @@ anônima ou em outro navegador e altere o mesmo incidente nas duas.
   igual à da API. A edição envia só os campos alterados; se outro analista mudou o incidente com o
   painel aberto, o painel mostra quais campos mudaram e deixa escolher entre usar a versão atual
   ou manter as próprias mudanças.
+- **Prazo para assumir:** Alta 15 min, Média 60, Baixa 240 (regra da API, em `/regras`). Um
+  incidente ativo sem responsável além do prazo ganha o marcador "Atrasado" (texto e ícone, não
+  só cor), e o filtro **Atrasados** mostra quantos são e quais.
 - **Gestão por exceção ao vivo:** "Atribuídos a mim" mostra a fila do analista; quando chega um
   incidente Alta novo, um aviso leva até ele, a linha fica destacada e, com a aba em segundo
   plano, o título conta os novos ("(2) Logos").

@@ -126,8 +126,9 @@ export function TelaTriagem({ analista, aoSair }: Props) {
   const filtros = useFiltros()
   const filtrando = temFiltro(filtros)
   const resultado = useMemo(
-    () => (itens ? filtrarIncidentes(itens, filtros, analista.id) : null),
-    [itens, filtros, analista.id],
+    () => (itens ? filtrarIncidentes(itens, filtros, analista.id, agora) : null),
+    // agora: um incidente passa a atrasado com o tempo, sem nova leitura.
+    [itens, filtros, analista.id, agora],
   )
   // Os cartões respeitam a categoria e a busca, mas não o próprio filtro de criticidade:
   // assim o analista vê quantos incidentes cada cartão traria ao ser escolhido.
@@ -411,6 +412,12 @@ export function TelaTriagem({ analista, aoSair }: Props) {
             contagem: resultado?.naMinhaFila ?? null,
             aoAlternar: () =>
               definirFiltros((atuais) => ({ ...atuais, minhaFila: !atuais.minhaFila })),
+          }}
+          atrasados={{
+            marcada: filtros.atrasados,
+            contagem: resultado?.atrasados ?? null,
+            aoAlternar: () =>
+              definirFiltros((atuais) => ({ ...atuais, atrasados: !atuais.atrasados })),
           }}
           aoLimpar={filtrando ? limparFiltros : undefined}
         />

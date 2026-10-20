@@ -131,7 +131,10 @@ export function GuiaTriagem({ aberto, aoMudar }: PropsGuia) {
             <p>
               Clique num cartão (Alta, Média, Baixa) ou numa categoria para ver só esses
               incidentes. <strong className="font-semibold text-foreground">Atribuídos a mim</strong>{' '}
-              mostra a sua fila. O número em cada botão é quantos incidentes ativos ele mostra.
+              mostra a sua fila.{' '}
+              <strong className="font-semibold text-foreground">Atrasados</strong> mostra quem
+              está sem responsável além do prazo (Alta 15 min, Média 60, Baixa 240); a linha
+              ganha o marcador "Atrasado". O número em cada botão é quantos incidentes ele mostra.
             </p>
             <p>
               A busca aceita título, local, placa ou <code className="font-mono">#número</code>.

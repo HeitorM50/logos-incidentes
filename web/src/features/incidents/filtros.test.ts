@@ -11,6 +11,8 @@ import {
   temFiltro,
 } from './filtros'
 
+const AGORA = Date.parse('2026-10-20T12:00:00Z')
+
 describe('filtros na URL', () => {
   it('ida e volta mantém a seleção', () => {
     const filtros = {
@@ -19,6 +21,7 @@ describe('filtros na URL', () => {
       categorias: ['bloqueio_pista' as const],
       busca: 'BR-116',
       minhaFila: true,
+      atrasados: false,
     }
 
     const query = filtrosParaUrl(filtros)
@@ -44,6 +47,7 @@ describe('filtros na URL', () => {
       categorias: [],
       busca: '',
       minhaFila: false,
+      atrasados: false,
     })
   })
 
@@ -99,18 +103,18 @@ describe('filtrarIncidentes', () => {
 
   it('combina criticidade e categoria e mantém a ordem da API', () => {
     const filtros = { ...SEM_FILTROS, criticidades: ['alta' as const], categorias: ['bloqueio_pista' as const] }
-    const ativos = filtrarIncidentes(itens, filtros, ANA.id)
+    const ativos = filtrarIncidentes(itens, filtros, ANA.id, AGORA)
     expect(ativos.itens.map((i) => i.id)).toEqual([1])
     // O fechado que passa nos outros filtros é contado como oculto.
     expect(ativos.fechadosOcultos).toBe(1)
 
-    const todos = filtrarIncidentes(itens, { ...filtros, situacao: 'todos' }, ANA.id)
+    const todos = filtrarIncidentes(itens, { ...filtros, situacao: 'todos' }, ANA.id, AGORA)
     expect(todos.itens.map((i) => i.id)).toEqual([1, 4])
     expect(todos.porSituacao).toEqual({ ativos: 1, fechados: 1, todos: 2 })
   })
 
   it('conta cada categoria com a criticidade e a situação escolhidas', () => {
-    const ativos = filtrarIncidentes(itens, { ...SEM_FILTROS, criticidades: ['alta'] }, ANA.id)
+    const ativos = filtrarIncidentes(itens, { ...SEM_FILTROS, criticidades: ['alta'] }, ANA.id, AGORA)
     expect(ativos.porCategoria.bloqueio_pista).toBe(1)
     expect(ativos.porCategoria.problema_mecanico).toBe(1)
 
@@ -118,6 +122,7 @@ describe('filtrarIncidentes', () => {
       itens,
       { ...SEM_FILTROS, situacao: 'fechados', criticidades: ['alta'] },
       ANA.id,
+      AGORA,
     )
     expect(fechados.porCategoria.bloqueio_pista).toBe(1)
     expect(fechados.porCategoria.problema_mecanico).toBe(0)
@@ -133,6 +138,7 @@ describe('filtrarIncidentes', () => {
       fechados,
       { ...SEM_FILTROS, situacao: 'fechados' },
       ANA.id,
+      AGORA,
     )
     expect(visiveis.map((i) => i.id)).toEqual([9, 7])
   })
@@ -142,7 +148,7 @@ describe('filtrarIncidentes', () => {
       ...SEM_FILTROS,
       criticidades: ['alta'],
       categorias: ['bloqueio_pista'],
-    }, ANA.id)
+    }, ANA.id, AGORA)
 
     expect(semFiltroDeCriticidade.map((i) => i.id)).toEqual([1, 3, 4])
   })
@@ -156,15 +162,43 @@ describe('filtrarIncidentes', () => {
       incidente({ id: 5, criticidade: 'alta' }),
     ]
 
-    const desligado = filtrarIncidentes(fila, { ...SEM_FILTROS, criticidades: ['alta'] }, ANA.id)
+    const desligado = filtrarIncidentes(fila, { ...SEM_FILTROS, criticidades: ['alta'] }, ANA.id, AGORA)
     // A contagem do botão vale com a fila desligada: é o que ele mostraria ao ser ligado.
     expect(desligado.naMinhaFila).toBe(1)
 
-    const ligado = filtrarIncidentes(fila, { ...SEM_FILTROS, minhaFila: true }, ANA.id)
+    const ligado = filtrarIncidentes(fila, { ...SEM_FILTROS, minhaFila: true }, ANA.id, AGORA)
     expect(ligado.itens.map((i) => i.id)).toEqual([1, 3])
     expect(ligado.naMinhaFila).toBe(2)
     // Os cartões de criticidade também respeitam a fila.
     expect(ligado.semFiltroDeCriticidade.map((i) => i.id)).toEqual([1, 3, 4])
+  })
+})
+
+describe('atrasados', () => {
+  const minutosAtras = (m: number) => new Date(AGORA - m * 60_000).toISOString()
+  const itens = [
+    // Alta: prazo 15 min.
+    incidente({ id: 1, criticidade: 'alta', criado_em: minutosAtras(20) }),
+    incidente({ id: 2, criticidade: 'alta', criado_em: minutosAtras(10) }),
+    // Assumido não está atrasado, por mais antigo que seja.
+    incidente({ id: 3, criticidade: 'alta', criado_em: minutosAtras(90), responsavel: ANA }),
+    // Baixa: prazo 240 min.
+    incidente({ id: 4, criticidade: 'baixa', criado_em: minutosAtras(200) }),
+    incidente({ id: 5, criticidade: 'baixa', criado_em: minutosAtras(300) }),
+    incidente({ id: 6, criticidade: 'alta', criado_em: minutosAtras(90), status: 'fechado' }),
+  ]
+
+  it('conta e filtra só os sem responsável além do prazo da criticidade', () => {
+    const desligado = filtrarIncidentes(itens, SEM_FILTROS, ANA.id, AGORA)
+    expect(desligado.atrasados).toBe(2)
+
+    const ligado = filtrarIncidentes(itens, { ...SEM_FILTROS, atrasados: true }, ANA.id, AGORA)
+    expect(ligado.itens.map((i) => i.id)).toEqual([1, 5])
+  })
+
+  it('vai para a URL como atrasados=1', () => {
+    expect(filtrosParaUrl({ ...SEM_FILTROS, atrasados: true })).toBe('atrasados=1')
+    expect(filtrosDaUrl('?atrasados=1').atrasados).toBe(true)
   })
 })
 
@@ -182,6 +216,7 @@ describe('auxiliares', () => {
         categorias: ['bloqueio_pista'],
         busca: ' br ',
         minhaFila: true,
+        atrasados: false,
       }),
     ).toBe('Criticidade Alta, Média · Bloqueio de Pista · atribuídos a mim · busca "br"')
   })

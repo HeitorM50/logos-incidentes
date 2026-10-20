@@ -1,5 +1,5 @@
 import dados from './regras.json'
-import type { StatusIncidente } from './tipos'
+import type { Criticidade, StatusIncidente } from './tipos'
 
 // Regras de negócio que o front repete para explicar um bloqueio antes do clique e validar o
 // formulário antes de enviar. NÃO edite regras.json à mão: ele é gerado pela API a partir do
@@ -18,6 +18,7 @@ export const REGRAS = {
   statusFinal: dados.status_final as StatusIncidente[],
   limites: dados.limites,
   padraoPlaca: new RegExp(dados.padrao_placa),
+  prazoParaAssumirMin: dados.prazo_para_assumir_min as Record<Criticidade, number>,
   comentario: {
     min: dados.comentario.min,
     max: dados.comentario.max,

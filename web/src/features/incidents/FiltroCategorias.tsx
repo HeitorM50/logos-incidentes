@@ -1,4 +1,4 @@
-import { Check, UserRound } from 'lucide-react'
+import { AlarmClock, Check, UserRound } from 'lucide-react'
 import { ROTULO_CATEGORIA } from '@/api/rotulos'
 import { CATEGORIAS, type Categoria } from '@/api/tipos'
 import { cn } from '@/lib/utils'
@@ -14,6 +14,8 @@ interface Props {
   aoAlternar: (categoria: Categoria) => void
   /** "Minha fila": incidentes atribuídos ao analista (null antes da primeira leitura). */
   minhaFila: { marcada: boolean; contagem: number | null; aoAlternar: () => void }
+  /** "Atrasados": ativos sem responsável além do prazo (null antes da primeira leitura). */
+  atrasados: { marcada: boolean; contagem: number | null; aoAlternar: () => void }
   /** Aparece só com algum filtro ativo (criticidade, categoria, minha fila ou busca). */
   aoLimpar?: () => void
 }
@@ -29,8 +31,10 @@ export function FiltroCategorias({
   selecionadas,
   aoAlternar,
   minhaFila,
+  atrasados,
   aoLimpar,
 }: Props) {
+  const haAtrasados = !!atrasados.contagem
   return (
     <div className="flex flex-wrap items-center gap-2">
       <span id="titulo-categoria" className="mr-1 text-[13px] font-semibold text-texto-2">
@@ -98,6 +102,46 @@ export function FiltroCategorias({
           )}
         >
           {minhaFila.contagem ?? '–'}
+        </span>
+      </button>
+      <button
+        type="button"
+        aria-pressed={atrasados.marcada}
+        aria-label={
+          atrasados.contagem === null
+            ? 'Atrasados'
+            : `Atrasados, ${atrasados.contagem} sem responsável além do prazo`
+        }
+        title="Ativos sem responsável além do prazo para assumir (Alta 15 min, Média 60, Baixa 240)"
+        onClick={atrasados.aoAlternar}
+        className={cn(
+          CHIP,
+          atrasados.marcada
+            ? CHIP_MARCADO
+            : haAtrasados
+              ? // Com atrasados, o botão chama atenção (borda e texto de erro), não só pela cor:
+                // o ícone e o número em negrito dizem o mesmo.
+                'border-erro-borda bg-card text-erro-texto hover:bg-superficie-2'
+              : CHIP_LIVRE,
+        )}
+      >
+        {atrasados.marcada ? (
+          <Check
+            aria-hidden
+            className="size-3 animate-in duration-200 zoom-in-50 fade-in-0"
+            strokeWidth={3}
+          />
+        ) : (
+          <AlarmClock aria-hidden className="size-3.5" />
+        )}
+        Atrasados
+        <span
+          className={cn(
+            'font-mono text-xs tabular-nums',
+            atrasados.marcada ? 'opacity-85' : haAtrasados ? 'font-bold' : 'text-texto-2',
+          )}
+        >
+          {atrasados.contagem ?? '–'}
         </span>
       </button>
       {aoLimpar && (

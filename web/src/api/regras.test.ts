@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { REGRAS } from './regras'
 import dados from './regras.json'
-import { STATUS } from './tipos'
+import { CRITICIDADES, STATUS } from './tipos'
 
 // O conteúdo de regras.json é conferido contra o código da API em api/tests/test_regras.py.
 // Aqui, o front confere que entende tudo o que veio de lá.
@@ -28,5 +28,6 @@ describe('regras geradas pela API', () => {
     expect(REGRAS.padraoPlaca.test('ABC1D23')).toBe(true)
     expect(REGRAS.padraoPlaca.test('ABC-1D23')).toBe(false)
     expect(REGRAS.comentario.min).toBeLessThan(REGRAS.comentario.max)
+    expect(Object.keys(REGRAS.prazoParaAssumirMin).sort()).toEqual([...CRITICIDADES].sort())
   })
 })

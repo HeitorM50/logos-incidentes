@@ -1,4 +1,12 @@
-import { ChevronRight, ExternalLink, ListChecks, Pencil, Trash2, Truck } from 'lucide-react'
+import {
+  AlarmClock,
+  ChevronRight,
+  ExternalLink,
+  ListChecks,
+  Pencil,
+  Trash2,
+  Truck,
+} from 'lucide-react'
 import { ROTULO_CATEGORIA, ROTULO_CRITICIDADE, ROTULO_STATUS } from '@/api/rotulos'
 import type { Criticidade, Incidente } from '@/api/tipos'
 import { cn } from '@/lib/utils'
@@ -9,6 +17,7 @@ import { HistoricoIncidente } from './HistoricoIncidente'
 import { BotaoComMotivo } from './BotaoComMotivo'
 import { motivoEdicao } from './formulario'
 import { IconeCriticidade, IconeStatus } from './Icones'
+import { estaAtrasado, explicarAtraso } from './prazos'
 import { linkDoMapa, PROTOCOLOS } from './protocolos'
 import { tempoDoIncidente } from './tempo'
 import type { Conflito } from './useAcoesIncidente'
@@ -74,6 +83,7 @@ export function LinhaIncidente({
       ? SEM_CONEXAO
       : motivoEdicao(incidente, idAnalista)
   const cartao = layout === 'cartao'
+  const atrasado = estaAtrasado(incidente, agora)
 
   const fundo = cn(
     conflito ? 'bg-info-fundo' : pendente ? 'bg-linha-pendente' : 'bg-card',
@@ -151,7 +161,7 @@ export function LinhaIncidente({
           <div className="flex items-center gap-2">
             <Selo incidente={incidente} />
             <span className="font-mono text-xs text-texto-3">#{incidente.id}</span>
-            <Marcadores incidente={incidente} novo={novo} />
+            <Marcadores incidente={incidente} novo={novo} atrasado={atrasado} />
             <span className="ml-auto font-mono text-xs whitespace-nowrap text-texto-2">
               {fechado && 'aberto por '}
               {tempoDoIncidente(incidente, agora)}
@@ -203,7 +213,7 @@ export function LinhaIncidente({
         <span role="cell" className="flex min-w-0 items-center gap-1.5">
           {botaoDetalhes}
           <span className="flex-none font-mono text-xs text-texto-3">#{incidente.id}</span>
-          <Marcadores incidente={incidente} novo={novo} />
+          <Marcadores incidente={incidente} novo={novo} atrasado={atrasado} />
           <span
             title={incidente.titulo}
             className={cn(
@@ -274,8 +284,14 @@ function Selo({ incidente }: { incidente: Incidente }) {
   )
 }
 
-/** Caminhão (chegou pelo rastreador) e "Novo" (Alta recém-chegado). */
-function Marcadores({ incidente, novo }: { incidente: Incidente; novo: boolean }) {
+/** Caminhão (chegou pelo rastreador), "Novo" (Alta recém-chegado) e "Atrasado" (prazo). */
+interface PropsMarcadores {
+  incidente: Incidente
+  novo: boolean
+  atrasado: boolean
+}
+
+function Marcadores({ incidente, novo, atrasado }: PropsMarcadores) {
   return (
     <>
       {/* Chegou sozinho, pelo rastreador: o analista distingue do que a central registrou. */}
@@ -286,6 +302,15 @@ function Marcadores({ incidente, novo }: { incidente: Incidente; novo: boolean }
         </span>
       )}
       {/* Texto, e não só a cor do fundo: o destaque precisa ser legível sem cor. */}
+      {atrasado && (
+        <span
+          title={explicarAtraso(incidente)}
+          className="inline-flex flex-none items-center gap-1 rounded-sm border border-erro-borda bg-erro-fundo px-1 py-px text-[10px] font-bold tracking-[0.06em] text-erro-texto uppercase"
+        >
+          <AlarmClock aria-hidden className="size-3" />
+          Atrasado
+        </span>
+      )}
       {novo && (
         <span className="flex-none rounded-sm bg-alta-fundo px-1.5 py-px text-[10px] font-bold tracking-[0.06em] text-alta-texto uppercase">
           Novo

@@ -6,6 +6,7 @@ import {
   type Criticidade,
   type Incidente,
 } from '@/api/tipos'
+import { estaAtrasado } from './prazos'
 
 // Filtros da triagem. A lista inteira (100 incidentes) já está no cliente pelo polling, então
 // o filtro roda no front: troca instantânea, sem nova requisição, e as contagens de cada
@@ -22,6 +23,8 @@ export interface Filtros {
   busca: string
   /** "Minha fila": só os incidentes que o analista assumiu. */
   minhaFila: boolean
+  /** Só os ativos sem responsável além do prazo para assumir. */
+  atrasados: boolean
 }
 
 export const SEM_FILTROS: Filtros = {
@@ -30,6 +33,7 @@ export const SEM_FILTROS: Filtros = {
   categorias: [],
   busca: '',
   minhaFila: false,
+  atrasados: false,
 }
 
 // Nomes curtos na URL: `?criticidade=alta,media&categoria=bloqueio_pista&busca=br-116`.
@@ -39,6 +43,7 @@ const PARAM_CRITICIDADE = 'criticidade'
 const PARAM_CATEGORIA = 'categoria'
 const PARAM_BUSCA = 'busca'
 const PARAM_RESPONSAVEL = 'responsavel'
+const PARAM_ATRASADOS = 'atrasados'
 
 /** Lê uma lista da URL e descarta valores desconhecidos (link antigo ou editado à mão). */
 function lerLista<T extends string>(valor: string | null, validos: readonly T[]): T[] {
@@ -57,6 +62,7 @@ export function filtrosDaUrl(consulta: string): Filtros {
     categorias: lerLista(params.get(PARAM_CATEGORIA), CATEGORIAS),
     busca: params.get(PARAM_BUSCA) ?? '',
     minhaFila: params.get(PARAM_RESPONSAVEL) === 'eu',
+    atrasados: params.get(PARAM_ATRASADOS) === '1',
   }
 }
 
@@ -73,6 +79,7 @@ export function filtrosParaUrl(filtros: Filtros): string {
     params.set(PARAM_CATEGORIA, CATEGORIAS.filter((c) => filtros.categorias.includes(c)).join(','))
   }
   if (filtros.minhaFila) params.set(PARAM_RESPONSAVEL, 'eu')
+  if (filtros.atrasados) params.set(PARAM_ATRASADOS, '1')
   if (!buscaVazia(filtros.busca)) params.set(PARAM_BUSCA, filtros.busca)
   // URLSearchParams codifica a vírgula como %2C; a vírgula pura deixa a URL legível.
   return params.toString().replaceAll('%2C', ',')
@@ -84,6 +91,7 @@ export function temFiltro(filtros: Filtros): boolean {
     filtros.criticidades.length > 0 ||
     filtros.categorias.length > 0 ||
     filtros.minhaFila ||
+    filtros.atrasados ||
     !buscaVazia(filtros.busca)
   )
 }
@@ -99,6 +107,7 @@ export function descreverFiltros(filtros: Filtros): string {
     partes.push(filtros.categorias.map((c) => ROTULO_CATEGORIA[c]).join(', '))
   }
   if (filtros.minhaFila) partes.push('atribuídos a mim')
+  if (filtros.atrasados) partes.push('atrasados')
   if (!buscaVazia(filtros.busca)) partes.push(`busca "${filtros.busca.trim()}"`)
   return partes.join(' · ')
 }
@@ -159,6 +168,8 @@ export interface ResultadoFiltro {
   porCategoria: Record<Categoria, number>
   /** Quantos incidentes (da situação escolhida) do analista "Minha fila" mostraria. */
   naMinhaFila: number
+  /** Quantos atrasados "Atrasados" mostraria (com os outros filtros). */
+  atrasados: number
   /** Quantos incidentes de cada situação os outros filtros deixam passar (rótulos do seletor). */
   porSituacao: Record<Situacao, number>
   /** Fechados que passariam nos outros filtros mas a situação "Ativos" esconde. */
@@ -182,6 +193,7 @@ export function filtrarIncidentes(
   itens: Incidente[],
   filtros: Filtros,
   idAnalista: number,
+  agora: number,
 ): ResultadoFiltro {
   const busca = criarBusca(filtros.busca)
   const meu = (i: Incidente) => i.responsavel?.id === idAnalista
@@ -199,14 +211,20 @@ export function filtrarIncidentes(
   const visiveis: Incidente[] = []
   let naMinhaFila = 0
   let fechadosOcultos = 0
+  let atrasados = 0
 
   for (const incidente of itens) {
     if (!busca(incidente)) continue
     const critOk = criticidadeOk(incidente)
     const catOk = categoriaOk(incidente)
     const sitOk = naSituacao(incidente, filtros.situacao)
-    if (critOk && catOk && sitOk && meu(incidente)) naMinhaFila++
-    if (filtros.minhaFila && !meu(incidente)) continue
+    const atrasado = estaAtrasado(incidente, agora)
+    const filaOk = !filtros.minhaFila || meu(incidente)
+    const atrasoOk = !filtros.atrasados || atrasado
+    // Cada contador vale com o próprio filtro desligado: é o que o botão mostraria ao ligar.
+    if (critOk && catOk && sitOk && atrasoOk && meu(incidente)) naMinhaFila++
+    if (critOk && catOk && sitOk && filaOk && atrasado) atrasados++
+    if (!filaOk || !atrasoOk) continue
     if (critOk && catOk) {
       porSituacao.todos++
       porSituacao[incidente.status === 'fechado' ? 'fechados' : 'ativos']++
@@ -227,6 +245,7 @@ export function filtrarIncidentes(
     semFiltroDeCriticidade,
     porCategoria,
     naMinhaFila,
+    atrasados,
     porSituacao,
     fechadosOcultos,
   }
