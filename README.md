@@ -86,6 +86,7 @@ web/                React + Vite + TypeScript
 docs/
   decisoes/         ADRs: contexto, decisão, alternativas e consequências
   contrato-api.md   rotas, códigos de erro e ciclo de vida
+  mapa-motions.md   mapa de animações: princípios, onde cada movimento ajuda e o que ficou fora
 ```
 
 ### Escolhas e por quê
