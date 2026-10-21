@@ -39,3 +39,12 @@ demonstração também não mostrava onde os caminhões estavam.
   (~45 min) viram alerta, o que é o comportamento desejado.
 - Geocodificação reversa (coordenada → endereço) fica com a central de rastreamento, que já manda
   a referência; sem ela, o incidente mostra a coordenada.
+- **Limitações conhecidas** (aceitas para o MVP, com um emissor só):
+  - a posição do caminhão não confere a hora da leitura: um lote atrasado sobrescreve a posição
+    mais nova e pode antecipar a regra de parada longa;
+  - a regra não repete o alerta comparando placa e título do incidente ativo; se o analista
+    edita o título, a próxima leitura pode abrir um incidente repetido;
+  - "contar ativos → inserir" não é atômico: dois lotes simultâneos com o mesmo sinal podem
+    abrir dois incidentes.
+  A correção é uma coluna com a regra que abriu o incidente, um índice único parcial
+  `(placa, regra)` nos ativos e ignorar leituras mais antigas que `ultima_leitura_em`.

@@ -274,7 +274,8 @@ cd web && npm test && npm run lint && npm run build   # 308 testes
 ```
 
 Os testes da API rodam num schema temporário, criado e apagado a cada execução, e só aceitam um
-Postgres local (o do `docker compose`): banco remoto exige `TESTES_BANCO_REMOTO=1`, que só o CI usa.
+Postgres local (o do `docker compose`). No CI, cada job sobe um Postgres descartável: nenhum
+teste toca o banco de produção.
 
 **Ponta a ponta (Playwright):** navegador de verdade contra a API e o Postgres de verdade, em 13
 cenários — triagem e filtros, login, dois analistas no mesmo incidente (409), CRUD com dado
@@ -289,8 +290,8 @@ cd api && uv run alembic upgrade head && uv run python -m app.seed --recriar
 cd web && npm run build && npm run e2e     # sobe a API e o front sozinho
 ```
 
-O CI (GitHub Actions) roda tudo a cada push: API, front e os testes ponta a ponta, estes com um
-Postgres descartável do próprio job.
+O CI (GitHub Actions) roda tudo a cada push: API, front e os testes ponta a ponta, a API e os
+ponta a ponta cada um com um Postgres descartável do próprio job.
 
 ### Simular banco lento e falhas
 
@@ -374,6 +375,12 @@ erro e transições permitidas: [`docs/contrato-api.md`](docs/contrato-api.md).
 - **Sem telas de gestão.** O cadastro da frota (trocar o motorista de um caminhão), os analistas
   e os papéis vêm do seed; a telemetria e os caminhões são simulados. Em produção, viriam do
   sistema da transportadora e da central de rastreamento contratada.
+- **Telemetria pensada para um emissor só** (a central de rastreamento). Uma leitura atrasada
+  pode sobrescrever a posição mais nova do caminhão; a regra não repete o alerta comparando o
+  título do incidente, então editar esse título permite um alerta repetido; e dois lotes
+  simultâneos com o mesmo sinal podem abrir dois incidentes. A correção é guardar a regra que
+  abriu o incidente (com índice único) e ignorar leituras mais antigas que a última. Ver
+  [ADR 0013](docs/decisoes/0013-telemetria-da-frota.md).
 - **Hibernação do plano gratuito.** Um job agendado chama `/health` a cada 10 min, mas o
   primeiro acesso ainda pode esperar o servidor acordar.
 
