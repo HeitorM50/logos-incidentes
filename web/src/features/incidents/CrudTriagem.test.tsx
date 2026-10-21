@@ -21,6 +21,7 @@ function simularServidor(itens: Incidente[]) {
     chamadas: [] as Chamada[],
     eventos: [] as unknown[],
     veiculos: {} as Record<string, unknown>,
+    iaDisponivel: false,
     responder: (_chamada: Chamada): Promise<Response> => new Promise(() => {}),
   }
   vi.stubGlobal(
@@ -32,6 +33,9 @@ function simularServidor(itens: Incidente[]) {
       if (url.includes('/veiculos/')) {
         const veiculo = servidor.veiculos[url.split('/veiculos/')[1]]
         return veiculo ? respostaJson(200, veiculo) : erroDaApi(404, 'nao_encontrado')
+      }
+      if (metodo === 'GET' && url.endsWith('/sugestao')) {
+        return respostaJson(200, { disponivel: servidor.iaDisponivel })
       }
       if (metodo === 'GET') return respostaJson(200, lista(servidor.itens))
       const chamada = { metodo, url, corpo: init?.body ? JSON.parse(String(init.body)) : null }
@@ -525,3 +529,78 @@ describe('TelaTriagem — histórico', () => {
   })
 })
 
+
+describe('TelaTriagem — preencher com IA', () => {
+  const MENSAGEM = 'Aqui é o Carlos, placa ABC1D23. Estourou o pneu na BR-116 km 230.'
+
+  async function abrirNovo() {
+    await userEvent.click(await screen.findByRole('button', { name: 'Novo incidente' }))
+    return screen.findByRole('dialog', { name: 'Novo incidente' })
+  }
+
+  it('sem a chave na API, o bloco não aparece', async () => {
+    simularServidor([incidente({ id: 1 })])
+    renderizar()
+    const painel = await abrirNovo()
+    await waitFor(() => expect(within(painel).getByLabelText(/Título/)).toBeInTheDocument())
+    expect(within(painel).queryByText('Recebeu pelo WhatsApp?')).not.toBeInTheDocument()
+  })
+
+  it('preenche o formulário com a sugestão e não salva sozinho', async () => {
+    const servidor = simularServidor([incidente({ id: 1 })])
+    servidor.iaDisponivel = true
+    servidor.responder = async () =>
+      respostaJson(200, {
+        titulo: 'Pneu estourado na BR-116',
+        descricao: MENSAGEM,
+        categoria: 'problema_mecanico',
+        criticidade: 'media',
+        local: 'BR-116, km 230',
+        placa: 'ABC1D23',
+        motorista_nome: 'Carlos',
+        justificativa: 'Veículo parado, sem vítimas.',
+      })
+    renderizar()
+    const painel = await abrirNovo()
+
+    await userEvent.type(
+      await within(painel).findByLabelText(/Cole a mensagem do motorista/),
+      MENSAGEM,
+    )
+    await userEvent.click(within(painel).getByRole('button', { name: 'Preencher com IA' }))
+
+    expect(await within(painel).findByText('Sugestão da IA: confira os campos.')).toBeInTheDocument()
+    expect(within(painel).getByLabelText(/Título/)).toHaveValue('Pneu estourado na BR-116')
+    expect(within(painel).getByLabelText(/Categoria/)).toHaveValue('problema_mecanico')
+    expect(within(painel).getByRole('radio', { name: /Média/ })).toBeChecked()
+    expect(within(painel).getByLabelText(/Local/)).toHaveValue('BR-116, km 230')
+    expect(within(painel).getByLabelText(/Placa/)).toHaveValue('ABC1D23')
+    expect(within(painel).getByLabelText('Nome')).toHaveValue('Carlos')
+    expect(within(painel).getByLabelText(/Descrição/)).toHaveValue(MENSAGEM)
+    // Só a chamada da sugestão: o incidente não foi criado.
+    expect(servidor.chamadas.map((c) => [c.metodo, c.url.replace(/^.*\/\/[^/]+/, '')])).toEqual([
+      ['POST', '/sugestao'],
+    ])
+    expect(servidor.chamadas[0].corpo).toEqual({ mensagem: MENSAGEM })
+  })
+
+  it('falha da IA mostra a mensagem da API e mantém o formulário', async () => {
+    const servidor = simularServidor([incidente({ id: 1 })])
+    servidor.iaDisponivel = true
+    servidor.responder = async () =>
+      erroDaApi(503, 'ia_indisponivel', { mensagem: 'A IA demorou para responder. Tente de novo.' })
+    renderizar()
+    const painel = await abrirNovo()
+
+    await userEvent.type(
+      await within(painel).findByLabelText(/Cole a mensagem do motorista/),
+      MENSAGEM,
+    )
+    await userEvent.click(within(painel).getByRole('button', { name: 'Preencher com IA' }))
+
+    expect(await within(painel).findByRole('alert')).toHaveTextContent(
+      'A IA demorou para responder. Tente de novo.',
+    )
+    expect(within(painel).getByLabelText(/Título/)).toHaveValue('')
+  })
+})

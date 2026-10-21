@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } fr
 import { ehErroApi } from '@/api/erros'
 import { obterVeiculo } from '@/api/incidentes'
 import { REGRAS } from '@/api/regras'
+import type { Sugestao } from '@/api/sugestao'
 import { ROTULO_CATEGORIA, ROTULO_CRITICIDADE } from '@/api/rotulos'
 import { CATEGORIAS, CRITICIDADES, type AnalistaResumo, type Incidente } from '@/api/tipos'
 import { LogosLoader } from '@/components/LogosLoader'
@@ -37,6 +38,7 @@ import {
   type ValoresFormulario,
 } from './formulario'
 import { IconeCriticidade } from './Icones'
+import { PreencherComIa } from './PreencherComIa'
 import { useCrudIncidente } from './useCrudIncidente'
 
 export type ModoPainel = { tipo: 'criar' } | { tipo: 'editar'; id: number }
@@ -234,6 +236,23 @@ function Formulario({
     if (tentou) setErros(validar(novos))
   }
 
+  /** Sugestão da IA: preenche o que ela leu e mantém o que a mensagem não trouxe. */
+  function aplicarSugestao(sugestao: Sugestao) {
+    const novos: ValoresFormulario = {
+      ...valores,
+      titulo: sugestao.titulo,
+      descricao: sugestao.descricao,
+      categoria: sugestao.categoria,
+      criticidade: sugestao.criticidade,
+      local: sugestao.local ?? valores.local,
+      placa: sugestao.placa ?? valores.placa,
+      motorista_nome: sugestao.motorista_nome ?? valores.motorista_nome,
+    }
+    setValores(novos)
+    setErros(validar(novos))
+    setTentou(true)
+  }
+
   function falhou(erro: unknown) {
     if (ehErroApi(erro) && erro.codigo === 'nao_encontrado') {
       setFoco({ alvo: 'aviso' })
@@ -420,6 +439,8 @@ function Formulario({
         >
           {aviso}
         </div>
+
+        {!editando && <PreencherComIa aoSugerir={aplicarSugestao} />}
 
         <CampoRotulado id={id('titulo')} rotulo="Título" obrigatorio erro={erros.titulo}>
           <Input

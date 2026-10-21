@@ -15,6 +15,10 @@ export type CodigoErro =
   | 'muitas_tentativas'
   | 'servico_indisponivel'
   | 'erro_interno'
+  | 'ia_desligada' // sugestão pela IA: sem chave da Anthropic neste ambiente
+  | 'ia_indisponivel'
+  | 'sem_sugestao'
+  | 'cota_ia_esgotada'
   | 'sem_conexao' // a requisição nem chegou à API (rede, DNS, servidor fora do ar)
   | 'resposta_invalida' // a API respondeu algo fora do formato do contrato
 
