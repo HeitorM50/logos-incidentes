@@ -4,7 +4,7 @@ import { LogosLoader } from '@/components/LogosLoader'
 import { useEhCelular } from '@/lib/useEhCelular'
 import { useFlipLinhas } from '@/lib/useFlipLinhas'
 import { cn } from '@/lib/utils'
-import { COLUNAS_TABELA, LinhaIncidente } from './LinhaIncidente'
+import { COLUNAS_TABELA, LARGURA_MINIMA_TABELA, LinhaIncidente } from './LinhaIncidente'
 import type { AcoesIncidente, Conflito } from './useAcoesIncidente'
 
 const CABECALHOS = [
@@ -63,7 +63,7 @@ function Barra({ largura, className }: { largura: string; className?: string }) 
 export function TabelaCarregando() {
   const celular = useEhCelular()
   return (
-    <div aria-hidden className={cn('relative', !celular && 'min-w-[1210px]')}>
+    <div aria-hidden className={cn('relative', !celular && LARGURA_MINIMA_TABELA)}>
       {celular ? (
         <div className="flex flex-col gap-2 p-2">
           {Array.from({ length: 5 }, (_, cartao) => {
@@ -237,7 +237,7 @@ export function TabelaIncidentes({
 
   return (
     // Tabela em ARIA sobre a grade: o leitor de tela anuncia o cabeçalho de cada coluna.
-    <div role="table" aria-label="Incidentes" className="min-w-[1210px]">
+    <div role="table" aria-label="Incidentes" className={LARGURA_MINIMA_TABELA}>
       <CabecalhoTabela />
       {/* A ordem vem da API: não fechados, criticidade (alta → baixa), mais antigo primeiro. */}
       <div ref={grupo} role="rowgroup" className={cascata} onKeyDown={andarComSetas}>

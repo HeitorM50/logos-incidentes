@@ -2,6 +2,8 @@ import { ehFinal, exigeComentario, REGRAS } from '@/api/regras'
 import { ROTULO_STATUS } from '@/api/rotulos'
 import type { AnalistaResumo, Incidente, StatusIncidente } from '@/api/tipos'
 
+export const MOTIVO_FECHADO = 'Incidente fechado: não aceita mais alterações.'
+
 // O front usa as regras da API (src/api/regras.ts, geradas do código da API) para desativar
 // o que a API recusaria e dizer o motivo; a API continua sendo a autoridade e devolve
 // 403/409/422 se o estado mudou entre a leitura e o clique.
@@ -55,7 +57,7 @@ export function motivoBloqueio(
   acao: Acao,
   idAnalista: number,
 ): string | null {
-  if (ehFinal(incidente.status)) return 'Incidente fechado: não aceita mais alterações.'
+  if (ehFinal(incidente.status)) return MOTIVO_FECHADO
   const responsavel = incidente.responsavel
   const meu = responsavel?.id === idAnalista
 

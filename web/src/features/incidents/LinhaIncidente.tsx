@@ -16,7 +16,7 @@ import { ROTULO_CATEGORIA, ROTULO_CRITICIDADE, ROTULO_STATUS } from '@/api/rotul
 import type { Criticidade, Incidente } from '@/api/tipos'
 import { formatarTelefone, linkLigar, linkWhatsApp } from '@/lib/telefone'
 import { cn } from '@/lib/utils'
-import type { Acao } from './acoes'
+import { MOTIVO_FECHADO, type Acao } from './acoes'
 import { AcoesLinha, EM_ANDAMENTO, SEM_CONEXAO } from './AcoesLinha'
 import { AvisoConflito } from './Avisos'
 import { DialogoTransferir } from './DialogoTransferir'
@@ -29,13 +29,13 @@ import { linkDoMapa, PROTOCOLOS } from './protocolos'
 import { tempoCurtoDoIncidente, tempoDoIncidente } from './tempo'
 import type { Conflito } from './useAcoesIncidente'
 
-// Mínimos somam 1.280 px com espaços: a tabela cabe sem rolagem lateral num notebook de 1366
-// px (com a margem da página e a barra de rolagem). Em telas maiores, título e local crescem.
 // O título é a coluna que cresce e quebra em até 2 linhas; local e categoria também quebram;
-// tempo, responsável e ações ficam estreitos. Mínimo de ~1.210 px: cabe numa tela de 1.280 px
-// sem rolagem lateral.
+// tempo, responsável e ações ficam estreitos. Mínimos de 1.118 px + 70 px de espaços + 24 px de
+// padding ≈ 1.210 px: cabe numa tela de 1.280 px sem rolagem lateral.
 export const COLUNAS_TABELA =
   'grid-cols-[84px_minmax(220px,3fr)_136px_minmax(150px,1.2fr)_72px_132px_112px_212px]'
+/** Largura mínima da tabela, a soma acima. Mude junto com COLUNAS_TABELA. */
+export const LARGURA_MINIMA_TABELA = 'min-w-[1210px]'
 
 const SELO: Record<Criticidade, string> = {
   alta: 'bg-alta-fundo text-alta-texto border-alta-borda font-bold',
@@ -181,7 +181,7 @@ export function LinhaIncidente({
                 : semConexao
                   ? SEM_CONEXAO
                   : fechado
-                    ? 'Incidente fechado: não aceita mais alterações.'
+                    ? MOTIVO_FECHADO
                     : null,
               aoExecutar,
             }
@@ -241,7 +241,7 @@ export function LinhaIncidente({
     <div
       role="none"
       data-incidente={incidente.id}
-      // scroll-mt-9: ao rolar até a linha (setas ↑↓), ela não fica sob o cabeçalho fixo.
+      // scroll-mt-11: ao rolar até a linha (setas ↑↓), ela não fica sob o cabeçalho fixo.
       className={cn('realce-linha relative scroll-mt-11 rounded-[14px] px-3 py-1.5', fundo)}
     >
       {camadas}

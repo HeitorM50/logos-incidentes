@@ -2,6 +2,7 @@ import { ehErroApi } from '@/api/erros'
 import { ehFinal, REGRAS } from '@/api/regras'
 import type { Categoria, Criticidade, Incidente, NovoIncidente } from '@/api/tipos'
 import { formatarTelefone, lerTelefone } from '@/lib/telefone'
+import { MOTIVO_FECHADO } from './acoes'
 
 // Espelho da validação da API (api/app/schemas/incidente.py). O formulário barra o que a API
 // recusaria, e a API continua sendo a autoridade: um 422 dela também aparece no campo.
@@ -174,7 +175,7 @@ export const ROTULO_CAMPO: Record<Campo, string> = {
 
 /** Motivo pelo qual o analista não pode editar nem remover, ou null quando pode. */
 export function motivoEdicao(incidente: Incidente, idAnalista: number): string | null {
-  if (ehFinal(incidente.status)) return 'Incidente fechado: não aceita mais alterações.'
+  if (ehFinal(incidente.status)) return MOTIVO_FECHADO
   const responsavel = incidente.responsavel
   if (responsavel && responsavel.id !== idAnalista) {
     return `Só ${responsavel.nome} pode editar ou remover este incidente.`
