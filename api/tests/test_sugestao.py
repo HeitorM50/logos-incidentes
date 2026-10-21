@@ -187,7 +187,7 @@ def test_recusa_do_modelo_vira_422(monkeypatch):
     assert (erro.value.status, erro.value.codigo) == (422, "sem_sugestao")
 
 
-def test_erro_da_anthropic_vira_503(monkeypatch):
+def test_erro_da_anthropic_vira_503_e_vai_ao_log(monkeypatch, caplog):
     extrair, _ = _extrator_com_http_falso(
         monkeypatch,
         lambda _: httpx2.Response(
@@ -197,3 +197,5 @@ def test_erro_da_anthropic_vira_503(monkeypatch):
     with pytest.raises(ErroApi) as erro:
         extrair(MENSAGEM)
     assert (erro.value.status, erro.value.codigo) == (503, "ia_indisponivel")
+    assert "Anthropic respondeu 401" in caplog.text
+    assert MENSAGEM not in caplog.text

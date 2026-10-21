@@ -6,6 +6,7 @@ sem o analista conferir e salvar. A mensagem é texto de terceiros, então a sa�
 schema (structured outputs) e passa pelas mesmas validações do formulário.
 """
 
+import logging
 from collections.abc import Callable
 
 import anthropic
@@ -16,6 +17,8 @@ from app.core.dominio import Categoria, Criticidade
 from app.core.erros import ErroApi
 from app.schemas.incidente import normalizar_placa
 from app.schemas.sugestao import SugestaoResposta
+
+logger = logging.getLogger("logos")
 
 LIMITE_TITULO = 120
 LIMITE_LOCAL = 160
@@ -98,12 +101,22 @@ def criar_extrator(config: Configuracao) -> Extrator | None:
                 **extras,
             )
         except (anthropic.APITimeoutError, anthropic.APIConnectionError) as erro:
+            logger.warning("Sugestão pela IA: sem resposta da Anthropic (%s)", type(erro).__name__)
             raise _indisponivel("A IA demorou para responder. Tente de novo.") from erro
         except anthropic.RateLimitError as erro:
+            logger.warning("Sugestão pela IA: limite da Anthropic (429)")
             raise _indisponivel("A IA está com muitos pedidos agora. Tente em instantes.") from erro
         except anthropic.APIStatusError as erro:
+            # A mensagem de erro da Anthropic não contém o texto do motorista: pode ir ao log.
+            logger.warning(
+                "Sugestão pela IA: Anthropic respondeu %s (%s, request-id %s)",
+                erro.status_code,
+                erro.message,
+                erro.request_id,
+            )
             raise _indisponivel("A IA não está disponível agora. Preencha à mão.") from erro
         if resposta.stop_reason == "refusal" or resposta.parsed_output is None:
+            logger.warning("Sugestão pela IA: sem saída (stop_reason=%s)", resposta.stop_reason)
             raise ErroApi(
                 422,
                 "sem_sugestao",
