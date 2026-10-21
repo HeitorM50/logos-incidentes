@@ -16,6 +16,7 @@ from app.routers import (
     regras,
     relatorio,
     saude,
+    sugestao,
     telemetria,
 )
 
@@ -64,6 +65,7 @@ def criar_app(
     app.include_router(telemetria.router)
     app.include_router(analistas.router)
     app.include_router(relatorio.router)
+    app.include_router(sugestao.router)
     return app
 
 

@@ -19,6 +19,15 @@ class Configuracao(BaseSettings):
     # Tempo máximo de uma consulta no banco antes de ser cancelada (ADR 0003).
     timeout_consulta_ms: int = 5000
 
+    # Sugestão de incidente pela IA a partir da mensagem do motorista (ADR 0014). Sem chave,
+    # o recurso fica desligado e o formulário funciona como antes.
+    anthropic_api_key: str | None = None
+    sugestao_modelo: str = "claude-opus-5-5"
+    # Duas tentativas cabem nos 60 s do cliente do front.
+    sugestao_timeout_s: float = Field(default=25, gt=0, le=120)
+    # Teto de chamadas por dia na instância: a conta demo é pública e cada chamada custa.
+    sugestao_limite_diario: int = Field(default=200, ge=0)
+
     # Simulação de falha para demonstração. Desligada por padrão.
     simular_latencia_ms: int = Field(default=0, ge=0, le=30_000)
     simular_falha_pct: float = Field(default=0, ge=0, le=100)

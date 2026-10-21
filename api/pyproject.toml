@@ -5,6 +5,7 @@ description = "API do Logos — central de resposta a incidentes"
 requires-python = ">=3.12"
 dependencies = [
     "alembic>=1.20.0",
+    "anthropic>=1.17.0",
     "bcrypt>=5.0.0",
     "fastapi>=0.146.0",
     "psycopg[binary]>=3.3.6",
