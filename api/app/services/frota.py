@@ -42,7 +42,12 @@ def completar_motorista(sessao: Session, valores: dict) -> dict:
 
 
 def mapa(sessao: Session) -> MapaDaFrota:
-    """Rodovias da simulação e a posição de cada caminhão, com o incidente ativo dele."""
+    """Rodovias da simulação e a posição de cada caminhão, com o alerta ativo dele.
+
+    Alerta = incidente ativo que a telemetria abriu (tem posição): é sobre onde o caminhão está
+    agora. Os outros incidentes da placa (registrados na central, em outro lugar e hora) ficam na
+    triagem, não no mapa.
+    """
     veiculos = sessao.scalars(
         select(Veiculo).options(joinedload(Veiculo.motorista)).order_by(Veiculo.placa)
     ).all()
@@ -53,7 +58,11 @@ def mapa(sessao: Session) -> MapaDaFrota:
     )
     ativos = sessao.execute(
         select(Incidente.placa, Incidente.id, Incidente.titulo, Incidente.criticidade)
-        .where(Incidente.status != StatusIncidente.FECHADO, Incidente.placa.is_not(None))
+        .where(
+            Incidente.status != StatusIncidente.FECHADO,
+            Incidente.placa.is_not(None),
+            Incidente.latitude.is_not(None),
+        )
         .order_by(ordem, Incidente.criado_em)
     ).all()
     incidente_da_placa: dict[str, IncidenteDoVeiculo] = {}

@@ -10,6 +10,7 @@ from app.core.dispositivo import hash_da_chave
 from app.models import Dispositivo, Incidente, Motorista, Veiculo
 from app.schemas.telemetria import LoteTelemetria
 from app.services import telemetria as servico
+from tests.apoio import criar_incidente
 
 CHAVE = "chave-de-teste-da-rastreadora"
 
@@ -151,3 +152,12 @@ def test_mapa_traz_rotas_posicoes_e_o_incidente_ativo(
     assert veiculos["RTA4E21"]["incidente"]["id"] == gerado["id"]
     assert veiculos["RTA4E21"]["motorista"] == "José Almeida"
     assert veiculos["ABC1D23"]["latitude"] is None
+
+
+def test_incidente_sem_posicao_nao_vira_alerta_no_mapa(
+    cliente: TestClient, rastreadora: Dispositivo
+):
+    # Registrado na central (sem posição): fica na triagem, não no mapa da frota.
+    criar_incidente(cliente, placa="RTA4E21")
+    veiculos = {v["placa"]: v for v in cliente.get("/frota").json()["veiculos"]}
+    assert veiculos["RTA4E21"]["incidente"] is None

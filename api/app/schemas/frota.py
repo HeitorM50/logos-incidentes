@@ -37,7 +37,7 @@ class PosicaoVeiculo(BaseModel):
     referencia: str | None
     ultima_leitura_em: datetime | None
     parado_desde: datetime | None
-    # O incidente ativo mais crítico do caminhão (o mais antigo, no empate).
+    # O alerta ativo mais crítico da telemetria para o caminhão (o mais antigo, no empate).
     incidente: IncidenteDoVeiculo | None
 
 
