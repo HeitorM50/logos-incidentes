@@ -4,6 +4,7 @@ from sqlalchemy import (
     BigInteger,
     DateTime,
     Enum,
+    Float,
     ForeignKey,
     Identity,
     Index,
@@ -46,6 +47,9 @@ class Incidente(Base):
     # pelo analista). Não aponta para o motorista: o motorista do veículo muda com o tempo.
     motorista_nome: Mapped[str | None] = mapped_column(String(80))
     motorista_telefone: Mapped[str | None] = mapped_column(String(16))
+    # Onde o caminhão estava quando a telemetria gerou o incidente (nulo nos demais).
+    latitude: Mapped[float | None] = mapped_column(Float)
+    longitude: Mapped[float | None] = mapped_column(Float)
     responsavel_id: Mapped[int | None] = mapped_column(ForeignKey("analistas.id"))
     atualizado_por_id: Mapped[int | None] = mapped_column(ForeignKey("analistas.id"))
     # Preenchido quando o incidente chegou direto de um caminhão (POST /ingestao/incidentes).

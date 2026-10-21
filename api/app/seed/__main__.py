@@ -8,8 +8,8 @@ import argparse
 
 from app.core.banco import obter_fabrica_sessoes
 from app.seed.analistas import semear_analistas
-from app.seed.dispositivos import semear_dispositivo_demo
-from app.seed.frota import semear_frota
+from app.seed.dispositivos import semear_dispositivo_demo, semear_rastreadora
+from app.seed.frota import posicionar_frota, semear_frota
 from app.seed.incidentes import semear_incidentes
 
 
@@ -22,12 +22,15 @@ def main() -> None:
         analistas = semear_analistas(sessao)
         # Antes dos incidentes: eles copiam o contato do motorista de cada placa.
         veiculos = semear_frota(sessao)
+        posicionar_frota(sessao)
         criados = semear_incidentes(sessao, analistas, recriar=argumentos.recriar)
         dispositivo = semear_dispositivo_demo(sessao)
+        rastreadora = semear_rastreadora(sessao)
     print(f"Analistas: {', '.join(a.usuario for a in analistas)}")
     print(f"Veículos criados: {veiculos}")
     print(f"Incidentes criados: {criados}")
     print(f"Dispositivo de demonstração: {dispositivo.nome}")
+    print(f"Telemetria: {rastreadora.nome}")
 
 
 if __name__ == "__main__":

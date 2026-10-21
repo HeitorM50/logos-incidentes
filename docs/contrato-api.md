@@ -133,6 +133,8 @@ por status e ordenada por criticidade e tempo aberto.
 | `GET /veiculos/{placa}` | — | 200 `{placa, modelo, motorista: {nome, telefone} \| null}` | 401, 404 |
 | `GET /relatorio?horas=6\|24\|168` | — | 200 funil (recebidos → assumidos → no prazo → fechados), tempos médios, taxa de atraso, comparação com o período anterior e recebidos por hora | 401, 422 |
 | `GET /relatorio/registro?horas=6\|24\|168` | — | 200 incidentes recebidos ou fechados no período (com marcos e comentário de fechamento) e a linha do tempo dos eventos, para o PDF | 401, 422 |
+| `POST /telemetria` | `{leituras: [{placa, latitude, longitude, velocidade_kmh, ignicao?, referencia?, registrado_em?, sinais?: {panico?, impacto_g?, temperatura_motor_c?, visibilidade_m?}}]}` (até 200; chave de dispositivo) | 200 `{processadas, ignoradas, incidentes}` | 401, 422, 429 |
+| `GET /frota` | — | 200 `{rotas, veiculos}`: rodovias da simulação e a última posição de cada caminhão, com o incidente ativo | 401 |
 | `GET /regras` | — | 200 transições, `pode_assumir`, `status_apos_liberar`, `status_final`, limites dos campos, padrão da placa e regra do comentário (público, sem dados) | — |
 | `POST /ingestao/incidentes` | cabeçalhos `X-Chave-Dispositivo` e `Idempotency-Key`; corpo igual ao `POST /incidentes` | 201 `Incidente` (novo) · 200 (reenvio, `Idempotent-Replayed: true`) | 401, 409 `ja_recebido`, 422 (inclui `chave_reutilizada`), 429 (por IP ou `cota_do_dispositivo`) |
 

@@ -203,6 +203,8 @@ class IncidenteResposta(BaseModel):
     placa: str | None
     motorista_nome: str | None = None
     motorista_telefone: str | None = None
+    latitude: float | None = None
+    longitude: float | None = None
     responsavel: AnalistaResumo | None
     atualizado_por: AnalistaResumo | None
     # Caminhão que enviou o incidente pela ingestão; nulo quando um analista o registrou.

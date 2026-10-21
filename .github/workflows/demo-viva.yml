@@ -4,8 +4,8 @@ name: Demonstração viva
 # envelhecem: quase todos aparecem como atrasados e o relatório das últimas 6 h fica vazio.
 #
 # - Todo dia às 06:00 (Brasília), os dados de demonstração são recriados (seed --recriar).
-# - A cada 30 min, um caminhão da frota envia um incidente pela ingestão, o mesmo caminho que um
-#   rastreador real usaria (scripts/simular_caminhao.py --frota).
+# - A cada 30 min, a central de rastreamento simulada manda 1 min de telemetria da frota
+#   (scripts/simular_frota.py): posições e sensores; a API abre incidentes pelas regras.
 on:
   schedule:
     - cron: "0 9 * * *"
@@ -48,7 +48,7 @@ jobs:
       - run: uv run python -m app.seed --recriar
 
   caminhao:
-    name: Caminhão envia um incidente
+    name: Telemetria da frota
     if: github.event.schedule == '*/30 * * * *' || inputs.acao == 'caminhao'
     runs-on: ubuntu-latest
     defaults:
@@ -60,9 +60,7 @@ jobs:
         with:
           enable-cache: true
       - run: uv sync --locked
-      # Um em cada três envios é Alta: o aviso de "Alta novo" aparece de vez em quando, não sempre.
-      - name: Enviar pela ingestão
-        run: |
-          extra=""
-          if [ $((RANDOM % 3)) -eq 0 ]; then extra="--criticidade alta"; fi
-          uv run python scripts/simular_caminhao.py --api "${{ vars.API_URL }}" --frota $extra
+      # 1 min de telemetria (4 envios): os 70 caminhões andam nas rodovias e a API abre os
+      # incidentes que as regras apontarem (pânico, impacto, motor quente, visibilidade, parada).
+      - name: Enviar a telemetria da frota
+        run: uv run python scripts/simular_frota.py --api "${{ vars.API_URL }}" --duracao 60

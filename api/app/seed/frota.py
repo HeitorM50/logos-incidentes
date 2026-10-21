@@ -5,11 +5,13 @@ demonstração toca o telefone de uma pessoa real, nem pelo botão "Ligar", nem 
 """
 
 import random
+from datetime import UTC, datetime
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models import Motorista, Veiculo
+from app.simulacao.frota import estado_do_caminhao
 
 
 def _gerar_placa(gerador: random.Random) -> str:
@@ -68,3 +70,24 @@ def semear_frota(sessao: Session) -> int:
     sessao.add_all(veiculos)
     sessao.commit()
     return len(veiculos)
+
+
+def posicionar_frota(sessao: Session, agora: datetime | None = None) -> None:
+    """Põe cada caminhão onde a simulação diz que ele está agora: o mapa da frota não começa
+    vazio, e a telemetria continua dali (scripts/simular_frota.py)."""
+    agora = agora or datetime.now(UTC)
+    ordem = {placa: n for n, placa in enumerate(PLACAS_DA_FROTA)}
+    for veiculo in sessao.scalars(select(Veiculo)):
+        if veiculo.placa not in ordem:
+            continue
+        estado = estado_do_caminhao(
+            veiculo.placa, ordem[veiculo.placa], agora, veiculo.motorista_id is not None
+        )
+        veiculo.latitude = estado.local.lat
+        veiculo.longitude = estado.local.lon
+        veiculo.referencia = estado.local.referencia
+        veiculo.velocidade_kmh = estado.velocidade_kmh
+        veiculo.ignicao = estado.ignicao
+        veiculo.ultima_leitura_em = agora
+        veiculo.parado_desde = None
+    sessao.commit()

@@ -1,10 +1,13 @@
 """Frota: veículos e o motorista atual de cada um."""
 
-from sqlalchemy import select
+from sqlalchemy import case, select
 from sqlalchemy.orm import Session, joinedload
 
+from app.core.dominio import Criticidade, StatusIncidente
 from app.core.erros import ErroApi
-from app.models import Veiculo
+from app.models import Incidente, Veiculo
+from app.schemas.frota import IncidenteDoVeiculo, MapaDaFrota, PosicaoVeiculo, RotaDoMapa
+from app.simulacao.rotas import ROTAS
 
 
 def buscar_veiculo(sessao: Session, placa: str) -> Veiculo | None:
@@ -36,3 +39,47 @@ def completar_motorista(sessao: Session, valores: dict) -> dict:
         "motorista_nome": veiculo.motorista.nome,
         "motorista_telefone": veiculo.motorista.telefone,
     }
+
+
+def mapa(sessao: Session) -> MapaDaFrota:
+    """Rodovias da simulação e a posição de cada caminhão, com o incidente ativo dele."""
+    veiculos = sessao.scalars(
+        select(Veiculo).options(joinedload(Veiculo.motorista)).order_by(Veiculo.placa)
+    ).all()
+    ordem = case(
+        (Incidente.criticidade == Criticidade.ALTA, 0),
+        (Incidente.criticidade == Criticidade.MEDIA, 1),
+        else_=2,
+    )
+    ativos = sessao.execute(
+        select(Incidente.placa, Incidente.id, Incidente.titulo, Incidente.criticidade)
+        .where(Incidente.status != StatusIncidente.FECHADO, Incidente.placa.is_not(None))
+        .order_by(ordem, Incidente.criado_em)
+    ).all()
+    incidente_da_placa: dict[str, IncidenteDoVeiculo] = {}
+    for linha in ativos:
+        incidente_da_placa.setdefault(
+            linha.placa,
+            IncidenteDoVeiculo(id=linha.id, titulo=linha.titulo, criticidade=linha.criticidade),
+        )
+    return MapaDaFrota(
+        rotas=[
+            RotaDoMapa(rodovia=r.rodovia, pontos=[(p.lat, p.lon) for p in r.pontos]) for r in ROTAS
+        ],
+        veiculos=[
+            PosicaoVeiculo(
+                placa=v.placa,
+                modelo=v.modelo,
+                motorista=v.motorista.nome if v.motorista else None,
+                latitude=v.latitude,
+                longitude=v.longitude,
+                velocidade_kmh=v.velocidade_kmh,
+                ignicao=v.ignicao,
+                referencia=v.referencia,
+                ultima_leitura_em=v.ultima_leitura_em,
+                parado_desde=v.parado_desde,
+                incidente=incidente_da_placa.get(v.placa),
+            )
+            for v in veiculos
+        ],
+    )

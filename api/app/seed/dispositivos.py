@@ -14,6 +14,27 @@ NOME_DEMO = "Simulador do caminhão RTA4E21"
 PLACA_DEMO = "RTA4E21"
 
 
+# Central de rastreamento simulada (opção D): manda a telemetria da frota inteira com uma
+# credencial só, como uma rastreadora real integra (POST /telemetria). Pública como a outra.
+CHAVE_RASTREADORA = "demo-rastreadora-logos-2026"
+NOME_RASTREADORA = "Central de rastreamento (simulada)"
+
+
+def semear_rastreadora(sessao: Session) -> Dispositivo:
+    """Cria o dispositivo da central de rastreamento simulada se ele ainda não existe."""
+    existente = sessao.scalars(
+        select(Dispositivo).where(Dispositivo.chave_hash == hash_da_chave(CHAVE_RASTREADORA))
+    ).first()
+    if existente:
+        return existente
+    dispositivo = Dispositivo(
+        nome=NOME_RASTREADORA, placa=None, chave_hash=hash_da_chave(CHAVE_RASTREADORA), ativo=True
+    )
+    sessao.add(dispositivo)
+    sessao.commit()
+    return dispositivo
+
+
 def semear_dispositivo_demo(sessao: Session) -> Dispositivo:
     """Cria o dispositivo de demonstração se ele ainda não existe (idempotente)."""
     existente = sessao.scalars(
