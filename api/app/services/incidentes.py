@@ -196,7 +196,7 @@ def editar(
     if not campos:
         # Mandar os mesmos valores não é edição: sem nova versão (não gera 409 falso nos outros
         # analistas) e sem evento vazio no histórico.
-        return IncidenteResposta.model_validate(incidente)
+        return obter(sessao, incidente_id)
     return _gravar_com_versao(
         sessao,
         incidente_id,
@@ -212,14 +212,15 @@ def assumir(
 ) -> IncidenteResposta:
     incidente = _buscar(sessao, incidente_id)
     if incidente.responsavel_id == analista_id:
-        return IncidenteResposta.model_validate(incidente)  # já é dele: nada a fazer
+        return obter(sessao, incidente_id)  # já é dele: nada a fazer
     # "Já assumido" vem antes da versão: é a mensagem que explica o conflito ao analista.
     if incidente.responsavel is not None:
         raise ErroApi(
             409,
             "ja_assumido",
             f"{incidente.responsavel.nome} já assumiu este incidente.",
-            atual=IncidenteResposta.model_validate(incidente),
+            # Pelo obter(): o front grava este estado no cache, com o selo de duplicata.
+            atual=obter(sessao, incidente_id),
         )
     _exigir_versao_atual(sessao, incidente, versao_lida)
     _exigir_aberto_para_alteracao(incidente)
