@@ -25,7 +25,9 @@ from app.schemas.sugestao import SugestaoResposta
 
 logger = logging.getLogger("logos")
 
-MODELO_GEMINI = "gemini-flash-latest"
+# Flash-Lite: o mais rápido da família, suficiente para extrair campos de uma mensagem curta.
+# O Flash comum raciocina antes de responder e passou dos 25 s no plano gratuito.
+MODELO_GEMINI = "gemini-flash-lite-latest"
 MODELO_CLAUDE = "claude-opus-5-5"
 
 LIMITE_TITULO = 120
@@ -136,6 +138,9 @@ def _extrator_gemini(config: Configuracao) -> Extrator:
                 raise _indisponivel(
                     "A IA está com muitos pedidos agora. Tente em instantes."
                 ) from erro
+            # O SDK manda o prazo no X-Server-Timeout: passou dele, o Google responde 504.
+            if erro.code in (408, 504):
+                raise _indisponivel("A IA demorou para responder. Tente de novo.") from erro
             raise _indisponivel("A IA não está disponível agora. Preencha à mão.") from erro
         saida = resposta.parsed
         if not isinstance(saida, _SaidaDoModelo):

@@ -166,7 +166,7 @@ api/                FastAPI
   app/simulacao/    rodovias reais e o movimento da frota de demonstração
   app/seed/         analistas, frota, dispositivos e 100 incidentes de demonstração
   alembic/          migrations (0001 a 0007)
-  tests/            pytest (203 testes)
+  tests/            pytest (204 testes)
   scripts/          simuladores: caminhão (ingestão) e frota (telemetria)
 web/                React + Vite + TypeScript
   src/api/          cliente tipado da API, erros e sessão
@@ -269,7 +269,7 @@ Postgres (o projeto usa a versão 17 localmente e o Postgres do Supabase em prod
 ### Testes e qualidade
 
 ```bash
-cd api && uv run pytest && uv run ruff check .        # 203 testes
+cd api && uv run pytest && uv run ruff check .        # 204 testes
 cd web && npm test && npm run lint && npm run build   # 308 testes
 ```
 

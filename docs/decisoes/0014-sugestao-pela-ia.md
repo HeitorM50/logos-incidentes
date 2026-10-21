@@ -15,11 +15,12 @@ a telemetria (ADR 0013), parte dos relatos continua chegando como texto livre do
   motorista e uma frase que justifica a criticidade. A mensagem original vira a descrição.
 - **A IA só sugere.** Nada é gravado: o formulário é preenchido e o analista confere, corrige e
   salva pelo `POST /incidentes` de sempre, com as mesmas validações.
-- **Gemini pela API do Google** (SDK oficial `google-genai`, modelo `gemini-flash-latest`), com
-  saída estruturada: a resposta é presa a um schema Pydantic com as categorias e criticidades
-  fechadas do domínio. O **Claude** (SDK oficial `anthropic`) continua como alternativa: a API usa
-  o Gemini se houver `GEMINI_API_KEY`, senão o Claude com `ANTHROPIC_API_KEY`. O schema e as
-  instruções são os mesmos para os dois. A API ainda
+- **Gemini pela API do Google** (SDK oficial `google-genai`, modelo `gemini-flash-lite-latest`,
+  o mais rápido da família), com saída estruturada: a resposta é presa a um schema Pydantic com
+  as categorias e criticidades fechadas do domínio. O Flash comum raciocina antes de responder e
+  passou do prazo de 25 s no plano gratuito. O **Claude** (SDK oficial `anthropic`) continua como
+  alternativa: a API usa o Gemini se houver `GEMINI_API_KEY`, senão o Claude com
+  `ANTHROPIC_API_KEY`. O schema e as instruções são os mesmos para os dois. A API ainda
   ajusta a saída aos limites do formulário (título até 120 caracteres, placa só se for válida,
   campos vazios viram nulo).
 - **A mensagem é dado de terceiros.** Ela vai delimitada, separada das instruções, e as

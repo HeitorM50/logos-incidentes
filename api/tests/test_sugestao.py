@@ -245,7 +245,7 @@ def test_gemini_tem_prioridade_e_pede_saida_estruturada(monkeypatch):
     )
     assert extrair(MENSAGEM) == _saida()
     pedido = pedidos[0]
-    assert pedido.url.path.endswith("/models/gemini-flash-latest:generateContent")
+    assert pedido.url.path.endswith("/models/gemini-flash-lite-latest:generateContent")
     # A chave vai no cabeçalho, nunca na URL (que pode parar em log).
     assert "g-teste" not in str(pedido.url)
     assert pedido.headers["x-goog-api-key"] == "g-teste"
@@ -288,3 +288,19 @@ def test_erro_do_gemini_vira_503_e_vai_ao_log(monkeypatch, caplog):
     assert "Gemini respondeu 400" in caplog.text
     assert "API key not valid" in caplog.text
     assert MENSAGEM not in caplog.text
+
+
+def test_prazo_estourado_no_gemini_diz_que_a_ia_demorou(monkeypatch):
+    extrair, pedidos = _extrator_gemini_com_http_falso(
+        monkeypatch,
+        lambda _: httpx.Response(
+            504,
+            json={"error": {"code": 504, "message": "Deadline", "status": "DEADLINE_EXCEEDED"}},
+        ),
+    )
+    with pytest.raises(ErroApi) as erro:
+        extrair(MENSAGEM)
+    assert erro.value.status == 503
+    assert erro.value.mensagem == "A IA demorou para responder. Tente de novo."
+    # O prazo do servidor acompanha o tempo limite configurado.
+    assert pedidos[0].headers["x-server-timeout"] == "25"
