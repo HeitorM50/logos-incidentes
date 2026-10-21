@@ -20,9 +20,28 @@ anônima ou em outro navegador e altere o mesmo incidente nas duas. A supervisor
 ![Tela de triagem no modo claro](docs/imagens/triagem-claro.png)
 
 <details>
-<summary>Modo escuro</summary>
+<summary>Mais telas: modo escuro, detalhes, relatório, login e celular</summary>
+
+**Modo escuro**
 
 ![Tela de triagem no modo escuro](docs/imagens/triagem-escuro.png)
+
+**Detalhes de um incidente:** protocolo da categoria, contato do motorista, mapa, mesma placa e
+histórico.
+
+![Detalhes de um incidente](docs/imagens/detalhes.png)
+
+**Relatório:** funil do atendimento, tempos e atraso comparados com o período anterior.
+
+![Painel de relatório](docs/imagens/relatorio.png)
+
+**Login**
+
+![Tela de login](docs/imagens/login.png)
+
+**Celular:** cada incidente vira um cartão.
+
+<img src="docs/imagens/celular.png" alt="Triagem no celular" width="300">
 
 </details>
 
