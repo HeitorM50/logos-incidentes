@@ -7,7 +7,7 @@ decidir **o que tratar primeiro**. API em Python (FastAPI + Postgres) e interfac
 |---|---|
 | **Aplicação** | https://logos-incidentes.vercel.app |
 | **API (documentação interativa)** | https://logos-api-uy7z.onrender.com/docs |
-| **Vídeo de demonstração** | _link publicado na entrega_ |
+| **Vídeo de demonstração** | https://youtu.be/7FVfirwq350 |
 
 **Acesso de demonstração:** usuário `ana`, senha `logos2026` (as credenciais também aparecem na
 tela de login). Para ver o controle de concorrência, entre como `bruno` (mesma senha) numa janela
