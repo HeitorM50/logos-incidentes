@@ -127,23 +127,26 @@ flowchart LR
     V[Front React<br/>Vercel] -->|carrega o app| A[Navegador<br/>do analista]
     A -->|JSON + JWT<br/>a cada 5 s e nas ações| R[API FastAPI<br/>Render]
     R -->|SQLAlchemy<br/>UPDATE ... WHERE versao| P[(Postgres<br/>Supabase)]
-    G[GitHub Actions<br/>a cada 10 min] -.->|/health| R
+    T[Central de rastreamento<br/>e caminhões] -->|/telemetria e /ingestao<br/>chave de dispositivo| R
+    G[GitHub Actions] -.->|/health a cada 10 min<br/>telemetria simulada a cada 30 min| R
 ```
 
 ```
 api/                FastAPI
-  app/routers/      rotas HTTP (auth, incidentes, health)
+  app/routers/      rotas HTTP (auth, incidentes, ingestão, telemetria, frota, relatório, regras, health)
   app/schemas/      validação de entrada e saída (Pydantic)
-  app/services/     regras de negócio: ciclo de vida, versão, responsável
+  app/services/     regras de negócio: ciclo de vida e versão, duplicatas, frota, telemetria, relatório
   app/models/       tabelas (SQLAlchemy)
-  app/core/         configuração, banco, segurança, erros, resiliência, limite de login
-  app/seed/         analistas e 100 incidentes de demonstração
-  alembic/          migrations
-  tests/            pytest (123 testes)
-  scripts/          simulador de caminhão para a ingestão
+  app/core/         configuração, banco, segurança, erros, resiliência, limites
+  app/simulacao/    rodovias reais e o movimento da frota de demonstração
+  app/seed/         analistas, frota, dispositivos e 100 incidentes de demonstração
+  alembic/          migrations (0001 a 0007)
+  tests/            pytest (185 testes)
+  scripts/          simuladores: caminhão (ingestão) e frota (telemetria)
 web/                React + Vite + TypeScript
   src/api/          cliente tipado da API, erros e sessão
-  src/features/     auth (login) e incidents (triagem, filtros, ações, formulário)
+  src/features/     auth (login), incidents (triagem, filtros, ações, formulário),
+                    relatorio (painel e PDF) e frota (mapa da telemetria)
   src/components/   componentes compartilhados e shadcn/ui
   src/theme/        tema claro/escuro
 docs/
@@ -241,17 +244,19 @@ Postgres (o projeto usa a versão 17 localmente e o Postgres do Supabase em prod
 ### Testes e qualidade
 
 ```bash
-cd api && uv run pytest && uv run ruff check .        # 123 testes
-cd web && npm test && npm run lint && npm run build   # 272 testes
+cd api && uv run pytest && uv run ruff check .        # 185 testes
+cd web && npm test && npm run lint && npm run build   # 305 testes
 ```
 
-Os testes da API rodam num schema temporário, criado e apagado a cada execução.
+Os testes da API rodam num schema temporário, criado e apagado a cada execução, e só aceitam um
+Postgres local (o do `docker compose`): banco remoto exige `TESTES_BANCO_REMOTO=1`, que só o CI usa.
 
-**Ponta a ponta (Playwright):** navegador de verdade contra a API e o Postgres de verdade, em 9
+**Ponta a ponta (Playwright):** navegador de verdade contra a API e o Postgres de verdade, em 13
 cenários — triagem e filtros, login, dois analistas no mesmo incidente (409), CRUD com dado
-inválido barrado, rollback com falha na escrita, desfazer e histórico, ingestão pelo caminhão
-aparecendo na triagem, paridade das regras entre a API rodando e o front e a tela de celular
-(cartões, sem rolagem horizontal).
+inválido barrado, rollback com falha na escrita, desfazer e histórico, comentário ao marcar
+inconclusivo e ao liberar, transferência pelo supervisor, ingestão pelo caminhão aparecendo na
+triagem, telemetria virando alerta no mapa da frota, relatório com exportação em PDF, paridade
+das regras entre a API rodando e o front e a tela de celular (cartões, sem rolagem horizontal).
 
 ```bash
 docker compose up -d
@@ -340,6 +345,9 @@ erro e transições permitidas: [`docs/contrato-api.md`](docs/contrato-api.md).
 - **Token no `localStorage`.** Mitigado por CSP e ausência de HTML injetado; em produção real, o
   ideal é cookie `HttpOnly` no mesmo domínio.
 - **Limite de login em memória.** Vale para uma instância da API; com várias, precisaria de Redis.
+- **Sem telas de gestão.** O cadastro da frota (trocar o motorista de um caminhão), os analistas
+  e os papéis vêm do seed; a telemetria e os caminhões são simulados. Em produção, viriam do
+  sistema da transportadora e da central de rastreamento contratada.
 - **Hibernação do plano gratuito.** Um job agendado chama `/health` a cada 10 min, mas o
   primeiro acesso ainda pode esperar o servidor acordar.
 
