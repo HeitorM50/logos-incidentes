@@ -29,6 +29,9 @@ services:
         value: "0"
       - key: SIMULAR_FALHA_PCT
         value: "0"
-      # Sugestão pela IA (ADR 0014): sem a chave, o recurso fica desligado.
+      # Sugestão pela IA (ADR 0014): Gemini, ou Claude se só houver a chave da Anthropic.
+      # Sem nenhuma das duas, o recurso fica desligado.
+      - key: GEMINI_API_KEY
+        sync: false
       - key: ANTHROPIC_API_KEY
         sync: false

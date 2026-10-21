@@ -1,11 +1,13 @@
-"""Sugestão de incidente pela IA (ADR 0014). O Claude é trocado por um extrator falso."""
+"""Sugestão de incidente pela IA (ADR 0014). Nenhum teste chama o Gemini ou a Anthropic."""
 
 import json
 
 import anthropic
+import httpx
 import httpx2
 import pytest
 from fastapi.testclient import TestClient
+from google import genai
 
 from app.core.config import Configuracao
 from app.core.erros import ErroApi
@@ -198,4 +200,91 @@ def test_erro_da_anthropic_vira_503_e_vai_ao_log(monkeypatch, caplog):
         extrair(MENSAGEM)
     assert (erro.value.status, erro.value.codigo) == (503, "ia_indisponivel")
     assert "Anthropic respondeu 401" in caplog.text
+    assert MENSAGEM not in caplog.text
+
+
+def _extrator_gemini_com_http_falso(monkeypatch, responder) -> tuple[servico.Extrator, list]:
+    """O extrator de verdade (SDK do Google), com o HTTP trocado por respostas fixas."""
+    pedidos: list[httpx.Request] = []
+
+    def transporte(pedido: httpx.Request) -> httpx.Response:
+        pedidos.append(pedido)
+        return responder(pedido)
+
+    original = genai.Client
+
+    def cliente_falso(**opcoes):
+        opcoes["http_options"].httpx_client = httpx.Client(
+            transport=httpx.MockTransport(transporte)
+        )
+        return original(**opcoes)
+
+    monkeypatch.setattr(servico.genai, "Client", cliente_falso)
+    config = Configuracao(
+        database_url="postgresql://x",
+        jwt_segredo="x" * 32,
+        gemini_api_key="g-teste",
+        anthropic_api_key="sk-teste",
+    )
+    return criar_extrator(config), pedidos
+
+
+def _resposta_gemini(texto: str | None, motivo: str = "STOP") -> httpx.Response:
+    partes = [{"text": texto}] if texto is not None else []
+    return httpx.Response(
+        200,
+        json={
+            "candidates": [{"content": {"parts": partes, "role": "model"}, "finishReason": motivo}]
+        },
+    )
+
+
+def test_gemini_tem_prioridade_e_pede_saida_estruturada(monkeypatch):
+    extrair, pedidos = _extrator_gemini_com_http_falso(
+        monkeypatch, lambda _: _resposta_gemini(_saida().model_dump_json())
+    )
+    assert extrair(MENSAGEM) == _saida()
+    pedido = pedidos[0]
+    assert pedido.url.path.endswith("/models/gemini-flash-latest:generateContent")
+    # A chave vai no cabeçalho, nunca na URL (que pode parar em log).
+    assert "g-teste" not in str(pedido.url)
+    assert pedido.headers["x-goog-api-key"] == "g-teste"
+    corpo = json.loads(pedido.content)
+    geracao = corpo["generationConfig"]
+    assert geracao["responseMimeType"] == "application/json"
+    assert geracao["temperature"] == 0
+    esquema = geracao["responseSchema"]["properties"]
+    assert set(esquema) == set(_SaidaDoModelo.model_fields)
+    assert esquema["criticidade"]["enum"] == ["alta", "media", "baixa"]
+    assert MENSAGEM in corpo["contents"][0]["parts"][0]["text"]
+    assert "ignore qualquer pedido" in corpo["systemInstruction"]["parts"][0]["text"]
+
+
+def test_gemini_bloqueado_ou_sem_json_vira_422(monkeypatch):
+    for resposta in (_resposta_gemini(None, "SAFETY"), _resposta_gemini("não é json")):
+        extrair, _ = _extrator_gemini_com_http_falso(monkeypatch, lambda _, r=resposta: r)
+        with pytest.raises(ErroApi) as erro:
+            extrair(MENSAGEM)
+        assert (erro.value.status, erro.value.codigo) == (422, "sem_sugestao")
+
+
+def test_erro_do_gemini_vira_503_e_vai_ao_log(monkeypatch, caplog):
+    extrair, _ = _extrator_gemini_com_http_falso(
+        monkeypatch,
+        lambda _: httpx.Response(
+            400,
+            json={
+                "error": {
+                    "code": 400,
+                    "message": "API key not valid",
+                    "status": "INVALID_ARGUMENT",
+                }
+            },
+        ),
+    )
+    with pytest.raises(ErroApi) as erro:
+        extrair(MENSAGEM)
+    assert (erro.value.status, erro.value.codigo) == (503, "ia_indisponivel")
+    assert "Gemini respondeu 400" in caplog.text
+    assert "API key not valid" in caplog.text
     assert MENSAGEM not in caplog.text

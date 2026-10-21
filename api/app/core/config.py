@@ -19,10 +19,13 @@ class Configuracao(BaseSettings):
     # Tempo máximo de uma consulta no banco antes de ser cancelada (ADR 0003).
     timeout_consulta_ms: int = 5000
 
-    # Sugestão de incidente pela IA a partir da mensagem do motorista (ADR 0014). Sem chave,
-    # o recurso fica desligado e o formulário funciona como antes.
+    # Sugestão de incidente pela IA a partir da mensagem do motorista (ADR 0014). Usa o Gemini
+    # se houver GEMINI_API_KEY, senão o Claude com ANTHROPIC_API_KEY; sem nenhuma, o recurso
+    # fica desligado e o formulário funciona como antes.
+    gemini_api_key: str | None = None
     anthropic_api_key: str | None = None
-    sugestao_modelo: str = "claude-opus-5-5"
+    # Vazio: o modelo padrão do provedor (app/services/sugestao.py).
+    sugestao_modelo: str | None = None
     # Duas tentativas cabem nos 60 s do cliente do front.
     sugestao_timeout_s: float = Field(default=25, gt=0, le=120)
     # Teto de chamadas por dia na instância: a conta demo é pública e cada chamada custa.

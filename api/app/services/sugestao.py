@@ -1,15 +1,20 @@
 """Sugestão de incidente a partir da mensagem do motorista (ADR 0014).
 
-O analista cola a mensagem que chegou pelo WhatsApp; o Claude extrai título, categoria,
-criticidade, local, placa e motorista. A sugestão só preenche o formulário: nada é gravado
-sem o analista conferir e salvar. A mensagem é texto de terceiros, então a saída é presa a um
-schema (structured outputs) e passa pelas mesmas validações do formulário.
+O analista cola a mensagem que chegou pelo WhatsApp; um LLM (Gemini ou Claude, conforme a chave
+configurada) extrai título, categoria, criticidade, local, placa e motorista. A sugestão só
+preenche o formulário: nada é gravado sem o analista conferir e salvar. A mensagem é texto de
+terceiros, então a saída é presa a um schema (saída estruturada) e passa pelas mesmas
+validações do formulário.
 """
 
 import logging
 from collections.abc import Callable
 
 import anthropic
+import httpx
+from google import genai
+from google.genai import errors as erros_gemini
+from google.genai import types as tipos_gemini
 from pydantic import BaseModel, Field
 
 from app.core.config import Configuracao
@@ -19,6 +24,9 @@ from app.schemas.incidente import normalizar_placa
 from app.schemas.sugestao import SugestaoResposta
 
 logger = logging.getLogger("logos")
+
+MODELO_GEMINI = "gemini-flash-latest"
+MODELO_CLAUDE = "claude-opus-5-5"
 
 LIMITE_TITULO = 120
 LIMITE_LOCAL = 160
@@ -55,7 +63,7 @@ Regras:
 
 
 class _SaidaDoModelo(BaseModel):
-    """Formato exigido do Claude (structured outputs)."""
+    """Formato exigido do modelo (saída estruturada)."""
 
     titulo: str = Field(description="Frase curta, até 80 caracteres")
     categoria: Categoria
@@ -73,14 +81,77 @@ def _indisponivel(mensagem: str) -> ErroApi:
     return ErroApi(503, "ia_indisponivel", mensagem, cabecalhos={"Retry-After": "30"})
 
 
+def _sem_sugestao() -> ErroApi:
+    return ErroApi(422, "sem_sugestao", "A IA não conseguiu ler esta mensagem. Preencha à mão.")
+
+
+def _pedido(mensagem: str) -> str:
+    # Delimitada: separada das instruções, a mensagem é tratada como dado.
+    return f"<mensagem>\n{mensagem}\n</mensagem>"
+
+
 def criar_extrator(config: Configuracao) -> Extrator | None:
-    """Extrator que chama o Claude, ou None quando não há chave configurada."""
-    if not config.anthropic_api_key:
-        return None
+    """Extrator do provedor com chave configurada (Gemini primeiro), ou None sem nenhuma."""
+    if config.gemini_api_key:
+        return _extrator_gemini(config)
+    if config.anthropic_api_key:
+        return _extrator_claude(config)
+    return None
+
+
+def _extrator_gemini(config: Configuracao) -> Extrator:
+    cliente = genai.Client(
+        api_key=config.gemini_api_key,
+        http_options=tipos_gemini.HttpOptions(
+            timeout=int(config.sugestao_timeout_s * 1000),
+            retry_options=tipos_gemini.HttpRetryOptions(attempts=2),
+        ),
+    )
+    modelo = config.sugestao_modelo or MODELO_GEMINI
+    configuracao = tipos_gemini.GenerateContentConfig(
+        system_instruction=INSTRUCOES,
+        response_mime_type="application/json",
+        response_schema=_SaidaDoModelo,
+        # Extração: a mesma mensagem deve dar a mesma sugestão.
+        temperature=0,
+    )
+
+    def extrair(mensagem: str) -> _SaidaDoModelo:
+        try:
+            resposta = cliente.models.generate_content(
+                model=modelo, contents=_pedido(mensagem), config=configuracao
+            )
+        except httpx.TransportError as erro:
+            logger.warning("Sugestão pela IA: sem resposta do Gemini (%s)", type(erro).__name__)
+            raise _indisponivel("A IA demorou para responder. Tente de novo.") from erro
+        except erros_gemini.APIError as erro:
+            # A mensagem de erro do Google não contém o texto do motorista: pode ir ao log.
+            logger.warning(
+                "Sugestão pela IA: Gemini respondeu %s (%s: %s)",
+                erro.code,
+                erro.status,
+                erro.message,
+            )
+            if erro.code == 429:
+                raise _indisponivel(
+                    "A IA está com muitos pedidos agora. Tente em instantes."
+                ) from erro
+            raise _indisponivel("A IA não está disponível agora. Preencha à mão.") from erro
+        saida = resposta.parsed
+        if not isinstance(saida, _SaidaDoModelo):
+            motivo = resposta.candidates[0].finish_reason if resposta.candidates else None
+            logger.warning("Sugestão pela IA: Gemini sem saída válida (finish_reason=%s)", motivo)
+            raise _sem_sugestao()
+        return saida
+
+    return extrair
+
+
+def _extrator_claude(config: Configuracao) -> Extrator:
     cliente = anthropic.Anthropic(
         api_key=config.anthropic_api_key, timeout=config.sugestao_timeout_s, max_retries=1
     )
-    modelo = config.sugestao_modelo
+    modelo = config.sugestao_modelo or MODELO_CLAUDE
     # Fallback no servidor se o modelo recusar o pedido (só os modelos Opus aceitam).
     extras = (
         {"betas": ["server-side-fallback-2026-07-01"], "fallbacks": "default"}
@@ -94,7 +165,7 @@ def criar_extrator(config: Configuracao) -> Extrator | None:
                 model=modelo,
                 max_tokens=2048,
                 system=INSTRUCOES,
-                messages=[{"role": "user", "content": f"<mensagem>\n{mensagem}\n</mensagem>"}],
+                messages=[{"role": "user", "content": _pedido(mensagem)}],
                 output_format=_SaidaDoModelo,
                 # Extração simples: pouco raciocínio basta e a resposta chega mais rápido.
                 output_config={"effort": "low"},
@@ -117,11 +188,7 @@ def criar_extrator(config: Configuracao) -> Extrator | None:
             raise _indisponivel("A IA não está disponível agora. Preencha à mão.") from erro
         if resposta.stop_reason == "refusal" or resposta.parsed_output is None:
             logger.warning("Sugestão pela IA: sem saída (stop_reason=%s)", resposta.stop_reason)
-            raise ErroApi(
-                422,
-                "sem_sugestao",
-                "A IA não conseguiu ler esta mensagem. Preencha à mão.",
-            )
+            raise _sem_sugestao()
         return resposta.parsed_output
 
     return extrair
