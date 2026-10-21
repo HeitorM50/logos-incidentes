@@ -72,6 +72,13 @@ histórico.
   igual à da API. A edição envia só os campos alterados; se outro analista mudou o incidente com o
   painel aberto, o painel mostra quais campos mudaram e deixa escolher entre usar a versão atual
   ou manter as próprias mudanças.
+- **Frota e telemetria:** a central de rastreamento (simulada) manda a posição e os sensores dos
+  70 caminhões para `POST /telemetria`, e um motor de regras na API transforma sinais em
+  incidentes: pânico → Acidente com Vítimas (Alta), impacto forte → Acidente com Veículo (Alta),
+  motor quente → Problema Mecânico (Média), visibilidade baixa → Condição Climática (Média) e
+  parada longa na rodovia → Bloqueio de Pista (Baixa). O botão "Frota" mostra um mapa esquemático
+  com as rodovias, cada caminhão (em movimento, parado, no pátio) e os alertas, que levam ao
+  incidente. Ver [ADR 0013](docs/decisoes/0013-telemetria-da-frota.md).
 - **Relatório:** o botão "Relatório" abre um painel com o funil do atendimento (recebidos →
   assumidos → assumidos no prazo → fechados), os Alta e o total recebidos, o tempo médio até
   assumir e até fechar, a taxa de atraso e os recebidos por hora, nas últimas 6 h, 24 h ou 7 dias,
@@ -294,9 +301,14 @@ por `uv run python -m app.dispositivos criar "Caminhão 042" --placa ABC1D23`.
 
 Os incidentes são **dados de demonstração** gerados pelo seed. Para a central não parecer parada
 quando aberta dias depois, o workflow [`demo-viva.yml`](.github/workflows/demo-viva.yml) recria os
-dados todo dia às 06:00 (Brasília) e, a cada 30 min, faz um caminhão da frota enviar um incidente
-pela ingestão (`simular_caminhao.py --frota`: placa e trecho sorteados). Em produção, os
-incidentes chegariam pela mesma rota, vindos da central de rastreamento e de um robô de WhatsApp.
+dados todo dia às 06:00 (Brasília) e, a cada 30 min, roda 1 min de telemetria da frota
+(`scripts/simular_frota.py`): os caminhões andam por rodovias reais e a API abre os incidentes
+que as regras apontarem. Em produção, as leituras viriam da central de rastreamento contratada,
+pela mesma rota, e os relatos do motorista, de um robô de WhatsApp pela ingestão.
+
+```bash
+cd api && uv run python scripts/simular_frota.py --duracao 300 --intensidade 20   # demonstração ao vivo
+```
 
 ## API
 
@@ -311,6 +323,8 @@ incidentes chegariam pela mesma rota, vindos da central de rastreamento e de um 
 | `GET` | `/incidentes/{id}/eventos` | Histórico, gravado na mesma transação de cada alteração |
 | `POST` | `/ingestao/incidentes` | Envio direto pelo caminhão (chave de dispositivo + `Idempotency-Key`) |
 | `GET` | `/veiculos/{placa}` | Veículo da frota e o motorista atual (com login: telefone é dado pessoal) |
+| `POST` | `/telemetria` | Leituras da frota (posição e sensores); as regras abrem os incidentes |
+| `GET` | `/frota` | Rodovias e a última posição de cada caminhão, com o alerta ativo (com login) |
 | `GET` | `/regras` | Transições, limites dos campos e padrão da placa, derivados do código |
 | `GET` | `/health` | API e banco respondendo |
 

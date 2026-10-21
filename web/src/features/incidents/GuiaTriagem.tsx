@@ -245,7 +245,17 @@ export function GuiaTriagem({ aberto, aoMudar }: PropsGuia) {
             </p>
           </Secao>
 
-          <Secao titulo="7. Se a conexão oscilar">
+          <Secao titulo="7. Frota">
+            <p>
+              <strong className="font-semibold text-foreground">Frota</strong> mostra onde cada
+              caminhão está, pela telemetria: em movimento, parado na rodovia ou no pátio. Os
+              alertas nascem dos sensores (pânico, impacto, motor quente, visibilidade baixa e
+              parada longa) e já entram na triagem como incidentes; clique num alerta para ir até
+              ele.
+            </p>
+          </Secao>
+
+          <Secao titulo="8. Se a conexão oscilar">
             <p>
               A tela muda na hora quando você age. Se o servidor não confirmar, a linha volta ao
               estado anterior e um aviso oferece <em>Tentar de novo</em>. O topo da tela mostra se

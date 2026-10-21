@@ -549,7 +549,7 @@ function Detalhes({
         <dd className="flex flex-col items-start gap-0.5">
           {incidente.local}
           <a
-            href={linkDoMapa(incidente.local)}
+            href={linkDoMapa(incidente.local, incidente.latitude, incidente.longitude)}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`Abrir no mapa: ${incidente.local} (nova aba)`}

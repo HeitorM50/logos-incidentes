@@ -1,8 +1,9 @@
-import { ChartNoAxesColumn, Plus } from 'lucide-react'
+import { ChartNoAxesColumn, Plus, Truck } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { ehErroApi } from '@/api/erros'
 import type { AnalistaLogado, Incidente } from '@/api/tipos'
 import { Button } from '@/components/ui/button'
+import { PainelFrota } from '@/features/frota/PainelFrota'
 import { PainelRelatorio } from '@/features/relatorio/PainelRelatorio'
 import { useAgora } from '@/lib/useAgora'
 import { useSegundosAguardando } from '@/lib/useSegundosAguardando'
@@ -156,6 +157,7 @@ export function TelaTriagem({ analista, aoSair }: Props) {
 
   const [painel, setPainel] = useState<ModoPainel | null>(null)
   const [relatorioAberto, setRelatorioAberto] = useState(false)
+  const [frotaAberta, setFrotaAberta] = useState(false)
   const [removendo, setRemovendo] = useState<Incidente | null>(null)
   const [sucesso, setSucesso] = useState<(Concluido & { chave: number }) | null>(null)
   // O aviso de sucesso para de contar enquanto o mouse ou o foco estão nele.
@@ -416,6 +418,16 @@ export function TelaTriagem({ analista, aoSair }: Props) {
                 <ChartNoAxesColumn aria-hidden />
                 Relatório
               </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="secondary"
+                onClick={() => setFrotaAberta(true)}
+                className="bg-pilula"
+              >
+                <Truck aria-hidden />
+                Frota
+              </Button>
             </span>
           </div>
           <div className="w-full lg:w-[min(560px,45%)]">
@@ -498,6 +510,7 @@ export function TelaTriagem({ analista, aoSair }: Props) {
         {reconectou ? 'Conexão restabelecida. A lista está ao vivo de novo.' : ''}
       </p>
       <GuiaTriagem aberto={guia.aberto} aoMudar={guia.setAberto} />
+      <PainelFrota aberto={frotaAberta} aoMudar={setFrotaAberta} aoVerIncidente={mostrarNaLista} />
       <PainelRelatorio
         aberto={relatorioAberto}
         aoMudar={setRelatorioAberto}

@@ -41,7 +41,11 @@ export const PROTOCOLOS: Record<Categoria, string[]> = {
   ],
 }
 
-/** Busca do local no Google Maps (sem chave de API): abre em outra aba. */
-export function linkDoMapa(local: string): string {
-  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(local)}`
+/**
+ * Busca no Google Maps (sem chave de API), em outra aba. Com a posição da telemetria, aponta o
+ * ponto exato do caminhão; sem ela, busca pelo texto do local.
+ */
+export function linkDoMapa(local: string, latitude?: number | null, longitude?: number | null): string {
+  const busca = latitude != null && longitude != null ? `${latitude},${longitude}` : local
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(busca)}`
 }

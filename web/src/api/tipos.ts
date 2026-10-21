@@ -52,6 +52,9 @@ export interface Incidente {
   /** Contato do motorista no momento do incidente (cópia do cadastro da frota). */
   motorista_nome: string | null
   motorista_telefone: string | null
+  /** Posição do caminhão quando a telemetria abriu o incidente (nulo nos demais). */
+  latitude?: number | null
+  longitude?: number | null
   responsavel: AnalistaResumo | null
   atualizado_por: AnalistaResumo | null
   /** Caminhão que enviou pela ingestão (ADR 0008); nulo quando um analista registrou. */
