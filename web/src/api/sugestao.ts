@@ -13,7 +13,7 @@ export interface Sugestao {
   justificativa: string
 }
 
-/** A API só liga a sugestão quando tem a chave da Anthropic configurada. */
+/** A API só liga a sugestão quando tem a chave de um provedor de IA (Gemini ou Anthropic). */
 export function obterDisponibilidadeSugestao(sinal?: AbortSignal): Promise<{ disponivel: boolean }> {
   return requisitar('/sugestao', { sinal })
 }

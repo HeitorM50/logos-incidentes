@@ -18,8 +18,8 @@ interface Props {
 
 /**
  * Novo incidente a partir da mensagem do motorista (ADR 0014): o analista cola o texto do
- * WhatsApp e a IA preenche o formulário. Nada é salvo sem o analista conferir. Sem a chave da
- * Anthropic na API, o bloco não aparece e o formulário funciona como antes.
+ * WhatsApp e a IA preenche o formulário. Nada é salvo sem o analista conferir. Sem a chave de
+ * um provedor de IA na API, o bloco não aparece e o formulário funciona como antes.
  */
 export function PreencherComIa({ aoSugerir }: Props) {
   const id = useId()

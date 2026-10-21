@@ -99,11 +99,11 @@ histórico.
   com as rodovias, cada caminhão (em movimento, parado, no pátio) e os alertas, que levam ao
   incidente. Ver [ADR 0013](docs/decisoes/0013-telemetria-da-frota.md).
 - **Novo incidente pela mensagem do motorista (IA):** no painel de novo incidente, o analista cola
-  a mensagem que chegou pelo WhatsApp e clica em "Preencher com IA". O Claude (API da Anthropic,
-  saída estruturada com as categorias e criticidades do domínio) sugere título, categoria,
-  criticidade com a justificativa, local, placa e motorista. **Nada é salvo sozinho:** o analista
-  confere e salva. Sem `ANTHROPIC_API_KEY` na API, o bloco não aparece e o formulário funciona
-  igual. Ver [ADR 0014](docs/decisoes/0014-sugestao-pela-ia.md).
+  a mensagem que chegou pelo WhatsApp e clica em "Preencher com IA". Um LLM (Gemini; ou Claude, se
+  só houver a chave da Anthropic), com saída estruturada nas categorias e criticidades do domínio,
+  sugere título, categoria, criticidade com a justificativa, local, placa e motorista. **Nada é
+  salvo sozinho:** o analista confere e salva. Sem chave na API, o bloco não aparece e o
+  formulário funciona igual. Ver [ADR 0014](docs/decisoes/0014-sugestao-pela-ia.md).
 - **Relatório:** o botão "Relatório" abre um painel com o funil do atendimento (recebidos →
   assumidos → assumidos no prazo → fechados), os Alta e o total recebidos, o tempo médio até
   assumir e até fechar, a taxa de atraso e os recebidos por hora, nas últimas 6 h, 24 h ou 7 dias,
@@ -166,7 +166,7 @@ api/                FastAPI
   app/simulacao/    rodovias reais e o movimento da frota de demonstração
   app/seed/         analistas, frota, dispositivos e 100 incidentes de demonstração
   alembic/          migrations (0001 a 0007)
-  tests/            pytest (199 testes)
+  tests/            pytest (203 testes)
   scripts/          simuladores: caminhão (ingestão) e frota (telemetria)
 web/                React + Vite + TypeScript
   src/api/          cliente tipado da API, erros e sessão
@@ -269,7 +269,7 @@ Postgres (o projeto usa a versão 17 localmente e o Postgres do Supabase em prod
 ### Testes e qualidade
 
 ```bash
-cd api && uv run pytest && uv run ruff check .        # 199 testes
+cd api && uv run pytest && uv run ruff check .        # 203 testes
 cd web && npm test && npm run lint && npm run build   # 308 testes
 ```
 

@@ -15,7 +15,7 @@ export type CodigoErro =
   | 'muitas_tentativas'
   | 'servico_indisponivel'
   | 'erro_interno'
-  | 'ia_desligada' // sugestão pela IA: sem chave da Anthropic neste ambiente
+  | 'ia_desligada' // sugestão pela IA: sem chave de provedor neste ambiente
   | 'ia_indisponivel'
   | 'sem_sugestao'
   | 'cota_ia_esgotada'

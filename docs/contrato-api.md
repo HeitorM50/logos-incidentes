@@ -135,7 +135,7 @@ por status e ordenada por criticidade e tempo aberto.
 | `GET /relatorio/registro?horas=6\|24\|168` | — | 200 incidentes recebidos ou fechados no período (com marcos e comentário de fechamento) e a linha do tempo dos eventos, para o PDF | 401, 422 |
 | `POST /telemetria` | `{leituras: [{placa, latitude, longitude, velocidade_kmh, ignicao?, referencia?, registrado_em?, sinais?: {panico?, impacto_g?, temperatura_motor_c?, visibilidade_m?}}]}` (até 200; chave de dispositivo) | 200 `{processadas, ignoradas, incidentes}` | 401, 422, 429 |
 | `GET /frota` | — | 200 `{rotas, veiculos}`: rodovias da simulação e a última posição de cada caminhão, com o incidente ativo | 401 |
-| `GET /sugestao` | — | 200 `{disponivel}`: a sugestão pela IA está ligada (há chave da Anthropic) | 401 |
+| `GET /sugestao` | — | 200 `{disponivel}`: a sugestão pela IA está ligada (há chave do Gemini ou da Anthropic) | 401 |
 | `POST /sugestao` | `{mensagem}` (10 a 2.000 caracteres) | 200 `{titulo, descricao, categoria, criticidade, local, placa, motorista_nome, justificativa}`: só sugere, nada é gravado | 401, 422 (inclui `sem_sugestao`), 429 (`muitas_tentativas`, `cota_ia_esgotada`), 503 (`ia_desligada`, `ia_indisponivel`) |
 | `GET /regras` | — | 200 transições, `pode_assumir`, `status_apos_liberar`, `status_final`, limites dos campos, padrão da placa e regra do comentário (público, sem dados) | — |
 | `POST /ingestao/incidentes` | cabeçalhos `X-Chave-Dispositivo` e `Idempotency-Key`; corpo igual ao `POST /incidentes` | 201 `Incidente` (novo) · 200 (reenvio, `Idempotent-Replayed: true`) | 401, 409 `ja_recebido`, 422 (inclui `chave_reutilizada`), 429 (por IP ou `cota_do_dispositivo`) |
@@ -197,6 +197,6 @@ Formato único:
 | 422 | `sem_sugestao` | A IA não conseguiu ler a mensagem (ou recusou) |
 | 429 | `cota_ia_esgotada` | Teto diário de sugestões da IA atingido |
 | 503 | `ia_desligada` | Sugestão pela IA sem chave configurada neste ambiente |
-| 503 | `ia_indisponivel` | A API da Anthropic falhou ou demorou (`Retry-After`) |
+| 503 | `ia_indisponivel` | O provedor de IA (Gemini ou Anthropic) falhou ou demorou (`Retry-After`) |
 | 503 | `servico_indisponivel` | Banco indisponível após retry (`Retry-After`) |
 | 500 | `erro_interno` | Erro inesperado (sem detalhes internos) |
