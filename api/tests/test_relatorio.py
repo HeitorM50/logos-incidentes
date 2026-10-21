@@ -96,3 +96,14 @@ def test_registro_traz_recebidos_fechados_e_a_linha_do_tempo(cliente: TestClient
         "Pneu estourado antigo",
         "Neblina na serra",
     }
+
+
+def test_atraso_do_periodo_anterior_e_medido_ate_o_fim_dele(cliente: TestClient, sessao: Session):
+    # Média (prazo 60 min) aberta 6 h 30 min atrás, sem ninguém: no fim do período anterior
+    # (6 h atrás) estava com 30 min, ainda no prazo. Só passa do prazo dentro do período atual.
+    antigo = criar_incidente(cliente, criticidade="media")
+    recuar(sessao, antigo, 6 * 60 + 30)
+
+    relatorio = cliente.get("/relatorio", params={"horas": 6}).json()
+
+    assert relatorio["taxa_atraso_pct"]["anterior"] == 0

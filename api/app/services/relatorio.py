@@ -103,7 +103,10 @@ def gerar(sessao: Session, horas: int, agora: datetime | None = None) -> Relator
             estat.assumidos_no_prazo += espera <= prazo
             estat.atrasados += espera > prazo
         elif incidente.status != StatusIncidente.FECHADO:
-            estat.atrasados += _minutos(incidente.criado_em, agora) > prazo
+            # Atraso medido até o fim do período do incidente: no período anterior, um que
+            # ainda estava no prazo quando o período acabou não conta como atrasado.
+            fim = agora if estat is atual else inicio
+            estat.atrasados += _minutos(incidente.criado_em, fim) > prazo
         fechou = fechado_em.get(incidente.id)
         if fechou:
             estat.fechados += 1
