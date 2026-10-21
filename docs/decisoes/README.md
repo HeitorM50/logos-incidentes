@@ -18,3 +18,4 @@ consideradas e consequências. Esses registros são a fonte das justificativas n
 | [0011](0011-supervisor.md) | Papel de supervisor e transferência |
 | [0012](0012-relatorio.md) | Relatório, PDF e demonstração viva |
 | [0013](0013-telemetria-da-frota.md) | Telemetria da frota e o mapa |
+| [0014](0014-sugestao-pela-ia.md) | Novo incidente a partir da mensagem do motorista (IA) |

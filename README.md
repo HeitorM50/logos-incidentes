@@ -98,6 +98,12 @@ histórico.
   parada longa na rodovia → Bloqueio de Pista (Baixa). O botão "Frota" mostra um mapa esquemático
   com as rodovias, cada caminhão (em movimento, parado, no pátio) e os alertas, que levam ao
   incidente. Ver [ADR 0013](docs/decisoes/0013-telemetria-da-frota.md).
+- **Novo incidente pela mensagem do motorista (IA):** no painel de novo incidente, o analista cola
+  a mensagem que chegou pelo WhatsApp e clica em "Preencher com IA". O Claude (API da Anthropic,
+  saída estruturada com as categorias e criticidades do domínio) sugere título, categoria,
+  criticidade com a justificativa, local, placa e motorista. **Nada é salvo sozinho:** o analista
+  confere e salva. Sem `ANTHROPIC_API_KEY` na API, o bloco não aparece e o formulário funciona
+  igual. Ver [ADR 0014](docs/decisoes/0014-sugestao-pela-ia.md).
 - **Relatório:** o botão "Relatório" abre um painel com o funil do atendimento (recebidos →
   assumidos → assumidos no prazo → fechados), os Alta e o total recebidos, o tempo médio até
   assumir e até fechar, a taxa de atraso e os recebidos por hora, nas últimas 6 h, 24 h ou 7 dias,
@@ -160,7 +166,7 @@ api/                FastAPI
   app/simulacao/    rodovias reais e o movimento da frota de demonstração
   app/seed/         analistas, frota, dispositivos e 100 incidentes de demonstração
   alembic/          migrations (0001 a 0007)
-  tests/            pytest (185 testes)
+  tests/            pytest (199 testes)
   scripts/          simuladores: caminhão (ingestão) e frota (telemetria)
 web/                React + Vite + TypeScript
   src/api/          cliente tipado da API, erros e sessão
@@ -263,8 +269,8 @@ Postgres (o projeto usa a versão 17 localmente e o Postgres do Supabase em prod
 ### Testes e qualidade
 
 ```bash
-cd api && uv run pytest && uv run ruff check .        # 185 testes
-cd web && npm test && npm run lint && npm run build   # 305 testes
+cd api && uv run pytest && uv run ruff check .        # 199 testes
+cd web && npm test && npm run lint && npm run build   # 308 testes
 ```
 
 Os testes da API rodam num schema temporário, criado e apagado a cada execução, e só aceitam um
@@ -349,6 +355,7 @@ cd api && uv run python scripts/simular_frota.py --duracao 300 --intensidade 20 
 | `GET` | `/veiculos/{placa}` | Veículo da frota e o motorista atual (com login: telefone é dado pessoal) |
 | `POST` | `/telemetria` | Leituras da frota (posição e sensores); as regras abrem os incidentes |
 | `GET` | `/frota` | Rodovias e a última posição de cada caminhão, com o alerta ativo (com login) |
+| `GET` · `POST` | `/sugestao` | Se a IA está ligada · sugere os campos a partir da mensagem do motorista (não grava) |
 | `GET` | `/regras` | Transições, limites dos campos e padrão da placa, derivados do código |
 | `GET` | `/health` | API e banco respondendo |
 
@@ -377,4 +384,3 @@ Ideias que ficaram fora do MVP estão na issue
 
 - **Eventos em tempo real (SSE)** no lugar da leitura a cada 5 s, quando o número de analistas
   justificar o custo.
-- **Sugestão de criticidade por IA** no formulário de criação, sempre confirmada pelo analista.
