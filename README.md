@@ -17,6 +17,25 @@ anônima ou em outro navegador e altere o mesmo incidente nas duas. A supervisor
 > A API roda no plano gratuito do Render. Se ela estiver hibernando, o primeiro acesso pode levar
 > até 1 minuto; a tela mostra "Acordando o servidor…" enquanto isso.
 
+### Como avaliar em 5 minutos
+
+1. **Entre** em https://logos-incidentes.vercel.app com **Preencher** → **Entrar** (usuária `ana`).
+2. **Priorize:** a lista já vem com Alta primeiro e o mais antigo no topo. Clique no cartão **ALTA**,
+   depois em **Atrasados** (sem responsável além do prazo). Busque uma placa ou `#número`.
+3. **Trate:** abra os detalhes de um incidente (seta no início da linha): protocolo da categoria,
+   motorista com **Ligar**/**WhatsApp**, mapa e histórico. **Assuma**, depois **Mude o status**
+   para Fechado: o comentário é obrigatório. **Desfazer** fica alguns segundos no canto.
+4. **Concorrência:** numa janela anônima, entre como `bruno` (mesma senha) e deixe as duas janelas
+   no mesmo incidente livre. A Ana assume; se o Bruno clicar antes da lista dele atualizar (5 s),
+   o Logos recusa (409) e mostra que a Ana alterou. Depois disso, o botão do Bruno aparece
+   desativado, com o motivo.
+5. **Frota:** o botão **Frota** mostra os caminhões nas rodovias; os alertas da telemetria (a cada
+   30 min chegam leituras novas) levam ao incidente.
+6. **Relatório:** funil do atendimento e tempos, com **Exportar PDF**.
+7. **Detalhes de UX:** troque o tema (lua/sol no topo), estreite a janela até virar cartões e
+   abra **?** para o guia da triagem. A API está em
+   https://logos-api-uy7z.onrender.com/docs.
+
 ![Tela de triagem no modo claro](docs/imagens/triagem-claro.png)
 
 <details>
