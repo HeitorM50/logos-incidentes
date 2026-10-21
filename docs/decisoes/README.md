@@ -13,3 +13,7 @@ consideradas e consequências. Esses registros são a fonte das justificativas n
 | [0006](0006-deploy-e-ambientes.md) | Deploy e ambientes |
 | [0007](0007-historico-do-incidente.md) | Histórico do incidente |
 | [0008](0008-ingestao-pelos-caminhoes.md) | Ingestão pelos caminhões |
+| [0009](0009-contato-do-motorista.md) | Contato do motorista: cadastro da frota e cópia no incidente |
+| [0010](0010-gestao-por-excecao.md) | Gestão por exceção: situação, prazo para assumir e duplicata |
+| [0011](0011-supervisor.md) | Papel de supervisor e transferência |
+| [0012](0012-relatorio.md) | Relatório, PDF e demonstração viva |
