@@ -49,7 +49,7 @@ function Chip({ metrica, maisEhPior = true }: { metrica: Metrica; maisEhPior?: b
           ? 'bg-pilula text-texto-2'
           : ruim
             ? 'bg-erro-fundo text-erro-texto'
-            : 'bg-[color-mix(in_oklab,var(--ao-vivo)_16%,transparent)] text-ao-vivo',
+            : 'bg-[color-mix(in_oklab,var(--ao-vivo)_9%,transparent)] text-ao-vivo',
       )}
     >
       <Icone aria-hidden className="size-3.5" strokeWidth={2.5} />

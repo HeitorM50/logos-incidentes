@@ -75,7 +75,7 @@ describe('TelaTriagem', () => {
       'listitem',
     )
     // Número e, abaixo, a parte dos ativos (1 de 2 = 50%).
-    expect(cartoes[0]).toHaveTextContent('AltaMais antigo há 30 min150% ativos')
+    expect(cartoes[0]).toHaveTextContent('Alta Mais antigo há 30 min 1 50% dos ativos')
     expect(cartoes[1]).toHaveTextContent('Nenhum ativo')
   })
 
@@ -192,7 +192,7 @@ describe('TelaTriagem', () => {
 
     await userEvent.click(await screen.findByRole('button', { name: 'Ver detalhes de #5' }))
     const detalhes = screen.getByRole('group', { name: 'Detalhes de #5' })
-    const mapa = within(detalhes).getByRole('link', { name: 'Abrir BR-116, km 212 no mapa (nova aba)' })
+    const mapa = within(detalhes).getByRole('link', { name: 'Abrir no mapa: BR-116, km 212 (nova aba)' })
     expect(mapa).toHaveAttribute(
       'href',
       'https://www.google.com/maps/search/?api=1&query=BR-116%2C%20km%20212',
@@ -377,7 +377,7 @@ describe('TelaTriagem — filtros', () => {
   it('o cartão de criticidade filtra a lista e grava o filtro na URL', async () => {
     abrirCom()
 
-    const alta = await screen.findByRole('button', { name: /^Alta: 2 ativos/ })
+    const alta = await screen.findByRole('button', { name: /^Alta, .*: 2, \d+% dos ativos$/ })
     await userEvent.click(alta)
 
     expect(alta).toHaveAttribute('aria-pressed', 'true')
@@ -392,13 +392,13 @@ describe('TelaTriagem — filtros', () => {
   it('"Fechados" e "Todos" trazem os fechados; a escolha vai para a URL', async () => {
     abrirCom()
     const situacao = await screen.findByRole('group', { name: 'Situação' })
-    await userEvent.click(await within(situacao).findByRole('button', { name: 'Fechados, 1 fechado' }))
+    await userEvent.click(await within(situacao).findByRole('button', { name: 'Fechados 1 fechado' }))
 
     expect(await idsVisiveis()).toEqual(['#20'])
     expect(linhaDeStatus()?.textContent).toBe('Mostrando 1 de 1 incidente fechado (filtrado)')
     await waitFor(() => expect(window.location.search).toBe('?situacao=fechados'))
 
-    await userEvent.click(within(situacao).getByRole('button', { name: 'Todos, 5 incidentes' }))
+    await userEvent.click(within(situacao).getByRole('button', { name: 'Todos 5 incidentes' }))
     expect(await idsVisiveis()).toEqual(['#1', '#2', '#3', '#12', '#20'])
     expect(linhaDeStatus()?.textContent).toBe(
       'Mostrando 5 de 5 incidentes (filtrado) · 1 fechado no fim da lista',
@@ -424,7 +424,7 @@ describe('TelaTriagem — filtros', () => {
     )
     renderizar()
 
-    const fila = await screen.findByRole('button', { name: 'Atribuídos a mim, 1 ativo' })
+    const fila = await screen.findByRole('button', { name: 'Atribuídos a mim 1 ativo' })
     await userEvent.click(fila)
 
     expect(fila).toHaveAttribute('aria-pressed', 'true')
@@ -472,13 +472,13 @@ describe('TelaTriagem — filtros', () => {
     abrirCom('/?criticidade=alta&categoria=acidente_vitimas')
 
     expect(
-      await screen.findByRole('button', { name: 'Acidente com Vítimas, 1 ativo' }),
+      await screen.findByRole('button', { name: 'Acidente com Vítimas 1 ativo' }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Problema Mecânico, 1 ativo' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Bloqueio de Pista, 0 ativos' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Problema Mecânico 1 ativo' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Bloqueio de Pista 0 ativos' })).toBeInTheDocument()
     // O cartão ALTA conta só a categoria escolhida (o #12 é de outra categoria).
-    expect(screen.getByRole('button', { name: /^Alta: 1 ativo\./ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Baixa: Nenhum ativo' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /^Alta, .*: 1, \d+% dos ativos$/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Baixa, Nenhum ativo: 0, 0% dos ativos' })).toBeInTheDocument()
   })
 
   it('busca por título, local, placa e número', async () => {

@@ -99,7 +99,13 @@ export function GuiaTriagem({ aberto, aoMudar }: PropsGuia) {
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-4">
+        {/* Focável: quem usa só o teclado consegue rolar o guia (não há links dentro dele). */}
+        <div
+          tabIndex={0}
+          role="region"
+          aria-label="Conteúdo do guia"
+          className="flex min-h-0 flex-1 flex-col gap-5 overflow-y-auto px-5 py-4 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
+        >
           <Secao titulo="1. O que atender primeiro">
             <p>
               A lista já vem ordenada: criticidade Alta primeiro e, dentro dela, o incidente aberto

@@ -320,8 +320,8 @@ function Selo({ incidente }: { incidente: Incidente }) {
     <span
       className={cn(
         'inline-flex h-[26px] items-center gap-1.5 rounded-full border pr-2.5 pl-2 text-xs tracking-[0.05em] whitespace-nowrap uppercase',
+        // Sem opacidade no fechado: o selo perderia o contraste (a linha já fica em cinza).
         SELO[incidente.criticidade],
-        incidente.status === 'fechado' && 'opacity-60',
       )}
     >
       <IconeCriticidade criticidade={incidente.criticidade} />
@@ -552,7 +552,7 @@ function Detalhes({
             href={linkDoMapa(incidente.local)}
             target="_blank"
             rel="noopener noreferrer"
-            aria-label={`Abrir ${incidente.local} no mapa (nova aba)`}
+            aria-label={`Abrir no mapa: ${incidente.local} (nova aba)`}
             className="inline-flex items-center gap-1 rounded-sm font-medium text-foreground underline underline-offset-3 outline-none focus-visible:ring-3 focus-visible:ring-ring/50"
           >
             Abrir no mapa

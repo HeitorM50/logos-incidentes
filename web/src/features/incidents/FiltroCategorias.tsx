@@ -53,8 +53,9 @@ export function FiltroCategorias({
               key={categoria}
               type="button"
               aria-pressed={marcada}
-              // Nome explícito: sem ele o leitor de tela junta rótulo e número ("Vítimas1").
-              aria-label={contagem ? `${rotulo}, ${quantosNaSituacao(contagem[categoria], situacao)}` : rotulo}
+              // Nome explícito: sem ele o leitor de tela junta rótulo e número ("Vítimas1"). Começa
+              // pelo texto visível (WCAG 2.5.3) e acrescenta a palavra da situação ao número.
+              aria-label={contagem ? `${rotulo} ${quantosNaSituacao(contagem[categoria], situacao)}` : rotulo}
               onClick={() => aoAlternar(categoria)}
               className={cn(CHIP, marcada ? CHIP_MARCADO : CHIP_LIVRE)}
             >
@@ -63,7 +64,7 @@ export function FiltroCategorias({
                   className="size-3 animate-in duration-200 zoom-in-50 fade-in-0"
                   strokeWidth={3}
                 />}
-              {rotulo}
+              {rotulo}{' '}
               <span
                 className={cn(
                   'font-mono text-xs tabular-nums',
@@ -84,7 +85,7 @@ export function FiltroCategorias({
         aria-label={
           minhaFila.contagem === null
             ? 'Atribuídos a mim'
-            : `Atribuídos a mim, ${quantosNaSituacao(minhaFila.contagem, situacao)}`
+            : `Atribuídos a mim ${quantosNaSituacao(minhaFila.contagem, situacao)}`
         }
         onClick={minhaFila.aoAlternar}
         className={cn(CHIP, minhaFila.marcada ? CHIP_MARCADO : CHIP_LIVRE)}
@@ -98,7 +99,7 @@ export function FiltroCategorias({
         ) : (
           <UserRound aria-hidden className="size-3.5" />
         )}
-        Atribuídos a mim
+        Atribuídos a mim{' '}
         <span
           className={cn(
             'font-mono text-xs tabular-nums',
@@ -114,7 +115,7 @@ export function FiltroCategorias({
         aria-label={
           atrasados.contagem === null
             ? 'Atrasados'
-            : `Atrasados, ${atrasados.contagem} sem responsável além do prazo`
+            : `Atrasados ${atrasados.contagem} sem responsável além do prazo`
         }
         title="Ativos sem responsável além do prazo para assumir (Alta 15 min, Média 60, Baixa 240)"
         onClick={atrasados.aoAlternar}
@@ -138,7 +139,7 @@ export function FiltroCategorias({
         ) : (
           <AlarmClock aria-hidden className="size-3.5" />
         )}
-        Atrasados
+        Atrasados{' '}
         <span
           className={cn(
             'font-mono text-xs tabular-nums',

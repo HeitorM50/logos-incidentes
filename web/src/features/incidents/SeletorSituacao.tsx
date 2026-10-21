@@ -34,7 +34,7 @@ export function SeletorSituacao({ situacao, contagem, aoEscolher }: Props) {
             type="button"
             aria-pressed={marcada}
             aria-label={
-              contagem ? `${ROTULO[opcao]}, ${quantosNaSituacao(contagem[opcao], opcao)}` : undefined
+              contagem ? `${ROTULO[opcao]} ${quantosNaSituacao(contagem[opcao], opcao)}` : undefined
             }
             onClick={() => aoEscolher(opcao)}
             className={cn(
@@ -42,7 +42,7 @@ export function SeletorSituacao({ situacao, contagem, aoEscolher }: Props) {
               marcada ? 'bg-primary text-primary-foreground' : 'text-texto-2 hover:bg-superficie-2',
             )}
           >
-            {ROTULO[opcao]}
+            {ROTULO[opcao]}{' '}
             <span className={cn('font-mono text-xs tabular-nums', marcada && 'opacity-85')}>
               {contagem ? contagem[opcao] : '–'}
             </span>

@@ -9,7 +9,7 @@ test('triagem: contadores, filtro pelo cartão, URL e busca', async ({ page }) =
   await expect(estado).toHaveText(/^Mostrando (\d+) de \1 incidentes ativos$/)
 
   // O cartão de criticidade é filtro e vai para a URL.
-  await page.getByRole('button', { name: /^Alta: \d+ ativos/ }).click()
+  await page.getByRole('button', { name: /^Alta, .*: \d+, \d+% dos ativos$/ }).click()
   await expect(page).toHaveURL(/criticidade=alta/)
   await expect(estado).toContainText('(filtrado)')
   const selos = page.locator('[data-incidente] [role="row"] [role="cell"]:first-child')
@@ -17,7 +17,7 @@ test('triagem: contadores, filtro pelo cartão, URL e busca', async ({ page }) =
 
   // Recarregar mantém o filtro (estado na URL).
   await page.reload()
-  await expect(page.getByRole('button', { name: /^Alta: \d+ ativos/ })).toHaveAttribute(
+  await expect(page.getByRole('button', { name: /^Alta, .*: \d+, \d+% dos ativos$/ })).toHaveAttribute(
     'aria-pressed',
     'true',
   )

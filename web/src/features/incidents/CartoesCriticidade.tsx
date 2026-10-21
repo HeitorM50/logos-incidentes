@@ -4,7 +4,7 @@ import { ROTULO_CRITICIDADE } from '@/api/rotulos'
 import { CRITICIDADES, type Criticidade } from '@/api/tipos'
 import { cn } from '@/lib/utils'
 import { IconeCriticidade } from './Icones'
-import { quantosAtivos, type ResumoCriticidade } from './resumo'
+import type { ResumoCriticidade } from './resumo'
 import { formatarTempoAberto } from './tempo'
 
 // Cor, forma e peso tipográfico juntos (ADR 0004): quem não distingue o vermelho ainda lê
@@ -132,10 +132,12 @@ export function CartoesCriticidade({ porCriticidade, selecionadas, aoAlternar }:
             <button
               type="button"
               aria-pressed={marcado}
+              // O nome segue o texto visível, na mesma ordem (WCAG 2.5.3: quem usa comando de voz
+              // fala o que vê): rótulo, mais antigo, número e a parte dos ativos.
               aria-label={
-                resumo?.quantidade
-                  ? `${ROTULO_CRITICIDADE[criticidade]}: ${quantosAtivos(resumo.quantidade)}. ${detalhe}`
-                  : `${ROTULO_CRITICIDADE[criticidade]}: ${detalhe}`
+                resumo
+                  ? `${ROTULO_CRITICIDADE[criticidade]}, ${detalhe}: ${resumo.quantidade}, ${parte}% dos ativos`
+                  : `${ROTULO_CRITICIDADE[criticidade]}, ${detalhe}`
               }
               onClick={() => aoAlternar(criticidade)}
               className={cn(
@@ -157,7 +159,7 @@ export function CartoesCriticidade({ porCriticidade, selecionadas, aoAlternar }:
               <span className="flex min-w-0 flex-col gap-0.5">
                 <span className="flex items-center gap-1.5">
                   <span className={cn('text-[15px] tracking-[0.04em] uppercase', estilo.rotulo)}>
-                    {ROTULO_CRITICIDADE[criticidade]}
+                    {ROTULO_CRITICIDADE[criticidade]}{' '}
                   </span>
                   {marcado && (
                     <span
@@ -183,7 +185,7 @@ export function CartoesCriticidade({ porCriticidade, selecionadas, aoAlternar }:
                       : 'text-texto-3',
                   )}
                 >
-                  {detalhe}
+                  {detalhe}{' '}
                 </span>
               </span>
               <span
@@ -193,7 +195,7 @@ export function CartoesCriticidade({ porCriticidade, selecionadas, aoAlternar }:
                 )}
               >
                 {resumo ? <NumeroDeslizante valor={resumo.quantidade} /> : '–'}
-              </span>
+              </span>{' '}
               </span>
               <span aria-hidden className="flex w-full items-center gap-2.5">
                 <span className="h-2 flex-1 overflow-hidden rounded-full bg-trilho">
@@ -206,7 +208,7 @@ export function CartoesCriticidade({ porCriticidade, selecionadas, aoAlternar }:
                   />
                 </span>
                 <span className="font-mono text-[11.5px] text-texto-2 tabular-nums">
-                  {parte}% ativos
+                  {parte}% dos ativos
                 </span>
               </span>
             </button>
