@@ -20,11 +20,22 @@ jobs:
     defaults:
       run:
         working-directory: api
+    # Banco descartável do próprio job: os testes nunca tocam a produção.
+    services:
+      banco:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: logos
+          POSTGRES_PASSWORD: logos
+          POSTGRES_DB: logos
+        ports:
+          - 55432:5432
+        options: >-
+          --health-cmd "pg_isready -U logos -d logos"
+          --health-interval 2s
+          --health-retries 15
     env:
-      # Os testes criam e removem um schema temporário; os dados da aplicação não são tocados.
-      DATABASE_URL: ${{ secrets.DATABASE_URL }}
-      # De propósito: sem isto, o conftest recusa banco remoto (proteção contra o api/.env local).
-      TESTES_BANCO_REMOTO: "1"
+      DATABASE_URL: postgresql+psycopg://logos:logos@localhost:55432/logos
       JWT_SEGREDO: segredo-usado-apenas-nos-testes-do-ci
     steps:
       - uses: actions/checkout@v5

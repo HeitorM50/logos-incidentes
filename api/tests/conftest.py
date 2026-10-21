@@ -35,7 +35,7 @@ def configuracao() -> Configuracao:
     except ValidationError:
         pytest.skip("DATABASE_URL e JWT_SEGREDO não configurados; testes com banco ignorados.")
     # Trava: o api/.env pode apontar para produção. Banco remoto só com permissão explícita
-    # (o CI passa TESTES_BANCO_REMOTO=1); localmente, use o Postgres do docker compose.
+    # (TESTES_BANCO_REMOTO=1); use o Postgres do docker compose, como o CI.
     host = make_url(configuracao.database_url).host
     if host not in HOSTS_LOCAIS and os.environ.get("TESTES_BANCO_REMOTO") != "1":
         pytest.exit(

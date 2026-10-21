@@ -18,7 +18,9 @@ o Render hiberna o serviço após ~15 min sem tráfego, e o Supabase pausa proje
   "Mudança de região" abaixo).
 - **Front:** site estático na Vercel.
 - **Testes automatizados** rodam no mesmo Postgres, mas num **schema temporário** criado e
-  removido a cada execução — os dados da aplicação nunca são tocados.
+  removido a cada execução — os dados da aplicação nunca são tocados. Atualização (20/10): os
+  testes só aceitam Postgres local (o do Docker), e o CI usa um Postgres descartável do próprio
+  job. Nenhum teste roda mais no banco de produção.
 - **Hibernação:** o front mostra "acordando servidor" quando a primeira requisição demora; um job
   agendado chama `/health` periodicamente para manter API e banco ativos.
 
@@ -34,7 +36,7 @@ o Render hiberna o serviço após ~15 min sem tráfego, e o Supabase pausa proje
 ## Consequências
 
 - Dois domínios diferentes → CORS obrigatório.
-- Os testes precisam de `DATABASE_URL` configurada e de acesso à internet.
+- Os testes precisam de um Postgres local (`docker compose up -d`).
 
 ## Mudança de região (19/10/2026)
 
